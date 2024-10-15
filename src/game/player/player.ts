@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { playerSchema } from '../../data/playerSchema';
+import { playerSchema } from '../../data/schemas/playerSchema';
 
 const generatePlayer = (): playerSchema => {
   const firstName = faker.person.firstName('male');

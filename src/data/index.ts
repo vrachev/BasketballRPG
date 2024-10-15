@@ -1,5 +1,5 @@
-import { playerSchemaSql, playerSchema } from './playerSchema';
-import { teamSchemaSql, teamSchema } from './teamSchema';
+import { playerSchemaSql, playerSchema } from './schemas/playerSchema';
+import { teamSchemaSql, teamSchema } from './schemas/teamSchema';
 import { PLAYER_TABLE, TEAM_TABLE } from './constants';
 import { SchemaTs, TableSchemaSql } from './sqlTypes';
 

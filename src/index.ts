@@ -1,5 +1,5 @@
-import { createTables, insertPlayer, getPlayers } from './db/db';
-import { generatePlayer } from './game/player/player';
+import { createTables } from './db';
+import { insertPlayer, insertTeam, getPlayers, getTeams, generatePlayer, generateTeam } from './game';
 
 async function main() {
   await createTables();
@@ -8,9 +8,15 @@ async function main() {
   await insertPlayer(generatePlayer());
   await insertPlayer(generatePlayer());
 
+  await insertTeam(generateTeam());
+  await insertTeam(generateTeam());
+
   // Retrieve and log all users
   const users = await getPlayers();
-  console.log('Users:', users);
+  console.log('Players:', users);
+
+  const teams = await getTeams();
+  console.log('Teams:', teams);
 }
 
 main().catch((err) => {

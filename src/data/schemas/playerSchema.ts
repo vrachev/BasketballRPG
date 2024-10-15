@@ -1,4 +1,4 @@
-import { SchemaTs, TableSchemaSql } from './sqlTypes';
+import { SchemaTs, TableSchemaSql, ForeignKeyType } from '../sqlTypes';
 
 const playerSchemaSql: TableSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
@@ -16,6 +16,8 @@ const playerSchemaSql: TableSchemaSql = {
   grit: 'REAL',
   leadership: 'REAL',
   experience: 'INTEGER',
+  team_id: 'INTEGER',
+  foreignKey: ['team_id', 'teams', 'id'] as ForeignKeyType
 } as const;
 
 type playerSchema = SchemaTs<typeof playerSchemaSql>;

@@ -12,24 +12,31 @@ import {
   TEAM_TABLE 
 } from '../data';
 
+import { TableSchemaSql, ForeignKeyType } from '../data/sqlTypes';
+
 const DB_PATH = path.join(process.cwd(), 'sqlite', 'database.db');
 
 // Enable sqlite3 verbose mode to get more debugging info
 sqlite3.verbose();
 
-export async function openDb() {
+async function openDb() {
   return open({
     filename: DB_PATH,
     driver: sqlite3.Database
   });
 }
 
-export async function createTables() {
+async function createTables() {
   const db = await openDb();
   
-  const createTable = async (tableName: string, schema: Record<string, string>) => {
+  const createTable = async (tableName: string, schema: TableSchemaSql) => {
     const columnDefinitions = Object.entries(schema)
-      .map(([name, type]) => `${name} ${type}`)
+      .map(([name, type]) => {
+        if (Array.isArray(type)) {
+          return `FOREIGN KEY (${type[0]}) REFERENCES ${type[1]}(${type[2]})`;
+        }
+        return `${name} ${type}`;
+      })
       .join(', ');
     await db.exec(`
       CREATE TABLE IF NOT EXISTS ${tableName} (
@@ -42,19 +49,12 @@ export async function createTables() {
   await createTable(TEAM_TABLE, teamSchemaSql);
 }
 
-async function insert<T extends Record<string, any>>(object: SchemaTs<T>) {
+async function insert<T extends Record<string, any>>(object: SchemaTs<T>, tableName: string) {
   const db = await openDb();
   const columns = Object.keys(object).join(', ');
   const placeholders = Object.keys(object).map(() => '?').join(', ');
   const values = Object.values(object);
-  await db.run(`INSERT INTO ${PLAYER_TABLE} (${columns}) VALUES (${placeholders})`, values);
+  await db.run(`INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`, values);
 }
 
-export async function insertPlayer(player: playerSchema) {
-  await insert(player);
-}
-
-export async function getPlayers() {
-  const db = await openDb();
-  return db.all(`SELECT * FROM ${PLAYER_TABLE}`);
-}
+export { openDb, createTables, insert };
