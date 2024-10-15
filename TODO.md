@@ -1,5 +1,23 @@
 TODO
 
+
+Ideas:
+- Several game modes
+  - Journey to "GOAT" (eg: first pick, lots of potential)
+  - Role-player (eg: starting as a middling prospect)
+  - How far can you get from undrafted?
+- Archtypes
+  - Can choose from a default - this gives you default skills
+  - But can also form your own by selecting for specific skills
+- Skill system
+  - Some combination of having points to allocate - like many RPGs, and
+    also some dice rolling. Notably, I want to introduce some skill into
+    the dice rolling, by allowing you to eg: stack dice rolls, or to
+    save dice rolls for different situations
+- Season actions
+  - players will accumulate action capital (think mana), which will enable them
+    to take certain actions, or allocate to leveling up and increasing their skills.
+
 High Level:
 - Simulatation System
   - Game
