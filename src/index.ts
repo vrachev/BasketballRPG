@@ -1,8 +1,8 @@
-import { createPlayersTable, insertPlayer, getPlayers } from './db/db';
-import { generatePlayer } from './player/player';
+import { createTables, insertPlayer, getPlayers } from './db/db';
+import { generatePlayer } from './game/player/player';
 
 async function main() {
-  await createPlayersTable();
+  await createTables();
 
   // Insert sample data
   await insertPlayer(generatePlayer());

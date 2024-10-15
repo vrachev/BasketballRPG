@@ -2,9 +2,16 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
 
-import { playerSchemaSql, playerSchema } from '../data/playerSchema';
+import { 
+  SchemaTs,
+  playerSchemaSql, 
+  playerSchema, 
+  teamSchemaSql, 
+  teamSchema, 
+  PLAYER_TABLE, 
+  TEAM_TABLE 
+} from '../data';
 
-const PLAYER_TABLE = 'players';
 const DB_PATH = path.join(process.cwd(), 'sqlite', 'database.db');
 
 // Enable sqlite3 verbose mode to get more debugging info
@@ -17,24 +24,34 @@ export async function openDb() {
   });
 }
 
-export async function createPlayersTable() {
+export async function createTables() {
   const db = await openDb();
-  const columnDefinitions = Object.entries(playerSchemaSql)
-    .map(([name, type]) => `${name} ${type}`)
-    .join(', ');
-  await db.exec(`
-    CREATE TABLE IF NOT EXISTS ${PLAYER_TABLE} (
-      ${columnDefinitions}
-    );
-  `);
+  
+  const createTable = async (tableName: string, schema: Record<string, string>) => {
+    const columnDefinitions = Object.entries(schema)
+      .map(([name, type]) => `${name} ${type}`)
+      .join(', ');
+    await db.exec(`
+      CREATE TABLE IF NOT EXISTS ${tableName} (
+        ${columnDefinitions}
+      );
+    `);
+  };
+
+  await createTable(PLAYER_TABLE, playerSchemaSql);
+  await createTable(TEAM_TABLE, teamSchemaSql);
+}
+
+async function insert<T extends Record<string, any>>(object: SchemaTs<T>) {
+  const db = await openDb();
+  const columns = Object.keys(object).join(', ');
+  const placeholders = Object.keys(object).map(() => '?').join(', ');
+  const values = Object.values(object);
+  await db.run(`INSERT INTO ${PLAYER_TABLE} (${columns}) VALUES (${placeholders})`, values);
 }
 
 export async function insertPlayer(player: playerSchema) {
-  const db = await openDb();
-  const columns = Object.keys(player).join(', ');
-  const placeholders = Object.keys(player).map(() => '?').join(', ');
-  const values = Object.values(player);
-  await db.run(`INSERT INTO players (${columns}) VALUES (${placeholders})`, values);
+  await insert(player);
 }
 
 export async function getPlayers() {
