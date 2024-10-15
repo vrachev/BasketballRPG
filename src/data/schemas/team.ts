@@ -1,6 +1,6 @@
-import { SchemaTs, TableSchemaSql } from '../sqlTypes';
+import { SchemaTs } from '../sqlTypes';
 
-const teamSchemaSql: TableSchemaSql = {
+const teamSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
   name: 'TEXT',
   city: 'TEXT',

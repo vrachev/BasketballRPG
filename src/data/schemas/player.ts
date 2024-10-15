@@ -1,6 +1,6 @@
-import { SchemaTs, TableSchemaSql, ForeignKeyType } from '../sqlTypes';
+import { SchemaTs, ForeignKeyType } from '../sqlTypes';
 
-const playerSchemaSql: TableSchemaSql = {
+const playerSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
   first_name: 'TEXT',
   last_name: 'TEXT',
@@ -17,7 +17,7 @@ const playerSchemaSql: TableSchemaSql = {
   leadership: 'REAL',
   experience: 'INTEGER',
   team_id: 'INTEGER',
-  foreignKey: ['team_id', 'teams', 'id'] as ForeignKeyType
+  teamKey: ['team_id', 'teams', 'id'] as ForeignKeyType
 } as const;
 
 type playerSchema = SchemaTs<typeof playerSchemaSql>;

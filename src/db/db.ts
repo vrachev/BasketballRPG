@@ -2,17 +2,7 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import path from 'path';
 
-import { 
-  SchemaTs,
-  playerSchemaSql, 
-  playerSchema, 
-  teamSchemaSql, 
-  teamSchema, 
-  PLAYER_TABLE, 
-  TEAM_TABLE 
-} from '../data';
-
-import { TableSchemaSql, ForeignKeyType } from '../data/sqlTypes';
+import * as Data from '../data';
 
 const DB_PATH = path.join(process.cwd(), 'sqlite', 'database.db');
 
@@ -22,17 +12,17 @@ sqlite3.verbose();
 async function openDb() {
   return open({
     filename: DB_PATH,
-    driver: sqlite3.Database
+    driver: sqlite3.Database,
   });
 }
 
 async function createTables() {
   const db = await openDb();
   
-  const createTable = async (tableName: string, schema: TableSchemaSql) => {
+  const createTable = async (tableName: string, schema: Data.TableSchemaSql) => {
     const columnDefinitions = Object.entries(schema)
       .map(([name, type]) => {
-        if (Array.isArray(type)) {
+        if (Data.isForeignKeyType(type)) {
           return `FOREIGN KEY (${type[0]}) REFERENCES ${type[1]}(${type[2]})`;
         }
         return `${name} ${type}`;
@@ -45,11 +35,13 @@ async function createTables() {
     `);
   };
 
-  await createTable(PLAYER_TABLE, playerSchemaSql);
-  await createTable(TEAM_TABLE, teamSchemaSql);
+  await createTable(Data.PLAYER_TABLE, Data.playerSchemaSql);
+  await createTable(Data.TEAM_TABLE, Data.teamSchemaSql);
+  await createTable(Data.TEAM_SEASON_TABLE, Data.teamSeasonSchemaSql);
+  await createTable(Data.MATCH_TABLE, Data.matchSchemaSql);
 }
 
-async function insert<T extends Record<string, any>>(object: SchemaTs<T>, tableName: string) {
+async function insert<T extends Record<string, any>>(object: Data.SchemaTs<T>, tableName: string) {
   const db = await openDb();
   const columns = Object.keys(object).join(', ');
   const placeholders = Object.keys(object).map(() => '?').join(', ');

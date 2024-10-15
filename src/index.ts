@@ -1,22 +1,28 @@
 import { createTables } from './db';
-import { insertPlayer, insertTeam, getPlayers, getTeams, generatePlayer, generateTeam } from './game';
+import * as core from './core';
 
 async function main() {
   await createTables();
 
   // Insert sample data
-  await insertPlayer(generatePlayer());
-  await insertPlayer(generatePlayer());
+  await core.insertPlayer(core.generatePlayer());
+  await core.insertPlayer(core.generatePlayer());
 
-  await insertTeam(generateTeam());
-  await insertTeam(generateTeam());
+  await core.insertTeam(core.generateTeam());
+  await core.insertTeam(core.generateTeam());
+
+  await core.insertTeamSeason(core.generateTeamSeason(1, 2024));
+  await core.insertTeamSeason(core.generateTeamSeason(2, 2024));
 
   // Retrieve and log all users
-  const users = await getPlayers();
+  const users = await core.getPlayers();
   console.log('Players:', users);
 
-  const teams = await getTeams();
+  const teams = await core.getTeams();
   console.log('Teams:', teams);
+
+  const teamSeasons = await core.getTeamSeasons();
+  console.log('Team Seasons:', teamSeasons);
 }
 
 main().catch((err) => {

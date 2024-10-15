@@ -1,5 +1,5 @@
 import { faker } from '@faker-js/faker';
-import { teamSchema } from '../../data/schemas/teamSchema';
+import { teamSchema } from '../../data';
 
 const generateTeam = (): teamSchema => {
   const team: teamSchema = {
