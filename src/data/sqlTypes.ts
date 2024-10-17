@@ -7,22 +7,27 @@ type MapSQLiteTypeToTS<T extends SQLiteType | ForeignKeyType> =
   T extends 'REAL' ? number :
   T extends ForeignKeyType ? ForeignKeyType :
   never;
-  
-type TableSchemaSql = Record<string, SQLiteType | ForeignKeyType>;
-type SchemaTs<T extends TableSchemaSql> = FilteredKeys<T>;
 
-// Helper types to exclude id and foreign key from the schema
-type ExcludeIdAndForeignKey<K extends keyof any, T> = 
-  K extends 'id' ? never : 
-  T extends ForeignKeyType ? never : 
+type TableSchemaSql = Record<string, SQLiteType | ForeignKeyType>;
+
+
+// Helper types to exclude foreign key from the schema
+type ExcludeForeignKey<K extends keyof any, T> =
+  T extends ForeignKeyType ? never :
   K;
+
 type FilteredKeys<T extends TableSchemaSql> = {
-  [K in keyof T as ExcludeIdAndForeignKey<K, T[K]>]: MapSQLiteTypeToTS<T[K]>
+  [K in keyof T as ExcludeForeignKey<K, T[K]>]: MapSQLiteTypeToTS<T[K]>
 };
+
+type SchemaTs<T extends TableSchemaSql> = FilteredKeys<T>;
+// Wrapper type that omits the id field
+type InsertDB<T extends SchemaTs<TableSchemaSql>> = Omit<T, 'id'>;
+
 
 // Type guard to check if a value is a ForeignKeyType
 function isForeignKeyType(value: any): value is ForeignKeyType {
   return Array.isArray(value) && value.length === 3 && typeof value[1] === 'string';
 }
 
-export { SchemaTs, TableSchemaSql, ForeignKeyType, isForeignKeyType };
+export { SchemaTs, TableSchemaSql, InsertDB, ForeignKeyType, isForeignKeyType };

@@ -1,12 +1,13 @@
 import { faker } from '@faker-js/faker';
 import { Player } from '../../data';
+import { InsertDB } from '../../data/sqlTypes';
 
-const generatePlayer = (): Player => {
+const generatePlayer = (): InsertDB<Player> => {
   const firstName = faker.person.firstName('male');
   const lastName = faker.person.lastName('male');
   const fullName = `${firstName} ${lastName}`;
 
-  const player: Player = {
+  const player: InsertDB<Player> = {
     first_name: firstName,
     last_name: lastName,
     full_name: fullName,

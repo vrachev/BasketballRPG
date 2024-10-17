@@ -1,44 +1,7 @@
-import { insert, openDb } from "../db";
-import * as data from "../data";
-import { generatePlayer } from "./player/player";
-import { generateTeam } from "./team/team";
-import { generateTeamSeason } from "./team/teamSeason";
+import { generatePlayer } from "./generation/player";
+import { generateTeam } from "./generation/team";
+import { generateTeamSeason } from "./generation/teamSeason";
+import * as fetchData from "./generation/fetchData";
 
-async function insertPlayer(player: data.Player) {
-  await insert(player, data.PLAYER_TABLE);
-}
 
-async function insertTeam(team: data.Team) {
-  await insert(team, data.TEAM_TABLE);
-}
-
-async function insertTeamSeason(teamSeason: data.TeamSeason) {
-  await insert(teamSeason, data.TEAM_SEASON_TABLE);
-}
-
-async function insertMatch(match: data.Match) {
-  await insert(match, data.MATCH_TABLE);
-}
-
-async function getAllFromTable(tableName: string) {
-  const db = await openDb();
-  return db.all(`SELECT * FROM ${tableName}`);
-}
-
-async function getPlayers() {
-  return getAllFromTable(data.PLAYER_TABLE);
-}
-
-async function getTeams() {
-  return getAllFromTable(data.TEAM_TABLE);
-}
-
-async function getTeamSeasons() {
-  return getAllFromTable(data.TEAM_SEASON_TABLE);
-}
-
-async function getMatches() {
-  return getAllFromTable(data.MATCH_TABLE);
-}
-
-export { insertPlayer, insertTeam, insertMatch, insertTeamSeason, getPlayers, getTeams, getTeamSeasons, getMatches, generatePlayer, generateTeam, generateTeamSeason };
+export { fetchData, generatePlayer, generateTeam, generateTeamSeason };
