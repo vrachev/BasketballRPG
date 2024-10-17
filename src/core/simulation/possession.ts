@@ -2,15 +2,9 @@
 * Simulate a basketball possession
 */
 
-import { Player } from '../../data';
+import { Player, Team } from '../../data';
 
-// Possession Types
-
-type Pass = {
-  type: "pass";
-  passer: Player;
-  receiver: Player;
-};
+// Possession Event Types
 
 type Assist = {
   type: "assist";
@@ -36,35 +30,39 @@ type OutOfBounds = {
   lastTouchedBy: Player;
 };
 
-type TwoPointShotAttempt = {
+type ShotAttempt = {
+  shooter: Player;
+  distance: number;
+  defender: Player;
+  contested: boolean;
+  made: boolean;
+};
+
+type TwoPointShotAttempt = ShotAttempt & {
   type: "two_point_shot_attempt";
-  shooter: Player;
-  distance: number;
-  defended: boolean;
+  shotType: "mid_range" | "close" | "hook" | "fadeaway" | "layup" | "dunk" | "floater" | "turnaround" | "step_back" | "catch_and_shoot";
 };
 
-type TwoPointShotSuccess = TwoPointShotAttempt & {
-  type: "two_point_shot_success";
-};
-
-type ThreePointShotAttempt = {
+type ThreePointShotAttempt = ShotAttempt & {
   type: "three_point_shot_attempt";
-  shooter: Player;
-  distance: number;
-  defended: boolean;
-};
-
-type ThreePointShotSuccess = ThreePointShotAttempt & {
-  type: "three_point_shot_success";
 };
 
 type FreeThrowShotAttempt = {
   type: "free_throw_shot_attempt";
   shooter: Player;
+  made: boolean;
 };
 
-type FreeThrowShotSuccess = FreeThrowShotAttempt & {
-  type: "free_throw_shot_success";
+type Steal = {
+  type: "steal";
+  ballHandler: Player;
+  stolenBy: Player;
+};
+
+type Block = {
+  type: "block";
+  blocker: Player;
+  shotAttempt: TwoPointShotAttempt | ThreePointShotAttempt;
 };
 
 type OffensiveRebound = {
@@ -79,7 +77,7 @@ type DefensiveRebound = {
 
 type Timeout = {
   type: "timeout";
-  team: string;
+  team: Team;
   timeoutType: "full" | "short";
 };
 
@@ -90,26 +88,49 @@ type EndOfPeriod = {
 
 type EndOfGame = {
   type: "end_of_game";
-  finalScore: {
-    homeTeam: number;
-    awayTeam: number;
-  };
 };
 
-type PossessionOutcomeDetails =
-  | Pass
+type PossessionEvent =
   | Assist
   | Turnover
   | Foul
   | OutOfBounds
   | TwoPointShotAttempt
-  | TwoPointShotSuccess
   | ThreePointShotAttempt
-  | ThreePointShotSuccess
   | FreeThrowShotAttempt
-  | FreeThrowShotSuccess
   | OffensiveRebound
   | DefensiveRebound
   | Timeout
   | EndOfPeriod
-  | EndOfGame;
+  | EndOfGame
+  | Steal
+  | Block;
+
+type Lineup = [Player, Player, Player, Player, Player];
+
+type PossessionResult = {
+  events: PossessionEvent[];
+  offensiveTeam: Lineup;
+  defensiveTeam: Lineup;
+  timeLength: number;
+};
+
+type PossessionInput = {
+  offensiveTeam: Lineup;
+  defensiveTeam: Lineup;
+  gameClock: number;
+  period: number;
+};
+
+const simulatePossession = (input: PossessionInput): PossessionResult => {
+  const { offensiveTeam, defensiveTeam, gameClock, period } = input;
+
+  const events: PossessionEvent[] = [];
+
+  return {
+    events,
+    offensiveTeam,
+    defensiveTeam,
+    timeLength: 0,
+  };
+};
