@@ -1,12 +1,12 @@
 import { faker } from '@faker-js/faker';
-import { teamSeasonSchema } from '../../data';
+import { TeamSeason } from '../../data';
 
-const generateTeamSeason = (teamId: number, year: number): teamSeasonSchema => {
+const generateTeamSeason = (teamId: number, year: number): TeamSeason => {
   const wins = faker.number.int({ min: 0, max: 82 });
   const offensive_rating = faker.number.float({ min: 90, max: 120, fractionDigits: 1 });
   const defensive_rating = faker.number.float({ min: 90, max: 120, fractionDigits: 1 });
 
-  const teamSeason: teamSeasonSchema = {
+  const teamSeason: TeamSeason = {
     team_id: teamId,
     year: year,
     wins: wins,

@@ -4,19 +4,19 @@ import { generatePlayer } from "./player/player";
 import { generateTeam } from "./team/team";
 import { generateTeamSeason } from "./team/teamSeason";
 
-async function insertPlayer(player: data.playerSchema) {
+async function insertPlayer(player: data.Player) {
   await insert(player, data.PLAYER_TABLE);
 }
 
-async function insertTeam(team: data.teamSchema) {
+async function insertTeam(team: data.Team) {
   await insert(team, data.TEAM_TABLE);
 }
 
-async function insertTeamSeason(teamSeason: data.teamSeasonSchema) {
+async function insertTeamSeason(teamSeason: data.TeamSeason) {
   await insert(teamSeason, data.TEAM_SEASON_TABLE);
 }
 
-async function insertMatch(match: data.matchSchema) {
+async function insertMatch(match: data.Match) {
   await insert(match, data.MATCH_TABLE);
 }
 

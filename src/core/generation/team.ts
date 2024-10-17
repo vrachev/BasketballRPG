@@ -1,8 +1,8 @@
 import { faker } from '@faker-js/faker';
-import { teamSchema } from '../../data';
+import { Team } from '../../data';
 
-const generateTeam = (): teamSchema => {
-  const team: teamSchema = {
+const generateTeam = (): Team => {
+  const team: Team = {
     name: faker.company.name(),
     city: faker.location.city(),
     mascot: faker.animal.type(),

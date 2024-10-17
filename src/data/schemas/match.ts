@@ -20,6 +20,6 @@ const matchSchemaSql = {
   awayTeam: ['away_team_id', 'teams', 'id'] as ForeignKeyType
 } as const;
 
-type matchSchema = SchemaTs<typeof matchSchemaSql>;
+type Match = SchemaTs<typeof matchSchemaSql>;
 
-export { matchSchemaSql, matchSchema };
+export { matchSchemaSql, Match };

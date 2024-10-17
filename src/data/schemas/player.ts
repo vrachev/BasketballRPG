@@ -20,6 +20,6 @@ const playerSchemaSql = {
   teamKey: ['team_id', 'teams', 'id'] as ForeignKeyType
 } as const;
 
-type playerSchema = SchemaTs<typeof playerSchemaSql>;
+type Player = SchemaTs<typeof playerSchemaSql>;
 
-export { playerSchemaSql, playerSchema };
+export { playerSchemaSql, Player };

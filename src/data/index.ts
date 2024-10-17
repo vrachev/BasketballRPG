@@ -1,7 +1,7 @@
-import { playerSchemaSql, playerSchema } from './schemas/player';
-import { teamSchemaSql, teamSchema } from './schemas/team';
-import { teamSeasonSchemaSql, teamSeasonSchema } from './schemas/teamSeason';
-import { matchSchemaSql, matchSchema } from './schemas/match';
+import { playerSchemaSql, Player } from './schemas/player';
+import { teamSchemaSql, Team } from './schemas/team';
+import { teamSeasonSchemaSql, TeamSeason } from './schemas/teamSeason';
+import { matchSchemaSql, Match } from './schemas/match';
 import { PLAYER_TABLE, TEAM_TABLE, TEAM_SEASON_TABLE, MATCH_TABLE } from './constants';
 import { SchemaTs, TableSchemaSql, isForeignKeyType } from './sqlTypes';
 
@@ -9,10 +9,10 @@ export {
   // Schema types
   SchemaTs,
   TableSchemaSql,
-  playerSchema,
-  teamSchema,
-  teamSeasonSchema,
-  matchSchema,
+  Player,
+  Team,
+  TeamSeason,
+  Match,
   // SQL
   playerSchemaSql,
   teamSchemaSql,

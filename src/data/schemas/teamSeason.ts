@@ -15,6 +15,6 @@ const teamSeasonSchemaSql = {
   team_key: ['team_id', 'teams', 'id'] as ForeignKeyType,
 } as const;
 
-type teamSeasonSchema = SchemaTs<typeof teamSeasonSchemaSql>;
+type TeamSeason = SchemaTs<typeof teamSeasonSchemaSql>;
 
-export { teamSeasonSchemaSql, teamSeasonSchema };
+export { teamSeasonSchemaSql, TeamSeason };

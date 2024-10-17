@@ -1,12 +1,12 @@
 import { faker } from '@faker-js/faker';
-import { playerSchema } from '../../data';
+import { Player } from '../../data';
 
-const generatePlayer = (): playerSchema => {
+const generatePlayer = (): Player => {
   const firstName = faker.person.firstName('male');
   const lastName = faker.person.lastName('male');
   const fullName = `${firstName} ${lastName}`;
 
-  const player: playerSchema = {
+  const player: Player = {
     first_name: firstName,
     last_name: lastName,
     full_name: fullName,
@@ -22,8 +22,8 @@ const generatePlayer = (): playerSchema => {
     leadership: faker.number.float({ min: 0, max: 100 }),
     experience: faker.number.int({ min: 0, max: 25 }),
     team_id: 1,
-  }
+  };
   return player;
-}
+};
 
 export { generatePlayer };
