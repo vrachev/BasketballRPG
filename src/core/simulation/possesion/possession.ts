@@ -2,7 +2,7 @@
 * Simulate a basketball possession
 */
 
-import { Player, Team } from '../../data';
+import { Player, Team } from '../../../data';
 
 // Possession Event Types
 
@@ -25,7 +25,7 @@ type Foul = {
   foulType: "personal" | "technical" | "flagrant";
 };
 
-type OutOfBounds = {
+type OutOfBoundsNonTurnover = {
   type: "out_of_bounds";
   lastTouchedBy: Player;
 };
@@ -75,12 +75,6 @@ type DefensiveRebound = {
   rebounder: Player;
 };
 
-type Timeout = {
-  type: "timeout";
-  team: Team;
-  timeoutType: "full" | "short";
-};
-
 type EndOfPeriod = {
   type: "end_of_period";
   period: number;
@@ -94,13 +88,12 @@ type PossessionEvent =
   | Assist
   | Turnover
   | Foul
-  | OutOfBounds
+  | OutOfBoundsNonTurnover
   | TwoPointShotAttempt
   | ThreePointShotAttempt
   | FreeThrowShotAttempt
   | OffensiveRebound
   | DefensiveRebound
-  | Timeout
   | EndOfPeriod
   | EndOfGame
   | Steal
