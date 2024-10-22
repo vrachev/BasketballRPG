@@ -1,9 +1,9 @@
 import { faker } from '@faker-js/faker';
 import { Team } from '../../data';
-import { InsertDB } from '../../data/sqlTypes';
+import { InsertableRecord } from '../../data/sqlTypes';
 
-const generateTeam = (): InsertDB<Team> => {
-  const team: InsertDB<Team> = {
+const generateTeam = (): InsertableRecord<Team> => {
+  const team: InsertableRecord<Team> = {
     name: faker.company.name(),
     city: faker.location.city(),
     mascot: faker.animal.type(),

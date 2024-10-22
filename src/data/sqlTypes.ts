@@ -22,7 +22,7 @@ type FilteredKeys<T extends TableSchemaSql> = {
 
 type SchemaTs<T extends TableSchemaSql> = FilteredKeys<T>;
 // Wrapper type that omits the id field
-type InsertDB<T extends SchemaTs<TableSchemaSql>> = Omit<T, 'id'>;
+type InsertableRecord<T extends SchemaTs<TableSchemaSql>> = Omit<T, 'id'>;
 
 
 // Type guard to check if a value is a ForeignKeyType
@@ -30,4 +30,4 @@ function isForeignKeyType(value: any): value is ForeignKeyType {
   return Array.isArray(value) && value.length === 3 && typeof value[1] === 'string';
 }
 
-export { SchemaTs, TableSchemaSql, InsertDB, ForeignKeyType, isForeignKeyType };
+export { SchemaTs, TableSchemaSql, InsertableRecord, ForeignKeyType, isForeignKeyType };

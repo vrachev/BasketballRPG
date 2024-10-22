@@ -3,6 +3,8 @@ import { SchemaTs, ForeignKeyType } from '../sqlTypes';
 const playerSeasonSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
   year: 'INTEGER',
+  season_type: 'TEXT', // regular_season, playoffs
+
   // Base stats
   games_played: 'INTEGER',
   games_started: 'INTEGER',

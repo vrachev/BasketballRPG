@@ -1,14 +1,14 @@
 import { faker } from '@faker-js/faker';
-import { Player } from '../../data';
-import { InsertDB } from '../../data/sqlTypes';
+import { Player, PLAYER_TABLE, PlayerRaw, PlayerSeason, PLAYER_SEASON_TABLE } from '../../data';
+import { InsertableRecord } from '../../data/sqlTypes';
 import { openDb } from '../../db';
 
-const generatePlayer = (): InsertDB<Player> => {
+const generatePlayer = (): InsertableRecord<PlayerRaw> => {
   const firstName = faker.person.firstName('male');
   const lastName = faker.person.lastName('male');
   const fullName = `${firstName} ${lastName}`;
 
-  const player: InsertDB<Player> = {
+  const player: InsertableRecord<PlayerRaw> = {
     // Personal Info
     first_name: firstName,
     last_name: lastName,
@@ -92,25 +92,24 @@ const generatePlayer = (): InsertDB<Player> => {
     // Career Info
     career_status: faker.helpers.arrayElement(['Active', 'Retired', 'Prospect']),
     experience: faker.number.int({ min: 0, max: 25 }),
-    team_id: faker.number.int({ min: 1, max: 30 }),
   };
   return player;
 };
 
 const fetchPlayer = async (playerId: number): Promise<Player> => {
   const db = await openDb();
-  const player = await db.get<Player>(`SELECT * FROM players WHERE id = ?`, [playerId]);
-  if (!player) {
+  const playerData = await db.get<PlayerRaw>(`SELECT * FROM ${PLAYER_TABLE} WHERE id = ?`, [playerId]);
+  const regularSeasons = await db.all<PlayerSeason[]>(`SELECT * FROM ${PLAYER_SEASON_TABLE} WHERE player_id = ? AND season_type = 'regular_season'`, [playerId]);
+  const playoffSeasons = await db.all<PlayerSeason[]>(`SELECT * FROM ${PLAYER_SEASON_TABLE} WHERE player_id = ? AND season_type = 'playoffs'`, [playerId]);
+  if (!playerData) {
     throw new Error(`Player with id ${playerId} not found`);
   }
+  const player: Player = {
+    playerInfo: playerData,
+    regularSeasons: regularSeasons,
+    playoffSeasons: playoffSeasons,
+  };
   return player;
 };
 
-const playerView = async (player: Player): Promise<PlayerView> => {
-  return {
-    ...player,
-    team,
-  };
-};
-
-export { generatePlayer, fetchPlayer, playerView };
+export { generatePlayer, fetchPlayer };
