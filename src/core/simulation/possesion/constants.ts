@@ -6,8 +6,6 @@ const possessionConstants = {
   overtimePeriodLength: 5 * 60,
 };
 
-//(1.32*.32+.87*.16+.87*.19+1.20*.07+1.09*.26)*88.9+17
-
 const averageGameStatsPerTeam = {
   possessions: 99.1,
   FreeThrowPercentage: 0.784,
@@ -45,4 +43,4 @@ const averageGameStatsPerTeam = {
   personalFouls: 18.7,
 };
 
-export default possessionConstants;
+export { possessionConstants, averageGameStatsPerTeam };
