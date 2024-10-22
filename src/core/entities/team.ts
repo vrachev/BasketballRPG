@@ -6,6 +6,7 @@ const generateTeam = (): InsertableRecord<Team> => {
   const team: InsertableRecord<Team> = {
     name: faker.company.name(),
     city: faker.location.city(),
+    abbreviation: faker.string.nanoid(3).toUpperCase(),
     mascot: faker.animal.type(),
     conference: faker.helpers.arrayElement(['Eastern', 'Western']),
     division: faker.helpers.arrayElement(['Atlantic', 'Central', 'Southeast', 'Northwest', 'Pacific', 'Southwest']),

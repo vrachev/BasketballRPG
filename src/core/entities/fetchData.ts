@@ -2,7 +2,7 @@ import * as data from "../../data";
 import { insert, openDb } from "../../db";
 import { InsertableRecord } from "../../data/sqlTypes";
 
-async function insertPlayer(player: InsertableRecord<data.Player>) {
+async function insertPlayer(player: InsertableRecord<data.PlayerRaw>) {
   await insert(player, data.PLAYER_TABLE);
 }
 

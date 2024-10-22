@@ -19,7 +19,15 @@ const generatePlayer = (): InsertableRecord<PlayerRaw> => {
     height: faker.number.float({ min: 70, max: 88 }),
     weight: faker.number.float({ min: 150, max: 400 }),
     wingspan: faker.number.float({ min: 68, max: 90 }),
-    position: faker.helpers.arrayElement(['Point Guard', 'Shooting Guard', 'Small Forward', 'Power Forward', 'Center']),
+    position: faker.helpers.arrayElement([
+      'Point Guard',
+      'Guard',
+      'Shooting Guard',
+      'Small Forward',
+      'Forward',
+      'Power Forward',
+      'Center',
+    ]),
 
     // Physical Skills
     strength: faker.number.float({ min: 0, max: 100 }),
