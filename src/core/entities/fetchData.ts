@@ -18,7 +18,7 @@ async function insertMatch(match: InsertDB<data.Match>) {
   await insert(match, data.MATCH_TABLE);
 }
 
-async function getAllFromTable(tableName: string) {
+async function getAllFromTable(tableName: string): Promise<any[]> {
   const db = await openDb();
   return db.all(`SELECT * FROM ${tableName}`);
 }

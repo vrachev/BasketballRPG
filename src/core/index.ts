@@ -1,7 +1,7 @@
-import { generatePlayer } from "./generation/player";
-import { generateTeam } from "./generation/team";
-import { generateTeamSeason } from "./generation/teamSeason";
-import * as fetchData from "./generation/fetchData";
+import { generatePlayer, getPlayer } from "./entities/player";
+import { generateTeam } from "./entities/team";
+import { generateTeamSeason } from "./entities/teamSeason";
+import * as fetchData from "./entities/fetchData";
 
 
-export { fetchData, generatePlayer, generateTeam, generateTeamSeason };
+export { fetchData, generatePlayer, getPlayer, generateTeam, generateTeamSeason };

@@ -4,6 +4,7 @@ const teamSchemaSql = {
   id: "INTEGER PRIMARY KEY AUTOINCREMENT",
   name: "TEXT",
   city: "TEXT",
+  abbreviation: "TEXT",
   mascot: "TEXT",
   conference: "TEXT",
   division: "TEXT",

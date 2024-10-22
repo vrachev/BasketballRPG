@@ -1,5 +1,6 @@
 import { SchemaTs, ForeignKeyType } from '../sqlTypes';
-
+import { Team } from './team';
+import { TeamSeason } from './teamSeason';
 const playerSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
 
@@ -86,10 +87,14 @@ const playerSchemaSql = {
   // Career Info
   career_status: 'TEXT',
   experience: 'INTEGER',
-  team_id: 'INTEGER',
-  teamKey: ['team_id', 'teams', 'id'] as ForeignKeyType
 } as const;
 
-type Player = SchemaTs<typeof playerSchemaSql>;
+type PlayerRaw = SchemaTs<typeof playerSchemaSql>;
 
-export { playerSchemaSql, Player };
+type Player = PlayerRaw & {
+  team: Team;
+  currentYear: number;
+  stats: PlayerSeasonStats[];
+};
+
+export { playerSchemaSql, PlayerRaw, Player };
