@@ -122,3 +122,9 @@ const fetchPlayer = async (playerId: number, currentYear: number): Promise<Playe
 };
 
 export { generatePlayer, fetchPlayer };
+
+export interface Player {
+  id: number;
+  name: string;
+  // ... other properties
+}

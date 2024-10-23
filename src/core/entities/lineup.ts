@@ -1,7 +1,10 @@
 import { z } from 'zod';
+import { Player } from './player';
+import { Team } from './team';
 
 export const Lineup = z.object({
-  players: z.array(z.number()).length(5),
+  team: z.string(),
+  players: z.array(z.string()).length(5),
 });
 export type Lineup = z.infer<typeof Lineup>;
 

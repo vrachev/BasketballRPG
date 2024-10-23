@@ -117,7 +117,7 @@ type PossessionInput = {
   period: number;
 };
 
-const simulatePossession = (input: PossessionInput): PossessionResult => {
+export const simulatePossession = (input: PossessionInput): PossessionResult => {
   const { offensiveTeam, defensiveTeam, gameClock, shotClock, period } = input;
 
   const events: PossessionEvent[] = [];
@@ -130,11 +130,14 @@ const simulatePossession = (input: PossessionInput): PossessionResult => {
   };
 };
 
-
-const pickShotType = (shotTendencies: number[]) => {
+export const pickShooter = (shotTendencies: number[]) => {
   const totalTendency = shotTendencies.reduce((sum, tendency) => sum + tendency, 0);
   const randomValue = Math.random() * totalTendency;
   let cumulativeTendency = 0;
+
+  if (randomValue >= totalTendency) {
+    return shotTendencies.length - 1;
+  }
 
   for (let i = 0; i < shotTendencies.length; i++) {
     cumulativeTendency += shotTendencies[i];
@@ -143,10 +146,13 @@ const pickShotType = (shotTendencies: number[]) => {
     }
   }
 
-  // Fallback in case of rounding errors
-  return shotTendencies.length - 1;
+  throw new Error(`randomValue is out of bounds: ${randomValue}, totalTendency: ${totalTendency}`);
 };
 
 const determineShot = (player: Player, passer: Player) => {
 
 };
+
+
+// Also export the types if they're not already exported
+export type { PossessionInput, PossessionResult, PossessionEvent };
