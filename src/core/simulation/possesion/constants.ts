@@ -31,7 +31,7 @@ export const averageGameStatsPerTeam = {
       return this.cornerThreeRate + this.aboveTheBreakThreeRate;
     },
   },
-  assists: 22.5,
+  assistPercentage: 0.55,
   steals: 7.5,
   blocks: 5.1,
   turnovers: 13.6,

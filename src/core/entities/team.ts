@@ -2,12 +2,6 @@ import { faker } from '@faker-js/faker';
 import { Team } from '../../data';
 import { InsertableRecord } from '../../data/sqlTypes';
 
-export interface Team {
-  id: number;
-  name: string;
-  // ... other properties
-}
-
 const generateTeam = (): InsertableRecord<Team> => {
   const team: InsertableRecord<Team> = {
     name: faker.company.name(),

@@ -1,6 +1,4 @@
 import { z } from 'zod';
-import { Player } from './player';
-import { Team } from './team';
 
 export const Lineup = z.object({
   team: z.string(),

@@ -20,7 +20,7 @@ type FilteredKeys<T extends TableSchemaSql> = {
   [K in keyof T as ExcludeForeignKey<K, T[K]>]: MapSQLiteTypeToTS<T[K]>
 };
 
-type SchemaTs<T extends TableSchemaSql> = FilteredKeys<T>;
+type SchemaTs<T extends TableSchemaSql> = { [K in keyof FilteredKeys<T>]: FilteredKeys<T>[K] };
 // Wrapper type that omits the id field
 type InsertableRecord<T extends SchemaTs<TableSchemaSql>> = Omit<T, 'id'>;
 

@@ -1,4 +1,4 @@
-import { generatePlayer, fetchPlayer } from "./entities/player";
+import { generatePlayer, fetchPlayerHistory } from "./entities/player";
 import { generateTeam } from "./entities/team";
 import { generateTeamSeason } from "./entities/teamSeason";
 import { Lineup, PossessionLineup } from "./entities/lineup";
@@ -8,7 +8,7 @@ import { possessionConstants, averageGameStatsPerTeam } from "./simulation/posse
 export {
   fetchData,
   generatePlayer,
-  fetchPlayer,
+  fetchPlayerHistory,
   generateTeam,
   generateTeamSeason,
   Lineup,

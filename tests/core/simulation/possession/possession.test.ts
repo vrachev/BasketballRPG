@@ -1,6 +1,7 @@
 import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
 
-import { pickShooter } from '@simulation/possession';
+import { Player } from '@data/schemas/player';
+import { pickOption, determineAssist, determineShot } from '@simulation/possession';
 
 beforeAll(() => {
   jest.spyOn(Math, 'random');
@@ -10,7 +11,7 @@ afterAll(() => {
   jest.spyOn(Math, 'random').mockRestore();
 });
 
-describe('pickShooter', () => {
+describe('pickOption', () => {
   it('should pick a shooter based on shooting tendencies', () => {
     const shotTendencies = [80, 60, 40, 20, 10];
 
@@ -25,9 +26,39 @@ describe('pickShooter', () => {
 
     testCases.forEach(({ random, expectedIndex }) => {
       (Math.random as jest.Mock).mockReturnValue(random);
-      const shooterIndex = pickShooter(shotTendencies);
+      const shooterIndex = pickOption(shotTendencies);
       expect(shooterIndex).toBe(expectedIndex);
     });
   });
 
+});
+
+
+describe('determineAssist', () => {
+  it('should determine an assister or no assist based on player skills and odds', () => {
+    const players = [
+      { skills: { passing: 70 } },
+      { skills: { passing: 80 } },
+      { skills: { passing: 60 } },
+      { skills: { passing: 50 } },
+      { skills: { passing: 40 } },
+    ] as Player[];
+
+    const testCases = [
+      { random: 0.1, expectedIndex: 0 },
+      { random: 0.2, expectedIndex: 1 },
+      { random: 0.4, expectedIndex: 3 },
+      { random: 0.5, expectedIndex: null },
+    ];
+
+    testCases.forEach(({ random, expectedIndex }) => {
+      (Math.random as jest.Mock).mockReturnValue(random);
+      const assister = determineAssist(players);
+      if (expectedIndex === null) {
+        expect(assister).toBeNull();
+      } else {
+        expect(assister).toBe(players[expectedIndex]);
+      }
+    });
+  });
 });

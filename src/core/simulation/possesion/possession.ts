@@ -130,26 +130,37 @@ export const simulatePossession = (input: PossessionInput): PossessionResult => 
   };
 };
 
-export const pickShooter = (shotTendencies: number[]) => {
-  const totalTendency = shotTendencies.reduce((sum, tendency) => sum + tendency, 0);
-  const randomValue = Math.random() * totalTendency;
-  let cumulativeTendency = 0;
+// basic function for now. We can add more sophisticated logic later, eg: clutch time
+export const pickOption = (ratios: number[]) => {
+  const totalOdds = ratios.reduce((sum, tendency) => sum + tendency, 0);
+  const randomValue = Math.random() * totalOdds;
+  let cumulativeOdds = 0;
 
-  if (randomValue >= totalTendency) {
-    return shotTendencies.length - 1;
+  if (randomValue >= totalOdds) {
+    return ratios.length - 1;
   }
 
-  for (let i = 0; i < shotTendencies.length; i++) {
-    cumulativeTendency += shotTendencies[i];
-    if (randomValue <= cumulativeTendency) {
+  for (let i = 0; i < ratios.length; i++) {
+    cumulativeOdds += ratios[i];
+    if (randomValue <= cumulativeOdds) {
       return i;
     }
   }
 
-  throw new Error(`randomValue is out of bounds: ${randomValue}, totalTendency: ${totalTendency}`);
+  throw new Error(`randomValue is out of bounds: ${randomValue}, totalTendency: ${totalOdds}`);
 };
 
-const determineShot = (player: Player, passer: Player) => {
+export const determineAssist = (players: Player[]) => {
+  const oddsNoAssists = averageGameStatsPerTeam.assistPercentage * (250 / .45);
+  const optionPicked = pickOption([...players.map(player => player.skills.passing), oddsNoAssists]);
+
+  const passer = optionPicked < 5 ? players[optionPicked] : null;
+  return passer;
+};
+
+export const determineShot = (players: Player[]) => {
+  const shooter = pickOption(players.map(player => player.skills.tendency_score));
+  const assister = determineAssist(players);
 
 };
 
