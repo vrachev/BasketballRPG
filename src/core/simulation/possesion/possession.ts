@@ -3,6 +3,8 @@
 */
 
 import { Player, Team } from '../../../data';
+import { Lineup } from '../..';
+import { possessionConstants, averageGameStatsPerTeam } from '../..';
 
 // Possession Event Types
 
@@ -100,8 +102,6 @@ type PossessionEvent =
   | Steal
   | Block;
 
-type Lineup = [Player, Player, Player, Player, Player];
-
 type PossessionResult = {
   events: PossessionEvent[];
   offensiveTeam: Lineup;
@@ -113,11 +113,12 @@ type PossessionInput = {
   offensiveTeam: Lineup;
   defensiveTeam: Lineup;
   gameClock: number;
+  shotClock: number;
   period: number;
 };
 
 const simulatePossession = (input: PossessionInput): PossessionResult => {
-  const { offensiveTeam, defensiveTeam, gameClock, period } = input;
+  const { offensiveTeam, defensiveTeam, gameClock, shotClock, period } = input;
 
   const events: PossessionEvent[] = [];
 
@@ -127,4 +128,25 @@ const simulatePossession = (input: PossessionInput): PossessionResult => {
     defensiveTeam,
     timeLength: 0,
   };
+};
+
+
+const pickShotType = (shotTendencies: number[]) => {
+  const totalTendency = shotTendencies.reduce((sum, tendency) => sum + tendency, 0);
+  const randomValue = Math.random() * totalTendency;
+  let cumulativeTendency = 0;
+
+  for (let i = 0; i < shotTendencies.length; i++) {
+    cumulativeTendency += shotTendencies[i];
+    if (randomValue <= cumulativeTendency) {
+      return i;
+    }
+  }
+
+  // Fallback in case of rounding errors
+  return shotTendencies.length - 1;
+};
+
+const determineShot = (player: Player, passer: Player) => {
+
 };

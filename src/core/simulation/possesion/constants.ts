@@ -1,12 +1,12 @@
 // https://shottracker.com/articles/the-3-point-revolution#:~:text=Five%20years%20after%20its%20inception,the%20trend%20is%20leveling%20off.
 
-const possessionConstants = {
+export const possessionConstants = {
   shotClock: 24,
   periodLength: 12 * 60,
   overtimePeriodLength: 5 * 60,
 };
 
-const averageGameStatsPerTeam = {
+export const averageGameStatsPerTeam = {
   possessions: 99.1,
   FreeThrowPercentage: 0.784,
   FreeThrowAttempts: 21.7,
@@ -42,5 +42,3 @@ const averageGameStatsPerTeam = {
   },
   personalFouls: 18.7,
 };
-
-export { possessionConstants, averageGameStatsPerTeam };

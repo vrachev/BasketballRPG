@@ -104,7 +104,7 @@ const generatePlayer = (): InsertableRecord<PlayerRaw> => {
   return player;
 };
 
-const fetchPlayer = async (playerId: number): Promise<Player> => {
+const fetchPlayer = async (playerId: number, currentYear: number): Promise<Player> => {
   const db = await openDb();
   const playerData = await db.get<PlayerRaw>(`SELECT * FROM ${PLAYER_TABLE} WHERE id = ?`, [playerId]);
   const regularSeasons = await db.all<PlayerSeason[]>(`SELECT * FROM ${PLAYER_SEASON_TABLE} WHERE player_id = ? AND season_type = 'regular_season'`, [playerId]);
@@ -116,6 +116,7 @@ const fetchPlayer = async (playerId: number): Promise<Player> => {
     playerInfo: playerData,
     regularSeasons: regularSeasons,
     playoffSeasons: playoffSeasons,
+    year: currentYear,
   };
   return player;
 };
