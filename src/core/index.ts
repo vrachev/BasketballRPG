@@ -3,7 +3,7 @@ import { generateTeam } from "./entities/team";
 import { generateTeamSeason } from "./entities/teamSeason";
 import { Lineup, PossessionLineup } from "./entities/lineup";
 import * as fetchData from "./entities/fetchData";
-import { possessionConstants, averageGameStatsPerTeam } from "./simulation/possesion/constants";
+import { possessionConstants, averageGameStatsPerTeam, playerConstants } from "./simulation/possesion/constants";
 
 export {
   fetchData,
@@ -15,4 +15,5 @@ export {
   PossessionLineup,
   possessionConstants,
   averageGameStatsPerTeam,
+  playerConstants,
 };

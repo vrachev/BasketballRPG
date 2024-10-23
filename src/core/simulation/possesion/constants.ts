@@ -6,6 +6,10 @@ export const possessionConstants = {
   overtimePeriodLength: 5 * 60,
 };
 
+export const playerConstants = {
+  leagueAverageSkill: 50,
+};
+
 export const averageGameStatsPerTeam = {
   possessions: 99.1,
   FreeThrowPercentage: 0.784,

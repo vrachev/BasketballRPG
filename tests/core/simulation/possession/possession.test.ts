@@ -41,14 +41,14 @@ describe('determineAssist', () => {
       { skills: { passing: 80 } },
       { skills: { passing: 60 } },
       { skills: { passing: 50 } },
-      { skills: { passing: 40 } },
     ] as Player[];
 
     const testCases = [
       { random: 0.1, expectedIndex: 0 },
       { random: 0.2, expectedIndex: 1 },
-      { random: 0.4, expectedIndex: 3 },
-      { random: 0.5, expectedIndex: null },
+      { random: 0.4, expectedIndex: 2 },
+      { random: 0.5, expectedIndex: 3 },
+      { random: 0.55, expectedIndex: null },
     ];
 
     testCases.forEach(({ random, expectedIndex }) => {

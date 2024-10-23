@@ -4,7 +4,7 @@
 
 import { Player, Team } from '../../../data';
 import { Lineup } from '../..';
-import { possessionConstants, averageGameStatsPerTeam } from '../..';
+import { possessionConstants, averageGameStatsPerTeam, playerConstants } from '../..';
 
 // Possession Event Types
 
@@ -151,16 +151,24 @@ export const pickOption = (ratios: number[]) => {
 };
 
 export const determineAssist = (players: Player[]) => {
-  const oddsNoAssists = averageGameStatsPerTeam.assistPercentage * (250 / .45);
+  const numPlayers = players.length;
+  const assistPercentage = averageGameStatsPerTeam.assistPercentage;
+  const leagueAverageSkill = playerConstants.leagueAverageSkill;
+
+  const oddsNoAssists = (
+    assistPercentage *
+    numPlayers *
+    leagueAverageSkill
+  ) / (1 - assistPercentage);
   const optionPicked = pickOption([...players.map(player => player.skills.passing), oddsNoAssists]);
 
-  const passer = optionPicked < 5 ? players[optionPicked] : null;
+  const passer = optionPicked < numPlayers ? players[optionPicked] : null;
   return passer;
 };
 
 export const determineShot = (players: Player[]) => {
-  const shooter = pickOption(players.map(player => player.skills.tendency_score));
-  const assister = determineAssist(players);
+  const shooter = players[pickOption(players.map(player => player.skills.tendency_score))];
+  const assister = determineAssist(players.filter(player => player !== shooter));
 
 };
 
