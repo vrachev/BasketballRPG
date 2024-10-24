@@ -1,7 +1,7 @@
 import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
 
 import { Player } from '@data/schemas/player';
-import { pickOption, determineAssist, determineShot } from '@simulation/possession';
+import { pickOption, determineAssist, determineShot, normalizeRates } from '@simulation/possession';
 
 beforeAll(() => {
   jest.spyOn(Math, 'random');
@@ -10,6 +10,21 @@ beforeAll(() => {
 afterAll(() => {
   jest.spyOn(Math, 'random').mockRestore();
 });
+
+
+describe('normalizeRates', () => {
+  it('should normalize rates based on quantifiers', () => {
+    const baseRates = [0.3, 0.4, 0.3];
+    const quantifiers = [60, 50, 40];
+    const medianValue = 50;
+
+    const expectedNormalizedRates = [0.36, 0.4, 0.24]; // Example expected values
+
+    const result = normalizeRates(baseRates, quantifiers, medianValue);
+    expect(result).toEqual(expectedNormalizedRates.map(rate => parseFloat(rate.toFixed(4))));
+  });
+});
+
 
 describe('pickOption', () => {
   it('should pick a shooter based on shooting tendencies', () => {
@@ -62,3 +77,7 @@ describe('determineAssist', () => {
     });
   });
 });
+
+/**
+ * [70, 80, 60, 50, 244.4]
+ */

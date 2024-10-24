@@ -130,7 +130,30 @@ export const simulatePossession = (input: PossessionInput): PossessionResult => 
   };
 };
 
-// basic function for now. We can add more sophisticated logic later, eg: clutch time
+export const normalizeRates = (baseRates: number[], quantifiers: number[], medianValue: number): number[] => {
+  const adjustedRates = baseRates.map((rate, index) => {
+    const quantifier = quantifiers[index];
+    const adjustment = (quantifier / medianValue);
+    return Math.max(0, Math.min(1, rate * adjustment));
+  });
+
+  const totalAdjustedRate = adjustedRates.reduce((sum, rate) => sum + rate, 0);
+  return adjustedRates.map(rate => Number((rate / totalAdjustedRate).toFixed(4)));
+};
+
+export const pickOptionWithBaseRates = (
+  baseRates: number[],
+  quantifiers: number[],
+  medianValue: number = playerConstants.leagueAverageSkill,
+): number => {
+  if (baseRates.length !== quantifiers.length) {
+    throw new Error('baseRates and quantifiers must have the same length');
+  }
+
+  const normalizedRates = normalizeRates(baseRates, quantifiers, medianValue);
+  return pickOption(normalizedRates);
+};
+
 export const pickOption = (ratios: number[]) => {
   const totalOdds = ratios.reduce((sum, tendency) => sum + tendency, 0);
   const randomValue = Math.random() * totalOdds;
@@ -147,7 +170,7 @@ export const pickOption = (ratios: number[]) => {
     }
   }
 
-  throw new Error(`randomValue is out of bounds: ${randomValue}, totalTendency: ${totalOdds}`);
+  throw new Error(`randomValue is out of bounds: ${randomValue}, totalOdds: ${totalOdds}`);
 };
 
 export const determineAssist = (players: Player[]) => {
@@ -155,12 +178,16 @@ export const determineAssist = (players: Player[]) => {
   const assistPercentage = averageGameStatsPerTeam.assistPercentage;
   const leagueAverageSkill = playerConstants.leagueAverageSkill;
 
-  const oddsNoAssists = (
-    assistPercentage *
-    numPlayers *
+  const baseRates = [
+    ...players.map(() => (1 - assistPercentage) / numPlayers),
+    assistPercentage
+  ];
+  const quantifiers = [
+    ...players.map(player => player.skills.passing),
     leagueAverageSkill
-  ) / (1 - assistPercentage);
-  const optionPicked = pickOption([...players.map(player => player.skills.passing), oddsNoAssists]);
+  ];
+
+  const optionPicked = pickOptionWithBaseRates(baseRates, quantifiers);
 
   const passer = optionPicked < numPlayers ? players[optionPicked] : null;
   return passer;
@@ -170,6 +197,52 @@ export const determineShot = (players: Player[]) => {
   const shooter = players[pickOption(players.map(player => player.skills.tendency_score))];
   const assister = determineAssist(players.filter(player => player !== shooter));
 
+  // Determine shot type based on shooting tendencies
+  const shotTypeTendencies = [
+    shooter.skills.tendency_mid_range,
+    shooter.skills.tendency_corner_three,
+    shooter.skills.tendency_above_the_break_three,
+    shooter.skills.tendency_drive_to_basket,
+    shooter.skills.tendency_rim,
+    shooter.skills.tendency_paint
+  ];
+
+  // Determine shot qualifier based on tendencies
+  // const shotQualifierTendencies = [
+  //   shooter.skills.tendency_catch_and_shoot,
+  //   shooter.skills.tendency_pull_up,
+  //   shooter.skills.tendency_step_back,
+  //   shooter.skills.tendency_fadeaway
+  // ];
+  // const shotQualifierIndex = pickOption(shotQualifierTendencies);
+
+  // Map shot qualifier index to shot qualifier
+  // const shotQualifiers = ['catch_and_shoot', 'pull_up', 'step_back', 'fadeaway'];
+  // const shotQualifier = shotQualifiers[shotQualifierIndex];
+
+  // Define base rates from constants
+  const baseRates = [
+    averageGameStatsPerTeam.twoPointShot.midRangeRate,
+    averageGameStatsPerTeam.threePointShot.cornerThreeRate,
+    averageGameStatsPerTeam.threePointShot.aboveTheBreakThreeRate,
+    averageGameStatsPerTeam.twoPointShot.rimRate / 2, // Assuming drive_to_basket is half of rim shots
+    averageGameStatsPerTeam.twoPointShot.rimRate / 2, // The other half of rim shots
+    averageGameStatsPerTeam.twoPointShot.paintRate
+  ];
+
+  // Determine shot type using pickOptionWithBaseRates
+  const shotTypeIndex = pickOptionWithBaseRates(baseRates, shotTypeTendencies);
+
+  // Map shot type index to shot type
+  const shotTypes = ['mid_range', 'corner_three', 'above_the_break_three', 'drive_to_basket', 'rim', 'paint'];
+  const shotType = shotTypes[shotTypeIndex];
+
+  return {
+    shooter,
+    assister,
+    shotType,
+    // shotQualifier
+  };
 };
 
 

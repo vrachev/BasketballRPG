@@ -63,7 +63,6 @@ const playerSkillsSchemaSql = {
   // Playmaking tendencies
   tendency_pass: 'REAL',
   tendency_score: 'REAL',
-  tendency_drive_to_basket: 'REAL',
   // Shot qualifier tendencies
   tendency_catch_and_shoot: 'REAL',
   tendency_pull_up: 'REAL',
@@ -71,9 +70,11 @@ const playerSkillsSchemaSql = {
   tendency_fadeaway: 'REAL',
   // Shot type tendencies
   tendency_mid_range: 'REAL',
-  tendency_three_point: 'REAL',
-  tendency_hook: 'REAL',
-  tendency_post: 'REAL',
+  tendency_corner_three: 'REAL',
+  tendency_above_the_break_three: 'REAL',
+  tendency_drive_to_basket: 'REAL',
+  tendency_rim: 'REAL',
+  tendency_paint: 'REAL',
   // Rebounding tendencies
   tendency_offensive_rebounding: 'REAL',
   tendency_defensive_rebounding: 'REAL',
