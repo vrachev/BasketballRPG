@@ -32,6 +32,7 @@ const playerSkillsSchemaSql = {
   two_point_fadeaway: 'REAL',
   // Three Point
   three_point_catch_and_shoot: 'REAL',
+  three_point_corner: 'REAL',
   three_point_step_back: 'REAL',
   three_point_pull_up: 'REAL',
   three_point_deep: 'REAL',
@@ -76,6 +77,7 @@ const playerSkillsSchemaSql = {
   tendency_drive_to_basket: 'REAL',
   tendency_rim: 'REAL',
   tendency_paint: 'REAL',
+  tendency_free_throw_drawing: 'REAL',
   // Rebounding tendencies
   tendency_offensive_rebounding: 'REAL',
   tendency_defensive_rebounding: 'REAL',

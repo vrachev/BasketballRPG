@@ -6,6 +6,62 @@ import { Player, Team } from '../../../data';
 import { Lineup } from '../..';
 import { possessionConstants, averageGameStatsPerTeam, playerConstants } from '../..';
 
+const shotTypeMapping = {
+  'mid_range': {
+    basePercentage: averageGameStatsPerTeam.twoPointShot.midRangePercentage,
+    skillKey: 'mid_range',
+    tendencyKey: 'tendency_mid_range',
+    baseRate: averageGameStatsPerTeam.twoPointShot.midRangeRate,
+    points: 2,
+  },
+  'corner_three': {
+    basePercentage: averageGameStatsPerTeam.threePointShot.cornerThreePercentage,
+    skillKey: 'three_point_corner',
+    tendencyKey: 'tendency_corner_three',
+    baseRate: averageGameStatsPerTeam.threePointShot.cornerThreeRate,
+    points: 3,
+  },
+  'above_the_break_three': {
+    basePercentage: averageGameStatsPerTeam.threePointShot.aboveTheBreakThreePercentage,
+    skillKey: 'three_point_catch_and_shoot',
+    tendencyKey: 'tendency_above_the_break_three',
+    baseRate: averageGameStatsPerTeam.threePointShot.aboveTheBreakThreeRate,
+    points: 3,
+  },
+  'drive_to_basket': {
+    basePercentage: averageGameStatsPerTeam.twoPointShot.rimPercentage,
+    skillKey: 'dunk',
+    tendencyKey: 'tendency_drive_to_basket',
+    baseRate: averageGameStatsPerTeam.twoPointShot.rimRate / 2,
+    points: 2,
+  },
+  'rim': {
+    basePercentage: averageGameStatsPerTeam.twoPointShot.rimPercentage,
+    skillKey: 'dunk',
+    tendencyKey: 'tendency_rim',
+    baseRate: averageGameStatsPerTeam.twoPointShot.rimRate / 2,
+    points: 2,
+  },
+  'paint': {
+    basePercentage: averageGameStatsPerTeam.twoPointShot.paintPercentage,
+    skillKey: 'post',
+    tendencyKey: 'tendency_paint',
+    baseRate: averageGameStatsPerTeam.twoPointShot.paintRate,
+    points: 2,
+  },
+
+} as const;
+
+const freeThrowMapping = {
+  'free_throw': {
+    basePercentage: averageGameStatsPerTeam.FreeThrowPercentage,
+    skillKey: 'free_throw',
+    tendencyKey: 'tendency_free_throw_drawing',
+    baseRate: averageGameStatsPerTeam.FreeThrowAttempts / averageGameStatsPerTeam.possessions,
+    points: 1,
+  },
+} as const;
+
 // Possession Event Types
 
 type Assist = {
@@ -32,23 +88,30 @@ type OutOfBoundsNonTurnover = {
   lastTouchedBy: Player;
 };
 
-type ShotAttempt = {
+type BaseShotAttempt = {
   shooter: Player;
-  distance: number;
-  defender: Player;
-  contested: boolean;
-  shotQualifier: ('step_back' | 'catch_and_shoot' | 'pull_up' | 'fadeaway' | 'heave' | 'deep')[];
+  points: number;
+  assist?: Assist;
+  distance?: number;
+  defender?: Player;
+  contested?: boolean;
+  shotQualifier?: ('step_back' | 'catch_and_shoot' | 'pull_up' | 'fadeaway' | 'heave' | 'deep')[];
   made: boolean;
 };
 
-type TwoPointShotAttempt = ShotAttempt & {
-  type: 'two_point_shot_attempt';
-  shotType: 'mid_range' | 'inside' | 'hook' | 'fadeaway' | 'layup' | 'dunk' | 'floater';
+type TwoPointShotAttempt = BaseShotAttempt & {
+  shotType: keyof Pick<typeof shotTypeMapping, {
+    [K in keyof typeof shotTypeMapping]: typeof shotTypeMapping[K]['points'] extends 2 ? K : never
+  }[keyof typeof shotTypeMapping]>;
 };
 
-type ThreePointShotAttempt = ShotAttempt & {
-  type: 'three_point_shot_attempt';
+type ThreePointShotAttempt = BaseShotAttempt & {
+  shotType: keyof Pick<typeof shotTypeMapping, {
+    [K in keyof typeof shotTypeMapping]: typeof shotTypeMapping[K]['points'] extends 3 ? K : never
+  }[keyof typeof shotTypeMapping]>;
 };
+
+type ShotAttempt = TwoPointShotAttempt | ThreePointShotAttempt;
 
 type FreeThrowShotAttempt = {
   type: 'free_throw_shot_attempt';
@@ -138,7 +201,9 @@ export const normalizeRates = (baseRates: number[], quantifiers: number[], media
   });
 
   const totalAdjustedRate = adjustedRates.reduce((sum, rate) => sum + rate, 0);
-  return adjustedRates.map(rate => Number((rate / totalAdjustedRate).toFixed(4)));
+  const normalizedRates = adjustedRates.map(rate => Number((rate / totalAdjustedRate).toFixed(4)));
+
+  return normalizedRates;
 };
 
 export const pickOptionWithBaseRates = (
@@ -197,66 +262,25 @@ export const determineAssist = (players: Player[]) => {
   return passer;
 };
 
-export const determineShot = (players: Player[]) => {
+export const determineShot = (players: Player[]): ShotAttempt => {
   const shooter = players[pickOption(players.map(player => player.skills.tendency_score))];
   const assister = determineAssist(players.filter(player => player !== shooter));
 
-  // Determine shot type based on shooting tendencies
-  const shotTypeTendencies = [
-    shooter.skills.tendency_mid_range,
-    shooter.skills.tendency_corner_three,
-    shooter.skills.tendency_above_the_break_three,
-    shooter.skills.tendency_drive_to_basket,
-    shooter.skills.tendency_rim,
-    shooter.skills.tendency_paint
-  ];
-
-  // Define base rates from constants
-  const baseRates = [
-    averageGameStatsPerTeam.twoPointShot.midRangeRate,
-    averageGameStatsPerTeam.threePointShot.cornerThreeRate,
-    averageGameStatsPerTeam.threePointShot.aboveTheBreakThreeRate,
-    averageGameStatsPerTeam.twoPointShot.rimRate / 2, // Assuming drive_to_basket is half of rim shots
-    averageGameStatsPerTeam.twoPointShot.rimRate / 2, // The other half of rim shots
-    averageGameStatsPerTeam.twoPointShot.paintRate
-  ];
+  // Use the mapping to get tendencies and base rates
+  const shotTypeTendencies = Object.values(shotTypeMapping).map(
+    mapping => shooter.skills[mapping.tendencyKey as keyof typeof shooter.skills]
+  );
+  const baseRates = Object.values(shotTypeMapping).map(mapping => mapping.baseRate);
 
   // Determine shot type using pickOptionWithBaseRates
   const shotTypeIndex = pickOptionWithBaseRates(baseRates, shotTypeTendencies);
 
-  // Map shot type index to shot type
-  const shotTypes = ['mid_range', 'corner_three', 'above_the_break_three', 'drive_to_basket', 'rim', 'paint'];
-  const shotType = shotTypes[shotTypeIndex];
+  // Get the shot type using the index
+  const shotType = Object.keys(shotTypeMapping)[shotTypeIndex] as keyof typeof shotTypeMapping;
 
-  // Determine if the shot is made
-  let basePercentage: number;
-  let skillQuantifier: number;
-
-  switch (shotType) {
-    case 'mid_range':
-      basePercentage = averageGameStatsPerTeam.twoPointShot.midRangePercentage;
-      skillQuantifier = shooter.skills.mid_range;
-      break;
-    case 'corner_three':
-      basePercentage = averageGameStatsPerTeam.threePointShot.cornerThreePercentage;
-      skillQuantifier = shooter.skills.three_point_catch_and_shoot;
-      break;
-    case 'above_the_break_three':
-      basePercentage = averageGameStatsPerTeam.threePointShot.aboveTheBreakThreePercentage;
-      skillQuantifier = shooter.skills.three_point_catch_and_shoot;
-      break;
-    case 'drive_to_basket':
-    case 'rim':
-      basePercentage = averageGameStatsPerTeam.twoPointShot.rimPercentage;
-      skillQuantifier = shooter.skills.dunk;
-      break;
-    case 'paint':
-      basePercentage = averageGameStatsPerTeam.twoPointShot.paintPercentage;
-      skillQuantifier = shooter.skills.post;
-      break;
-    default:
-      throw new Error(`Invalid shot type: ${shotType}`);
-  }
+  // Use the mapping to get the base percentage and skill quantifier
+  const { basePercentage, skillKey } = shotTypeMapping[shotType];
+  const skillQuantifier = shooter.skills[skillKey as keyof typeof shooter.skills];
 
   const isMade = pickOptionWithBaseRates(
     [basePercentage, 1 - basePercentage],
@@ -264,12 +288,21 @@ export const determineShot = (players: Player[]) => {
     playerConstants.leagueAverageSkill
   ) === 0;
 
-  return {
-    isMade,
-    shooter,
+  const assist: Assist | undefined = assister ? {
+    type: 'assist',
     assister,
-    shotType,
+    scorer: shooter,
+  } : undefined;
+
+  const shotAttempt: ShotAttempt = {
+    made: isMade,
+    shooter: shooter,
+    assist: assist,
+    shotType: shotType,
+    points: shotTypeMapping[shotType].points
   };
+
+  return shotAttempt;
 };
 
 

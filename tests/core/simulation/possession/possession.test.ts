@@ -96,6 +96,84 @@ describe('determineAssist', () => {
   });
 });
 
-/**
- * [70, 80, 60, 50, 244.4]
- */
+describe.only('determineShot', () => {
+  it('should determine a shot attempt with correct shooter, assist, shot type, and points', () => {
+    const players = [
+      {
+        skills: {
+          passing: 60,
+          mid_range: 80,
+          three_point_catch_and_shoot: 75,
+          three_point_corner: 40,
+          dunk: 65,
+          post: 70,
+          tendency_score: 70,
+          tendency_mid_range: 50,
+          tendency_above_the_break_three: 35,
+          tendency_corner_three: 40,
+          tendency_drive_to_basket: 30,
+          tendency_rim: 25,
+          tendency_paint: 45
+        }
+      },
+      {
+        skills: {
+          passing: 55,
+          mid_range: 70,
+          three_point_catch_and_shoot: 65,
+          three_point_corner: 70,
+          dunk: 60,
+          post: 65,
+          tendency_score: 65,
+          tendency_mid_range: 45,
+          tendency_above_the_break_three: 30,
+          tendency_corner_three: 35,
+          tendency_drive_to_basket: 25,
+          tendency_rim: 20,
+          tendency_paint: 40
+        }
+      },
+      {
+        skills: {
+          passing: 65,
+          mid_range: 85,
+          three_point_catch_and_shoot: 80,
+          three_point_corner: 70,
+          dunk: 70,
+          post: 75,
+          tendency_score: 75,
+          tendency_mid_range: 55,
+          tendency_above_the_break_three: 40,
+          tendency_corner_three: 45,
+          tendency_drive_to_basket: 35,
+          tendency_rim: 30,
+          tendency_paint: 50
+        }
+      }
+    ] as Player[];
+
+    const testCases = [
+      { randomValues: [0.1, 0.2, 0.3, 0.3], expectedShooterIndex: 0, expectedAssistIndex: 1, expectedShotType: 'corner_three', expectedPoints: 3, made: true },
+      { randomValues: [0.4, 0.5, 0.6, 0.8], expectedShooterIndex: 1, expectedAssistIndex: 2, expectedShotType: 'drive_to_basket', expectedPoints: 2, made: false },
+      { randomValues: [0.4, 0.55, 0.9, 0.9], expectedShooterIndex: 1, expectedAssistIndex: null, expectedShotType: 'paint', expectedPoints: 2, made: false },
+    ];
+
+    testCases.forEach(({ randomValues, expectedShooterIndex, expectedAssistIndex, expectedShotType, expectedPoints, made }) => {
+      (Math.random as jest.Mock).mockReturnValueOnce(randomValues[0]);
+      (Math.random as jest.Mock).mockReturnValueOnce(randomValues[1]);
+      (Math.random as jest.Mock).mockReturnValueOnce(randomValues[2]);
+      (Math.random as jest.Mock).mockReturnValueOnce(randomValues[3]);
+      const shotAttempt = determineShot(players);
+
+      expect(shotAttempt.shooter).toBe(players[expectedShooterIndex]);
+      if (expectedAssistIndex === null) {
+        expect(shotAttempt.assist).toBeUndefined();
+      } else {
+        expect(shotAttempt.assist?.assister).toBe(players[expectedAssistIndex]);
+      }
+      expect(shotAttempt.shotType).toBe(expectedShotType);
+      expect(shotAttempt.points).toBe(expectedPoints);
+      expect(shotAttempt.made).toBe(made);
+    });
+  });
+});
