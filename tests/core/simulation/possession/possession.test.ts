@@ -46,6 +46,24 @@ describe('pickOption', () => {
     });
   });
 
+  it('should handle all inputs being 0', () => {
+    const zeroTendencies = [0, 0, 0, 0, 0];
+
+    // Test multiple scenarios
+    const testCases = [
+      { random: 0.1, expectedIndex: 0 },
+      { random: 0.3, expectedIndex: 1 },
+      { random: 0.5, expectedIndex: 2 },
+      { random: 0.7, expectedIndex: 3 },
+      { random: 0.9, expectedIndex: 4 },
+    ];
+
+    testCases.forEach(({ random, expectedIndex }) => {
+      (Math.random as jest.Mock).mockReturnValue(random);
+      const shooterIndex = pickOption(zeroTendencies);
+      expect(shooterIndex).toBe(expectedIndex);
+    });
+  });
 });
 
 

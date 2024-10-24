@@ -154,17 +154,21 @@ export const pickOptionWithBaseRates = (
   return pickOption(normalizedRates);
 };
 
-export const pickOption = (ratios: number[]) => {
-  const totalOdds = ratios.reduce((sum, tendency) => sum + tendency, 0);
+export const pickOption = (weights: number[]) => {
+  const totalOdds = weights.reduce((sum, tendency) => sum + tendency, 0);
   const randomValue = Math.random() * totalOdds;
   let cumulativeOdds = 0;
 
-  if (randomValue >= totalOdds) {
-    return ratios.length - 1;
+  if (totalOdds === 0) {
+    return Math.floor(Math.random() * weights.length);
   }
 
-  for (let i = 0; i < ratios.length; i++) {
-    cumulativeOdds += ratios[i];
+  if (randomValue >= totalOdds) {
+    return weights.length - 1;
+  }
+
+  for (let i = 0; i < weights.length; i++) {
+    cumulativeOdds += weights[i];
     if (randomValue <= cumulativeOdds) {
       return i;
     }
@@ -207,19 +211,6 @@ export const determineShot = (players: Player[]) => {
     shooter.skills.tendency_paint
   ];
 
-  // Determine shot qualifier based on tendencies
-  // const shotQualifierTendencies = [
-  //   shooter.skills.tendency_catch_and_shoot,
-  //   shooter.skills.tendency_pull_up,
-  //   shooter.skills.tendency_step_back,
-  //   shooter.skills.tendency_fadeaway
-  // ];
-  // const shotQualifierIndex = pickOption(shotQualifierTendencies);
-
-  // Map shot qualifier index to shot qualifier
-  // const shotQualifiers = ['catch_and_shoot', 'pull_up', 'step_back', 'fadeaway'];
-  // const shotQualifier = shotQualifiers[shotQualifierIndex];
-
   // Define base rates from constants
   const baseRates = [
     averageGameStatsPerTeam.twoPointShot.midRangeRate,
@@ -237,11 +228,47 @@ export const determineShot = (players: Player[]) => {
   const shotTypes = ['mid_range', 'corner_three', 'above_the_break_three', 'drive_to_basket', 'rim', 'paint'];
   const shotType = shotTypes[shotTypeIndex];
 
+  // Determine if the shot is made
+  let basePercentage: number;
+  let skillQuantifier: number;
+
+  switch (shotType) {
+    case 'mid_range':
+      basePercentage = averageGameStatsPerTeam.twoPointShot.midRangePercentage;
+      skillQuantifier = shooter.skills.mid_range;
+      break;
+    case 'corner_three':
+      basePercentage = averageGameStatsPerTeam.threePointShot.cornerThreePercentage;
+      skillQuantifier = shooter.skills.three_point_catch_and_shoot;
+      break;
+    case 'above_the_break_three':
+      basePercentage = averageGameStatsPerTeam.threePointShot.aboveTheBreakThreePercentage;
+      skillQuantifier = shooter.skills.three_point_catch_and_shoot;
+      break;
+    case 'drive_to_basket':
+    case 'rim':
+      basePercentage = averageGameStatsPerTeam.twoPointShot.rimPercentage;
+      skillQuantifier = shooter.skills.dunk;
+      break;
+    case 'paint':
+      basePercentage = averageGameStatsPerTeam.twoPointShot.paintPercentage;
+      skillQuantifier = shooter.skills.post;
+      break;
+    default:
+      throw new Error(`Invalid shot type: ${shotType}`);
+  }
+
+  const isMade = pickOptionWithBaseRates(
+    [basePercentage, 1 - basePercentage],
+    [skillQuantifier, playerConstants.leagueAverageSkill],
+    playerConstants.leagueAverageSkill
+  ) === 0;
+
   return {
+    isMade,
     shooter,
     assister,
     shotType,
-    // shotQualifier
   };
 };
 

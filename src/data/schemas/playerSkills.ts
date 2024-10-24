@@ -26,6 +26,7 @@ const playerSkillsSchemaSql = {
   dunk: 'REAL',
   floater: 'REAL',
   turnaround: 'REAL',
+  post: 'REAL',
   step_back: 'REAL',
   mid_range: 'REAL',
   two_point_fadeaway: 'REAL',
