@@ -1,7 +1,16 @@
 import { describe, it, expect, jest, beforeAll, afterAll } from '@jest/globals';
 
 import { Player } from '@data/schemas/player';
-import { pickOption, determineAssist, determineShot, normalizeRates } from '@simulation/possession';
+import {
+  pickOption,
+  determineAssist,
+  determineShot,
+  determineTurnover,
+  normalizeRates,
+  Turnover,
+  Steal
+} from '@simulation/possession';
+import { Lineup } from '@core/entities/lineup';
 
 beforeAll(() => {
   jest.spyOn(Math, 'random');
@@ -96,7 +105,7 @@ describe('determineAssist', () => {
   });
 });
 
-describe.only('determineShot', () => {
+describe('determineShot', () => {
   it('should determine a shot attempt with correct shooter, assist, shot type, points, and free throws', () => {
     const players = [
       {
@@ -179,5 +188,45 @@ describe.only('determineShot', () => {
       expect(shotAttempt.result).toBe(expectedResult);
       expect(shotAttempt.fts).toBe(expectedFts);
     });
+  });
+});
+
+describe('determineTurnover', () => {
+  it('should correctly determine a turnover', () => {
+    (Math.random as jest.Mock).mockReturnValue(0.4);
+
+    const offensiveTeam: Lineup = {
+      players: [
+        { skills: { passing: 10 } },
+        { skills: { passing: 30 } },
+        { skills: { passing: 20 } },
+        { skills: { passing: 65 } },
+        { skills: { passing: 90 } },
+      ],
+    } as Lineup;
+
+    const defensiveTeam: Lineup = {
+      players: [
+        { skills: { defensive_iq: 10 } },
+        { skills: { defensive_iq: 98 } },
+        { skills: { defensive_iq: 31 } },
+        { skills: { defensive_iq: 11 } },
+        { skills: { defensive_iq: 77 } },
+      ],
+    } as Lineup;
+
+    const result = determineTurnover(offensiveTeam, defensiveTeam);
+
+    expect(result.events).toHaveLength(2);
+    expect(result.events[0].t).toBe('turnover');
+    expect(result.events[1].t).toBe('steal');
+
+    const turnover = result.events[0] as Turnover;
+    expect(turnover.player).toBe(offensiveTeam.players[1]);
+    expect(turnover.cause).toBe('steal');
+
+    const steal = result.events[1] as Steal;
+    expect(steal.ballHandler).toBe(turnover.player);
+    expect(steal.stolenBy).toBe(defensiveTeam.players[1]);
   });
 });

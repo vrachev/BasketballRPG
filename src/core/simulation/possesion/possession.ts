@@ -6,13 +6,14 @@ import { Player, Team } from '../../../data';
 import { Lineup } from '../..';
 import { possessionConstants, averageGameStatsPerTeam, playerConstants } from '../..';
 
-const shotTypeMapping = {
+export const shotTypeMapping = {
   'mid_range': {
     basePercentage: averageGameStatsPerTeam.twoPointShot.midRangePercentage,
     skillKey: 'mid_range',
     tendencyKey: 'tendency_mid_range',
     baseRate: averageGameStatsPerTeam.twoPointShot.midRangeRate,
     points: 2,
+    shotType: 'two_point_shot_attempt',
   },
   'corner_three': {
     basePercentage: averageGameStatsPerTeam.threePointShot.cornerThreePercentage,
@@ -20,6 +21,7 @@ const shotTypeMapping = {
     tendencyKey: 'tendency_corner_three',
     baseRate: averageGameStatsPerTeam.threePointShot.cornerThreeRate,
     points: 3,
+    shotType: 'three_point_shot_attempt',
   },
   'above_the_break_three': {
     basePercentage: averageGameStatsPerTeam.threePointShot.aboveTheBreakThreePercentage,
@@ -27,6 +29,7 @@ const shotTypeMapping = {
     tendencyKey: 'tendency_above_the_break_three',
     baseRate: averageGameStatsPerTeam.threePointShot.aboveTheBreakThreeRate,
     points: 3,
+    shotType: 'three_point_shot_attempt',
   },
   'drive_to_basket': {
     basePercentage: averageGameStatsPerTeam.twoPointShot.rimPercentage,
@@ -34,6 +37,7 @@ const shotTypeMapping = {
     tendencyKey: 'tendency_drive_to_basket',
     baseRate: averageGameStatsPerTeam.twoPointShot.rimRate / 2,
     points: 2,
+    shotType: 'two_point_shot_attempt',
   },
   'rim': {
     basePercentage: averageGameStatsPerTeam.twoPointShot.rimPercentage,
@@ -41,6 +45,7 @@ const shotTypeMapping = {
     tendencyKey: 'tendency_rim',
     baseRate: averageGameStatsPerTeam.twoPointShot.rimRate / 2,
     points: 2,
+    shotType: 'two_point_shot_attempt',
   },
   'paint': {
     basePercentage: averageGameStatsPerTeam.twoPointShot.paintPercentage,
@@ -48,11 +53,12 @@ const shotTypeMapping = {
     tendencyKey: 'tendency_paint',
     baseRate: averageGameStatsPerTeam.twoPointShot.paintRate,
     points: 2,
+    shotType: 'two_point_shot_attempt',
   },
 
 } as const;
 
-const freeThrowMapping = {
+export const freeThrowMapping = {
   'free_throw': {
     basePercentage: averageGameStatsPerTeam.FreeThrowPercentage,
     skillKey: 'free_throw',
@@ -64,26 +70,44 @@ const freeThrowMapping = {
 
 // Possession Event Types
 
-type Assist = {
-  type: 'assist';
+type PossessionEventType =
+  | 'assist'
+  | 'turnover'
+  | 'foul'
+  | 'two_point_shot_attempt'
+  | 'three_point_shot_attempt'
+  | 'free_throw_shot_attempt'
+  | 'steal'
+  | 'block'
+  | 'offensive_rebound'
+  | 'defensive_rebound'
+  | 'end_of_period'
+  | 'end_of_game';
+
+export type BasePossessionEvent = {
+  t: PossessionEventType;
+};
+
+export type Assist = BasePossessionEvent & {
+  t: 'assist';
   assister: Player;
   scorer: Player;
 };
 
-type Turnover = {
-  type: 'turnover';
+export type Turnover = BasePossessionEvent & {
+  t: 'turnover';
   player: Player;
   cause: 'bad pass' | 'steal' | 'offensive foul' | 'shot clock violation' | 'other';
 };
 
-type Foul = {
-  type: 'foul';
+export type Foul = BasePossessionEvent & {
+  t: 'foul';
   offender: Player;
   fouled: Player;
   foulType: 'personal' | 'technical' | 'flagrant';
 };
 
-type BaseShotAttempt = {
+export type BaseShotAttempt = {
   shooter: Player;
   points: number;
   assist?: Assist;
@@ -95,58 +119,60 @@ type BaseShotAttempt = {
   fts: 0 | 1 | 2 | 3;
 };
 
-type TwoPointShotAttempt = BaseShotAttempt & {
+export type TwoPointShotAttempt = BasePossessionEvent & BaseShotAttempt & {
+  t: 'two_point_shot_attempt';
   shotType: keyof Pick<typeof shotTypeMapping, {
     [K in keyof typeof shotTypeMapping]: typeof shotTypeMapping[K]['points'] extends 2 ? K : never
   }[keyof typeof shotTypeMapping]>;
 };
 
-type ThreePointShotAttempt = BaseShotAttempt & {
+export type ThreePointShotAttempt = BasePossessionEvent & BaseShotAttempt & {
+  t: 'three_point_shot_attempt';
   shotType: keyof Pick<typeof shotTypeMapping, {
     [K in keyof typeof shotTypeMapping]: typeof shotTypeMapping[K]['points'] extends 3 ? K : never
   }[keyof typeof shotTypeMapping]>;
 };
 
-type ShotAttempt = TwoPointShotAttempt | ThreePointShotAttempt;
+export type ShotAttempt = TwoPointShotAttempt | ThreePointShotAttempt;
 
-type FreeThrowShotAttempt = {
-  type: 'free_throw_shot_attempt';
+export type FreeThrowShotAttempt = BasePossessionEvent & {
+  t: 'free_throw_shot_attempt';
   shooter: Player;
   made: boolean;
 };
 
-type Steal = {
-  type: 'steal';
+export type Steal = BasePossessionEvent & {
+  t: 'steal';
   ballHandler: Player;
   stolenBy: Player;
 };
 
-type Block = {
-  type: 'block';
+export type Block = BasePossessionEvent & {
+  t: 'block';
   blocker: Player;
   shotAttempt: TwoPointShotAttempt | ThreePointShotAttempt;
 };
 
-type OffensiveRebound = {
-  type: 'offensive_rebound';
+export type OffensiveRebound = BasePossessionEvent & {
+  t: 'offensive_rebound';
   rebounder: Player;
 };
 
-type DefensiveRebound = {
-  type: 'defensive_rebound';
+export type DefensiveRebound = BasePossessionEvent & {
+  t: 'defensive_rebound';
   rebounder: Player;
 };
 
-type EndOfPeriod = {
+export type EndOfPeriod = BasePossessionEvent & {
   type: 'end_of_period';
   period: number;
 };
 
-type EndOfGame = {
-  type: 'end_of_game';
+export type EndOfGame = BasePossessionEvent & {
+  t: 'end_of_game';
 };
 
-type PossessionEvent =
+export type PossessionEvent =
   | Assist
   | Turnover
   | Foul
@@ -160,14 +186,15 @@ type PossessionEvent =
   | Steal
   | Block;
 
-type PossessionResult = {
+
+export type PossessionResult = {
   events: PossessionEvent[];
   offensiveTeam: Lineup;
   defensiveTeam: Lineup;
   timeLength: number;
 };
 
-type PossessionInput = {
+export type PossessionInput = {
   offensiveTeam: Lineup;
   defensiveTeam: Lineup;
   gameClock: number;
@@ -308,19 +335,28 @@ export const determineShot = (players: Player[]): ShotAttempt => {
   }
 
   const assist: Assist | undefined = assister ? {
-    type: 'assist',
+    t: 'assist',
     assister,
     scorer: shooter,
   } : undefined;
 
-  const shotAttempt: ShotAttempt = {
-    shooter: shooter,
-    assist: assist,
-    shotType: shotType,
+  const shotAttemptBase: BaseShotAttempt = {
+    shooter,
+    assist,
     points: shotTypeMapping[shotType].points,
     result: isMade ? 'made' : 'missed',
     fts,
   };
+
+  // something is very off with how we construct this type
+  // and how we've created the shotTypeMapping object.
+  // For now we'll just cast it to the correct type since we know it's correct,
+  // but I am not happy.
+  const shotAttempt: ShotAttempt = {
+    ...shotAttemptBase,
+    t: shotTypeMapping[shotType].shotType,
+    shotType,
+  } as ShotAttempt;
 
   return shotAttempt;
 };
@@ -329,7 +365,7 @@ export const determineShot = (players: Player[]): ShotAttempt => {
  * Here are the cases:
  * 1. Turnover (off) + ?steal (def)
  * 2. Foul (def | off) + ?FTs-from-penalty (off)
- * 3. Shot Attempt + (make + ?assist + ?and1FT) | (miss + (?block | ?Oreb | ? Dreb) | ?(foul + FTs))
+ * 3. ✅ Shot Attempt + (make + ?assist + ?and1FT) | (miss + (?block | ?Oreb | ? Dreb) | ?(foul + FTs))
  * 4. End of period
  * 5. End of game
  */
@@ -349,66 +385,78 @@ const determinePossessionResult = (
     )
   ];
 
-  const eventIndex = pickOption(eventProbabilities);
+  return {
+    events: [],
+    offensiveTeam,
+    defensiveTeam,
+    timeLength: 0,
+  };
 
-  switch (eventIndex) {
-    case 0: // turnover
-      return determineTurnover(offensiveTeam, defensiveTeam);
+  // const eventIndex = pickOption(eventProbabilities);
 
-  }
+  // switch (eventIndex) {
+  //   case 0: // turnover
+  //     return determineTurnover(offensiveTeam, defensiveTeam);
 
-  switch (eventIndex) {
-    case 0: // Steal
-      return {
-        type: 'turnover',
-        player: shotAttempt.shooter,
-        cause: 'steal',
-      };
-    case 2: // Turnover
-      return {
-        type: 'turnover',
-        player: players[pickOption(players.map(player => player.skills.tendency_score))],
-        cause: 'bad pass',
-      };
-    case 3: // Foul
-      return {
-        type: 'foul',
-        offender: players[pickOption(players.map(player => player.skills.tendency_score))],
-        fouled: shotAttempt.shooter,
-        foulType: 'personal',
-      };
-    default: // Shot Attempt
-      return shotAttempt;
-  }
+  // }
+
+  // switch (eventIndex) {
+  //   case 0: // Steal
+  //     return {
+  //       type: 'turnover',
+  //       player: shotAttempt.shooter,
+  //       cause: 'steal',
+  //     };
+  //   case 2: // Turnover
+  //     return {
+  //       type: 'turnover',
+  //       player: players[pickOption(players.map(player => player.skills.tendency_score))],
+  //       cause: 'bad pass',
+  //     };
+  //   case 3: // Foul
+  //     return {
+  //       type: 'foul',
+  //       offender: players[pickOption(players.map(player => player.skills.tendency_score))],
+  //       fouled: shotAttempt.shooter,
+  //       foulType: 'personal',
+  //     };
+  //   default: // Shot Attempt
+  //     return shotAttempt;
+  // }
 
 };
 
-const determineTurnover = (offensiveTeam: Lineup, defensiveTeam: Lineup): PossessionResult => {
+export const determineTurnover = (offensiveTeam: Lineup, defensiveTeam: Lineup): PossessionResult => {
   const stealRateForTurnovers = averageGameStatsPerTeam.steals / averageGameStatsPerTeam.turnovers;
-  const wasStolen = pickOption([stealRateForTurnovers, 1 - stealRateForTurnovers]) === 0;
+  console.log('stealRateForTurnovers', stealRateForTurnovers);
+  const wasStolen: boolean = pickOption([stealRateForTurnovers, 1 - stealRateForTurnovers]) === 0;
 
   // we'll refine this later, for now just pick a random player.
-  const ballHandler = offensiveTeam.players[pickOption([100, 100, 100, 100, 100])];
-  const stolenBy = defensiveTeam.players[pickOption(defensiveTeam.players.map(p => p.skills.defensive_iq))];
+  const ballHandler: Player = offensiveTeam.players[pickOption([100, 100, 100, 100, 100])];
+  console.log(defensiveTeam.players.map(p => p.skills.defensive_iq));
 
   const turnover: Turnover = {
-    type: 'turnover',
+    t: 'turnover',
     player: ballHandler,
     cause: wasStolen ? 'steal' : 'bad pass',
   };
 
-  const steal: Steal | undefined = wasStolen ? {
-    type: 'steal',
-    ballHandler,
-    stolenBy,
-  } : undefined;
+  const events: PossessionEvent[] = [turnover];
+  let steal: Steal | undefined;
+  if (wasStolen) {
+    const stolenBy: Player = defensiveTeam.players[pickOption(defensiveTeam.players.map(p => p.skills.defensive_iq))];
+    steal = {
+      t: 'steal',
+      ballHandler,
+      stolenBy,
+    };
+    events.push(steal);
+  }
 
   return {
-    events: [turnover, steal].filter(Boolean) as PossessionEvent[],
+    events,
     offensiveTeam,
     defensiveTeam,
     timeLength: 0,
   };
 };
-
-export type { PossessionInput, PossessionResult, PossessionEvent };
