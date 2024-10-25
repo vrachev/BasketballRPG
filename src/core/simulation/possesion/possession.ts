@@ -83,11 +83,6 @@ type Foul = {
   foulType: 'personal' | 'technical' | 'flagrant';
 };
 
-type OutOfBoundsNonTurnover = {
-  type: 'out_of_bounds';
-  lastTouchedBy: Player;
-};
-
 type BaseShotAttempt = {
   shooter: Player;
   points: number;
@@ -96,7 +91,8 @@ type BaseShotAttempt = {
   defender?: Player;
   contested?: boolean;
   shotQualifier?: ('step_back' | 'catch_and_shoot' | 'pull_up' | 'fadeaway' | 'heave' | 'deep')[];
-  made: boolean;
+  result: 'made' | 'missed';
+  fts: 0 | 1 | 2 | 3;
 };
 
 type TwoPointShotAttempt = BaseShotAttempt & {
@@ -154,7 +150,6 @@ type PossessionEvent =
   | Assist
   | Turnover
   | Foul
-  | OutOfBoundsNonTurnover
   | TwoPointShotAttempt
   | ThreePointShotAttempt
   | FreeThrowShotAttempt
@@ -288,6 +283,28 @@ export const determineShot = (players: Player[]): ShotAttempt => {
     playerConstants.leagueAverageSkill
   ) === 0;
 
+  let fts: 0 | 1 | 2 | 3 = 0;
+  if (isMade) {
+    const andOneRate = averageGameStatsPerTeam.andOneFouledRate / averageGameStatsPerTeam.possessions;
+    if (pickOption([andOneRate, 1 - andOneRate]) === 0) fts = 1;
+  }
+
+  if (!isMade) {
+    const twoPointFouledRate = averageGameStatsPerTeam.twoPointFouledRate / averageGameStatsPerTeam.possessions;
+    const threePointFouledRate = averageGameStatsPerTeam.threePointFouledRate / averageGameStatsPerTeam.possessions;
+    const foulOption = pickOption([twoPointFouledRate, threePointFouledRate, 1 - twoPointFouledRate - threePointFouledRate]);
+    switch (foulOption) {
+      case 0:
+        fts = 2;
+        break;
+      case 1:
+        fts = 3;
+        break;
+      default:
+        fts = 0;
+    }
+  }
+
   const assist: Assist | undefined = assister ? {
     type: 'assist',
     assister,
@@ -295,16 +312,101 @@ export const determineShot = (players: Player[]): ShotAttempt => {
   } : undefined;
 
   const shotAttempt: ShotAttempt = {
-    made: isMade,
     shooter: shooter,
     assist: assist,
     shotType: shotType,
-    points: shotTypeMapping[shotType].points
+    points: shotTypeMapping[shotType].points,
+    result: isMade ? 'made' : 'missed',
+    fts,
   };
 
   return shotAttempt;
 };
 
+/**
+ * Here are the cases:
+ * 1. Turnover (off) + ?steal (def)
+ * 2. Foul (def | off) + ?FTs-from-penalty (off)
+ * 3. Shot Attempt + (make + ?assist + ?and1FT) | (miss + (?block | ?Oreb | ? Dreb) | ?(foul + FTs))
+ * 4. End of period
+ * 5. End of game
+ */
 
-// Also export the types if they're not already exported
+const determinePossessionResult = (
+  offensiveTeam: Lineup,
+  defensiveTeam: Lineup
+): PossessionResult => {
+  const eventProbabilities = [
+    averageGameStatsPerTeam.steals / averageGameStatsPerTeam.possessions,
+    averageGameStatsPerTeam.turnovers / averageGameStatsPerTeam.possessions,
+    averageGameStatsPerTeam.personalFouls / averageGameStatsPerTeam.possessions,
+    1 - (
+      averageGameStatsPerTeam.steals / averageGameStatsPerTeam.possessions +
+      averageGameStatsPerTeam.turnovers / averageGameStatsPerTeam.possessions +
+      averageGameStatsPerTeam.personalFouls / averageGameStatsPerTeam.possessions
+    )
+  ];
+
+  const eventIndex = pickOption(eventProbabilities);
+
+  switch (eventIndex) {
+    case 0: // turnover
+      return determineTurnover(offensiveTeam, defensiveTeam);
+
+  }
+
+  switch (eventIndex) {
+    case 0: // Steal
+      return {
+        type: 'turnover',
+        player: shotAttempt.shooter,
+        cause: 'steal',
+      };
+    case 2: // Turnover
+      return {
+        type: 'turnover',
+        player: players[pickOption(players.map(player => player.skills.tendency_score))],
+        cause: 'bad pass',
+      };
+    case 3: // Foul
+      return {
+        type: 'foul',
+        offender: players[pickOption(players.map(player => player.skills.tendency_score))],
+        fouled: shotAttempt.shooter,
+        foulType: 'personal',
+      };
+    default: // Shot Attempt
+      return shotAttempt;
+  }
+
+};
+
+const determineTurnover = (offensiveTeam: Lineup, defensiveTeam: Lineup): PossessionResult => {
+  const stealRateForTurnovers = averageGameStatsPerTeam.steals / averageGameStatsPerTeam.turnovers;
+  const wasStolen = pickOption([stealRateForTurnovers, 1 - stealRateForTurnovers]) === 0;
+
+  // we'll refine this later, for now just pick a random player.
+  const ballHandler = offensiveTeam.players[pickOption([100, 100, 100, 100, 100])];
+  const stolenBy = defensiveTeam.players[pickOption(defensiveTeam.players.map(p => p.skills.defensive_iq))];
+
+  const turnover: Turnover = {
+    type: 'turnover',
+    player: ballHandler,
+    cause: wasStolen ? 'steal' : 'bad pass',
+  };
+
+  const steal: Steal | undefined = wasStolen ? {
+    type: 'steal',
+    ballHandler,
+    stolenBy,
+  } : undefined;
+
+  return {
+    events: [turnover, steal].filter(Boolean) as PossessionEvent[],
+    offensiveTeam,
+    defensiveTeam,
+    timeLength: 0,
+  };
+};
+
 export type { PossessionInput, PossessionResult, PossessionEvent };
