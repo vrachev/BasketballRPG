@@ -28,6 +28,12 @@ export const averageGameStatsPerTeam = {
     get twoPointShotRate() {
       return this.rimRate + this.paintRate + this.midRangeRate;
     },
+    get cumulativeTwoPointPercentage() {
+      return (this.rimPercentage * this.rimRate +
+        this.paintPercentage * this.paintRate +
+        this.midRangePercentage * this.midRangeRate) /
+        this.twoPointShotRate;
+    },
   },
   threePointShot: {
     cornerThreeRate: 0.09,
@@ -36,6 +42,11 @@ export const averageGameStatsPerTeam = {
     aboveTheBreakThreePercentage: 0.37,
     get threePointShotRate() {
       return this.cornerThreeRate + this.aboveTheBreakThreeRate;
+    },
+    get cumulativeThreePointPercentage() {
+      return (this.cornerThreePercentage * this.cornerThreeRate +
+        this.aboveTheBreakThreePercentage * this.aboveTheBreakThreeRate) /
+        this.threePointShotRate;
     },
   },
   assistPercentage: 0.55,
@@ -50,18 +61,42 @@ export const averageGameStatsPerTeam = {
   FreeThrowPercentage: 0.763,
   FreeThrowAttempts: 27.3,
   FreeThrowsPerFGA: 0.21, // this is FTs from shooting fouls only, not eg: bonus penalty.
-  get twoPointFouledRate() { // amount of 2 point shooting fouls per game
-    return this.FreeThrowsPerFGA * 0.7 * this.fga / 2;
+  get freeThrowsFromShootingFouls() {
+    return this.FreeThrowsPerFGA * this.fga;
   },
-  get threePointFouledRate() { // amount of 3 point shooting fouls per game
-    return this.FreeThrowsPerFGA * 0.1 * this.threePointShot.threePointShotRate * this.fga / 3;
+  get freeThrowsFromNonShootingFouls() {
+    return this.FreeThrowAttempts - this.freeThrowsFromShootingFouls;
   },
-  get andOneFouledRate() { // amount of and-one fouls per game
-    return this.FreeThrowsPerFGA * 0.20 * this.twoPointShot.twoPointShotRate * this.fga / 1;
+  get twoPointerFGA() {
+    return this.twoPointShot.twoPointShotRate * this.fga;
   },
-  // free throw eligible fouls from non-shooting fouls. for now, only bonus fouls, no technicals or flagrants.
-  get FreeThrowsNonFGARate() {
-    return this.FreeThrowAttempts - this.FreeThrowsPerFGA * this.fga / 2;
+  get threePointerFGA() {
+    return this.threePointShot.threePointShotRate * this.fga;
+  },
+  get madeTwoPointers() {
+    return this.twoPointerFGA * this.twoPointShot.cumulativeTwoPointPercentage;
+  },
+  get madeThreePointers() {
+    return this.threePointerFGA * this.threePointShot.cumulativeThreePointPercentage;
+  },
+  get twoPointFoulRate() {
+    const missedTwoPointers = this.twoPointerFGA - this.madeTwoPointers;
+    const twoPointFoulRatePerGame = this.FreeThrowsPerFGA * 0.7 * this.fga / 2;
+    return twoPointFoulRatePerGame / missedTwoPointers;
+  },
+  get threePointFoulRate() {
+    const missedThreePointers = this.threePointerFGA - this.madeThreePointers;
+    const threePointFoulRatePerGame = this.FreeThrowsPerFGA * 0.1 * this.fga / 3;
+    return threePointFoulRatePerGame / missedThreePointers;
+  },
+  // does not yet support and-one from three-point shots.
+  get andOneFoulRate() {
+    const andOneFoulRatePerGame = this.FreeThrowsPerFGA * 0.20 * this.twoPointShot.twoPointShotRate * this.fga / 1;
+    return andOneFoulRatePerGame / this.madeTwoPointers;
+  },
+  // Free throw eligible fouls from non-shooting fouls (only supports 2 shot bonus fouls right now).
+  get nonShootingFoulFreeThrowRate() {
+    return this.freeThrowsFromNonShootingFouls / this.possessions / 2;
   },
 
   personalFouls: 22.3,

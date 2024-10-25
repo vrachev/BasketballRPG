@@ -197,7 +197,7 @@ export const normalizeRates = (baseRates: number[], quantifiers: number[], media
 
   const totalAdjustedRate = adjustedRates.reduce((sum, rate) => sum + rate, 0);
   const normalizedRates = adjustedRates.map(rate => Number((rate / totalAdjustedRate).toFixed(4)));
-
+  console.log('normalizedRates', normalizedRates);
   return normalizedRates;
 };
 
@@ -277,6 +277,7 @@ export const determineShot = (players: Player[]): ShotAttempt => {
   const { basePercentage, skillKey } = shotTypeMapping[shotType];
   const skillQuantifier = shooter.skills[skillKey as keyof typeof shooter.skills];
 
+  console.log('shotType', shotType, basePercentage, skillQuantifier, shotTypeMapping[shotType].points);
   const isMade = pickOptionWithBaseRates(
     [basePercentage, 1 - basePercentage],
     [skillQuantifier, playerConstants.leagueAverageSkill],
@@ -285,23 +286,24 @@ export const determineShot = (players: Player[]): ShotAttempt => {
 
   let fts: 0 | 1 | 2 | 3 = 0;
   if (isMade) {
-    const andOneRate = averageGameStatsPerTeam.andOneFouledRate / averageGameStatsPerTeam.possessions;
+    const andOneRate = averageGameStatsPerTeam.andOneFoulRate;
     if (pickOption([andOneRate, 1 - andOneRate]) === 0) fts = 1;
   }
 
   if (!isMade) {
-    const twoPointFouledRate = averageGameStatsPerTeam.twoPointFouledRate / averageGameStatsPerTeam.possessions;
-    const threePointFouledRate = averageGameStatsPerTeam.threePointFouledRate / averageGameStatsPerTeam.possessions;
-    const foulOption = pickOption([twoPointFouledRate, threePointFouledRate, 1 - twoPointFouledRate - threePointFouledRate]);
-    switch (foulOption) {
-      case 0:
+    const points = shotTypeMapping[shotType].points;
+    if (points === 2) {
+      const twoPointFoulRate = averageGameStatsPerTeam.twoPointFoulRate;
+      if (pickOption([twoPointFoulRate, 1 - twoPointFoulRate]) === 0) {
         fts = 2;
-        break;
-      case 1:
+      }
+    } else if (points === 3) {
+      const threePointFoulRate = averageGameStatsPerTeam.threePointFoulRate;
+      console.log('threePointFoulRate', threePointFoulRate);
+      console.log(JSON.stringify(averageGameStatsPerTeam, null, 2));
+      if (pickOption([threePointFoulRate, 1 - threePointFoulRate]) === 0) {
         fts = 3;
-        break;
-      default:
-        fts = 0;
+      }
     }
   }
 

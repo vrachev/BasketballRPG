@@ -97,7 +97,7 @@ describe('determineAssist', () => {
 });
 
 describe.only('determineShot', () => {
-  it('should determine a shot attempt with correct shooter, assist, shot type, and points', () => {
+  it('should determine a shot attempt with correct shooter, assist, shot type, points, and free throws', () => {
     const players = [
       {
         skills: {
@@ -153,16 +153,19 @@ describe.only('determineShot', () => {
     ] as Player[];
 
     const testCases = [
-      { randomValues: [0.1, 0.2, 0.3, 0.3], expectedShooterIndex: 0, expectedAssistIndex: 1, expectedShotType: 'corner_three', expectedPoints: 3, made: true },
-      { randomValues: [0.4, 0.5, 0.6, 0.8], expectedShooterIndex: 1, expectedAssistIndex: 2, expectedShotType: 'drive_to_basket', expectedPoints: 2, made: false },
-      { randomValues: [0.4, 0.55, 0.9, 0.9], expectedShooterIndex: 1, expectedAssistIndex: null, expectedShotType: 'paint', expectedPoints: 2, made: false },
+      { randomValues: [0.1, 0.2, 0.3, 0.3, 0.9], expectedShooterIndex: 0, expectedAssistIndex: 1, expectedShotType: 'corner_three', expectedPoints: 3, expectedResult: 'made', expectedFts: 0 },
+      { randomValues: [0.4, 0.5, 0.6, 0.8, 0.003], expectedShooterIndex: 1, expectedAssistIndex: 2, expectedShotType: 'above_the_break_three', expectedPoints: 3, expectedResult: 'missed', expectedFts: 3 },
+      { randomValues: [0.4, 0.55, 0.9, 0.9, 0.5], expectedShooterIndex: 1, expectedAssistIndex: null, expectedShotType: 'paint', expectedPoints: 2, expectedResult: 'missed', expectedFts: 0 },
+      { randomValues: [0.4, 0.55, 0.9, 0.9, 0.2], expectedShooterIndex: 1, expectedAssistIndex: null, expectedShotType: 'paint', expectedPoints: 2, expectedResult: 'missed', expectedFts: 2 },
     ];
 
-    testCases.forEach(({ randomValues, expectedShooterIndex, expectedAssistIndex, expectedShotType, expectedPoints, made }) => {
-      (Math.random as jest.Mock).mockReturnValueOnce(randomValues[0]);
-      (Math.random as jest.Mock).mockReturnValueOnce(randomValues[1]);
-      (Math.random as jest.Mock).mockReturnValueOnce(randomValues[2]);
-      (Math.random as jest.Mock).mockReturnValueOnce(randomValues[3]);
+    testCases.forEach(({ randomValues, expectedShooterIndex, expectedAssistIndex, expectedShotType, expectedPoints, expectedResult, expectedFts }) => {
+      (Math.random as jest.Mock)
+        .mockReturnValueOnce(randomValues[0])
+        .mockReturnValueOnce(randomValues[1])
+        .mockReturnValueOnce(randomValues[2])
+        .mockReturnValueOnce(randomValues[3])
+        .mockReturnValueOnce(randomValues[4]);
       const shotAttempt = determineShot(players);
 
       expect(shotAttempt.shooter).toBe(players[expectedShooterIndex]);
@@ -173,7 +176,8 @@ describe.only('determineShot', () => {
       }
       expect(shotAttempt.shotType).toBe(expectedShotType);
       expect(shotAttempt.points).toBe(expectedPoints);
-      expect(shotAttempt.made).toBe(made);
+      expect(shotAttempt.result).toBe(expectedResult);
+      expect(shotAttempt.fts).toBe(expectedFts);
     });
   });
 });
