@@ -84,6 +84,7 @@ export type PlayerEvent = {
   assist: number;
   steal: number;
   block: number;
+  turnover: number;
   foul: number;
 };
 
@@ -98,6 +99,7 @@ export const createPlayerEvent = (pid: number, stats?: Partial<Omit<PlayerEvent,
   points: 0,
   oReb: 0,
   dReb: 0,
+  turnover: 0,
   assist: 0,
   steal: 0,
   block: 0,
@@ -292,61 +294,89 @@ const simulatePossession = (
 
   switch (eventIndex) {
     case 'turnover':
-      return determineTurnover(offensiveTeam, defensiveTeam);
+      return determineTurnover(offensiveTeam, defensiveTeam, gameClock, shotClock);
+
     case 'non_shooting_foul':
-      return determineFoul(defensiveTeam, gameClock, shotClock);
+      const event = determineFoul(defensiveTeam);
+      return {
+        playerEvents: [event],
+        timeLength: calculatePossessionLength(gameClock, shotClock),
+      };
+
     case 'shot_attempt':
       return determineShot(offensiveTeam.players);
+
     default:
       throw new Error(`Invalid event index: ${eventIndex}`);
   }
 };
 
-export const determineFoul = (lineup: Lineup, gameClock: number, shotClock: number): PossessionResult => {
+export const determineFoul = (lineup: Lineup): PlayerEvent => {
   const offender = pickOption(lineup.players, lineup.players.map((p) => 1 - p.skills.defensive_iq));
   const event = createPlayerEvent(offender.playerInfo.id, { foul: 1 });
-  const possessionResult: PossessionResult = {
-    playerEvents: [event],
-    timeLength: calculatePossessionLength(gameClock, shotClock),
-  };
 
-  return possessionResult;
+  return event;
 };
 
-export const determineTurnover = (offensiveTeam: Lineup, defensiveTeam: Lineup): PossessionResult => {
-  const stealRateForTurnovers = averageStatRates.stealRatePerTurnover;
-  console.log('stealRateForTurnovers', stealRateForTurnovers);
-  const wasStolen: boolean = pickOption([stealRateForTurnovers, 1 - stealRateForTurnovers]) === 0;
+/**
+ * Cases for turnovers:
+ * 1. turnover (off)
+ * 2. turnover (off) + steal (def)
+ * 3. turnover (off) + foul (off)
+ */
+export const determineTurnover = (
+  offensiveTeam: Lineup,
+  defensiveTeam: Lineup,
+  gameClock: number,
+  shotClock: number
+): PossessionResult => {
+  const outcomeOptions = ['steal', 'foul', 'plain_turnover'];
+  const outcomeProbabilities = [
+    averageStatRates.stealRatePerTurnover,
+    averageStatRates.nonShootingFouls.offensiveFoulRate,
+    1 - averageStatRates.stealRatePerTurnover - averageStatRates.nonShootingFouls.offensiveFoulRate,
+  ];
 
+  console.log('outcomeOptions', outcomeOptions);
+  console.log('outcomeProbabilities', outcomeProbabilities);
+
+  const outcome = pickOption(outcomeOptions, outcomeProbabilities);
   // we'll refine this later, for now just pick a random player.
-  const ballHandler: Player = offensiveTeam.players[pickOption([100, 100, 100, 100, 100])];
+  const ballHandler: Player = pickOption(offensiveTeam.players, offensiveTeam.players.map(() => 100));
   console.log(defensiveTeam.players.map(p => p.skills.defensive_iq));
   console.log(JSON.stringify(averageStatRates, null, 2));
 
-  const turnover: Turnover = {
-    t: 'turnover',
-    player: ballHandler,
-    cause: wasStolen ? 'steal' : 'bad pass',
-  };
+  const turnoverEvent = createPlayerEvent(ballHandler.playerInfo.id, { turnover: 1 });
+  const timeLength = calculatePossessionLength(gameClock, shotClock);
 
-  const events: PossessionEvent[] = [turnover];
-  let steal: Steal | undefined;
-  if (wasStolen) {
-    const stolenBy: Player = defensiveTeam.players[pickOption(defensiveTeam.players.map(p => p.skills.defensive_iq))];
-    steal = {
-      t: 'steal',
-      ballHandler,
-      stolenBy,
-    };
-    events.push(steal);
+  switch (outcome) {
+    case 'steal':
+      const stolenBy: Player = pickOption(
+        defensiveTeam.players,
+        defensiveTeam.players.map((p) => p.skills.defensive_iq)
+      );
+      const stealEvent = createPlayerEvent(stolenBy.playerInfo.id, { steal: 1 });
+      return {
+        playerEvents: [turnoverEvent, stealEvent],
+        timeLength,
+      };
+
+    case 'foul':
+      const foulEvent = determineFoul(offensiveTeam);
+      return {
+        playerEvents: [turnoverEvent, foulEvent],
+        timeLength,
+      };
+
+    case 'plain_turnover':
+      return {
+        playerEvents: [turnoverEvent],
+        timeLength,
+      };
+
+    default:
+      throw new Error(`Invalid outcome: ${outcome}`);
   }
-
-  return {
-    events,
-    offensiveTeam,
-    defensiveTeam,
-    timeLength: 0,
-  };
 };
 
 const calculatePossessionLength = (gameClock: number, shotClock: number): number => {

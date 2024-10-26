@@ -104,8 +104,12 @@ export const averageStatRates = {
         averageStatRates.shootingFouls.foulsPerFga * averageGameStatsPerTeam.fga;
       return nonShootingFouls / averageGameStatsPerTeam.possessions;
     },
-    offensiveFoulRate: 0.15,
-    deffensiveFoulRate: .85,
+    get offensiveFoulRate() {
+      return 0.15 * this.nonShootingFoulRate;
+    },
+    get defensiveFoulRate() {
+      return 0.85 * this.nonShootingFoulRate;
+    },
   },
 
   // counting stat rates
@@ -123,8 +127,7 @@ export const averageStatRates = {
     },
     turnoverRate: averageGameStatsPerTeam.turnovers / averageGameStatsPerTeam.possessions,
     get nonShootingFoulDefensiveRate() {
-      return averageStatRates.nonShootingFouls.nonShootingFoulRate *
-        averageStatRates.nonShootingFouls.deffensiveFoulRate;
+      return averageStatRates.nonShootingFouls.defensiveFoulRate;
     },
   },
 
