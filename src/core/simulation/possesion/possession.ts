@@ -2,17 +2,27 @@
 * Simulate a basketball possession
 */
 
-import { Player } from '../../../data';
+import { Player, PlayerSkills } from '../../../data';
 import { Lineup, averageStatRates, playerConstants, possessionConstants } from '../..';
 
-export const shotTypeMapping = {
+type ShotTypeKey = 'mid_range' | 'corner_three' | 'above_the_break_three' | 'drive_to_basket' | 'rim' | 'paint';
+type ShotTypeData = {
+  [K in ShotTypeKey]: {
+    basePercentage: number;
+    skillKey: keyof PlayerSkills;
+    tendencyKey: keyof PlayerSkills;
+    baseRate: number;
+    points: number;
+  }
+};
+
+export const shotTypeMapping: ShotTypeData = {
   'mid_range': {
     basePercentage: averageStatRates.twoPointShot.midRangePercentage,
     skillKey: 'mid_range',
     tendencyKey: 'tendency_mid_range',
     baseRate: averageStatRates.twoPointShot.midRangeRate,
     points: 2,
-    shotType: 'two_point_shot_attempt',
   },
   'corner_three': {
     basePercentage: averageStatRates.threePointShot.cornerThreePercentage,
@@ -20,7 +30,6 @@ export const shotTypeMapping = {
     tendencyKey: 'tendency_corner_three',
     baseRate: averageStatRates.threePointShot.cornerThreeRate,
     points: 3,
-    shotType: 'three_point_shot_attempt',
   },
   'above_the_break_three': {
     basePercentage: averageStatRates.threePointShot.aboveTheBreakThreePercentage,
@@ -28,23 +37,20 @@ export const shotTypeMapping = {
     tendencyKey: 'tendency_above_the_break_three',
     baseRate: averageStatRates.threePointShot.aboveTheBreakThreeRate,
     points: 3,
-    shotType: 'three_point_shot_attempt',
   },
   'drive_to_basket': {
     basePercentage: averageStatRates.twoPointShot.rimPercentage,
     skillKey: 'dunk',
     tendencyKey: 'tendency_drive_to_basket',
-    baseRate: averageStatRates.twoPointShot.rimRate / 2,
+    baseRate: averageStatRates.twoPointShot.rimRate / 2, // hack because we don't have a separate rate for dribble-to-basket
     points: 2,
-    shotType: 'two_point_shot_attempt',
   },
   'rim': {
     basePercentage: averageStatRates.twoPointShot.rimPercentage,
     skillKey: 'dunk',
     tendencyKey: 'tendency_rim',
-    baseRate: averageStatRates.twoPointShot.rimRate / 2,
+    baseRate: averageStatRates.twoPointShot.rimRate / 2, // hack like in drive_to_basket
     points: 2,
-    shotType: 'two_point_shot_attempt',
   },
   'paint': {
     basePercentage: averageStatRates.twoPointShot.paintPercentage,
@@ -52,12 +58,11 @@ export const shotTypeMapping = {
     tendencyKey: 'tendency_paint',
     baseRate: averageStatRates.twoPointShot.paintRate,
     points: 2,
-    shotType: 'two_point_shot_attempt',
   },
 
 } as const;
 
-export const shootingFoulMapping = {
+export const shootingFoulMapping: ShotTypeData = {
   'free_throw': {
     basePercentage: averageStatRates.freeThrowPercentage,
     skillKey: 'free_throw',
@@ -136,14 +141,14 @@ export const normalizeRates = (baseRates: number[], quantifiers: number[], media
 export const pickOptionWithBaseRates = <T>(
   options: T[],
   baseRates: number[],
-  quantifiers: number[],
+  qualifiers: number[],
   medianValue: number = playerConstants.leagueAverageSkill,
 ): T => {
-  if (baseRates.length !== quantifiers.length) {
-    throw new Error('baseRates and quantifiers must have the same length');
+  if (baseRates.length !== qualifiers.length) {
+    throw new Error('baseRates and qualifiers must have the same length');
   }
 
-  const normalizedRates = normalizeRates(baseRates, quantifiers, medianValue);
+  const normalizedRates = normalizeRates(baseRates, qualifiers, medianValue);
   return pickOption(options, normalizedRates);
 };
 
@@ -166,29 +171,28 @@ export const pickOption = <T>(options: T[], weights: number[]): T => {
   throw new Error(`randomValue is out of bounds: ${randomValue}, totalOdds: ${totalOdds}`);
 };
 
-export const determineAssist = (players: Player[]) => {
+export const determineAssist = (players: Player[]): Player | null => {
   const numPlayers = players.length;
-  const assistPercentage = averageStatRates.assistRatePerMadeFga;
-  console.log('assistPercentage', assistPercentage, "should be like .50 or so");
+  const assistRate = averageStatRates.assistRatePerMadeFga;
+  console.log('assistRate', assistRate, "should be like .50 or so");
   const leagueAverageSkill = playerConstants.leagueAverageSkill;
 
   const baseRates = [
-    ...players.map(() => (assistPercentage / numPlayers)),
-    (1 - assistPercentage)
+    ...players.map(() => (assistRate / numPlayers)),
+    (1 - assistRate)
   ];
-  const quantifiers = [
+  const qualifier = [
     ...players.map(player => player.skills.passing),
-    leagueAverageSkill
+    leagueAverageSkill // this is a hack since the non-assist rate does not need to be qualified.
   ];
 
-  const optionPicked = pickOptionWithBaseRates(baseRates, quantifiers);
+  const optionPicked = pickOptionWithBaseRates([...players, null], baseRates, qualifier);
 
-  const passer = optionPicked < numPlayers ? players[optionPicked] : null;
-  return passer;
+  return optionPicked;
 };
 
 export const determineShot = (players: Player[]): PossessionResult => {
-  const shooter = players[pickOption(players.map(player => player.skills.tendency_score))];
+  const shooter = pickOption(players, players.map(player => player.skills.tendency_score));
   const assister = determineAssist(players.filter(player => player !== shooter));
 
   // Use the mapping to get tendencies and base rates
@@ -274,7 +278,7 @@ export const determineShot = (players: Player[]): PossessionResult => {
  * 5. End of game
  */
 
-const simulatePossession = (
+export const simulatePossession = (
   { offensiveTeam, defensiveTeam, gameClock, period, shotClock = possessionConstants.shotClock }: PossessionInput
 ): PossessionResult => {
 
