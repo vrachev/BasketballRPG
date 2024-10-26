@@ -5,15 +5,15 @@
 import { Player, PlayerSkills } from '../../../data';
 import { Lineup, averageStatRates, playerConstants, possessionConstants } from '../..';
 
-type ShotTypeKey = 'mid_range' | 'corner_three' | 'above_the_break_three' | 'drive_to_basket' | 'rim' | 'paint';
+// type ShotTypeKey = 'mid_range' | 'corner_three' | 'above_the_break_three' | 'drive_to_basket' | 'rim' | 'paint';
 type ShotTypeData = {
-  [K in ShotTypeKey]: {
+  [key: string]: {
     basePercentage: number;
     skillKey: keyof PlayerSkills;
     tendencyKey: keyof PlayerSkills;
     baseRate: number;
     points: number;
-  }
+  };
 };
 
 export const shotTypeMapping: ShotTypeData = {
@@ -191,7 +191,13 @@ export const determineAssist = (players: Player[]): Player | null => {
   return optionPicked;
 };
 
-export const determineShot = (players: Player[]): PossessionResult => {
+/**
+ * TODO:
+ * - need to add logic to determine how many FTs are made, if any are attempted.
+ * - need to add logic to determine if there is a OReb/DReb.
+ */
+
+export const determineShot = (players: Player[], gameClock: number, shotClock: number): PossessionResult => {
   const shooter = pickOption(players, players.map(player => player.skills.tendency_score));
   const assister = determineAssist(players.filter(player => player !== shooter));
 
@@ -202,70 +208,48 @@ export const determineShot = (players: Player[]): PossessionResult => {
   const baseRates = Object.values(shotTypeMapping).map(mapping => mapping.baseRate);
 
   // Determine shot type using pickOptionWithBaseRates
-  const shotTypeIndex = pickOptionWithBaseRates(baseRates, shotTypeTendencies);
-
-  // Get the shot type using the index
-  const shotType = Object.keys(shotTypeMapping)[shotTypeIndex] as keyof typeof shotTypeMapping;
+  const shotType = pickOptionWithBaseRates(Object.keys(shotTypeMapping), baseRates, shotTypeTendencies);
 
   // Use the mapping to get the base percentage and skill quantifier
   const { basePercentage, skillKey } = shotTypeMapping[shotType];
-  const skillQuantifier = shooter.skills[skillKey as keyof typeof shooter.skills];
+  const skillQualifier = shooter.skills[skillKey as keyof typeof shooter.skills];
 
-  console.log('shotType', shotType, basePercentage, skillQuantifier, shotTypeMapping[shotType].points);
-  const isMade = pickOptionWithBaseRates(
+  console.log('shotType', shotType, basePercentage, skillQualifier, shotTypeMapping[shotType].points);
+  const isMade = pickOptionWithBaseRates([true, false],
     [basePercentage, 1 - basePercentage],
-    [skillQuantifier, playerConstants.leagueAverageSkill],
-    playerConstants.leagueAverageSkill
-  ) === 0;
+    [skillQualifier, playerConstants.leagueAverageSkill],
+  );
 
-  let fts: 0 | 1 | 2 | 3 = 0;
+  let fta: 0 | 1 | 2 | 3 = 0;
+  const points = shotTypeMapping[shotType].points;
+
   if (isMade) {
     const andOneRate = averageStatRates.shootingFouls.andOneFoulRate;
-    if (pickOption([andOneRate, 1 - andOneRate]) === 0) fts = 1;
-  }
-
-  if (!isMade) {
-    const points = shotTypeMapping[shotType].points;
+    fta = pickOption([1, 0], [andOneRate, 1 - andOneRate]);
+  } else if (!isMade) {
     if (points === 2) {
       const twoPointFoulRate = averageStatRates.shootingFouls.twoPointFoulRate;
-      if (pickOption([twoPointFoulRate, 1 - twoPointFoulRate]) === 0) {
-        fts = 2;
-      }
+      fta = pickOption([2, 0], [twoPointFoulRate, 1 - twoPointFoulRate]);
     } else if (points === 3) {
       const threePointFoulRate = averageStatRates.shootingFouls.threePointFoulRate;
-      console.log('threePointFoulRate', threePointFoulRate);
-      console.log(JSON.stringify(averageStatRates, null, 2));
-      if (pickOption([threePointFoulRate, 1 - threePointFoulRate]) === 0) {
-        fts = 3;
-      }
+      fta = pickOption([3, 0], [threePointFoulRate, 1 - threePointFoulRate]);
     }
   }
 
-  const assist: Assist | undefined = assister ? {
-    t: 'assist',
-    assister,
-    scorer: shooter,
-  } : undefined;
-
-  const shotAttemptBase: BaseShotAttempt = {
-    shooter,
-    assist,
+  const event = createPlayerEvent(shooter.playerInfo.id, {
+    twoFgm: points === 2 ? 1 : 0,
+    twoFga: points === 2 ? 1 : 0,
+    threeFgm: points === 3 ? 1 : 0,
+    threeFga: points === 3 ? 1 : 0,
+    ftm: fta, // this is jsut fta, need to add function to determine if it's a made foul shot.
+    fta: fta,
     points: shotTypeMapping[shotType].points,
-    result: isMade ? 'made' : 'missed',
-    fts,
+  });
+
+  return {
+    playerEvents: [event],
+    timeLength: calculatePossessionLength(gameClock, shotClock),
   };
-
-  // something is very off with how we construct this type
-  // and how we've created the shotTypeMapping object.
-  // For now we'll just cast it to the correct type since we know it's correct,
-  // but I am not happy.
-  const shotAttempt: ShotAttempt = {
-    ...shotAttemptBase,
-    t: shotTypeMapping[shotType].shotType,
-    shotType,
-  } as ShotAttempt;
-
-  return shotAttempt;
 };
 
 /**
@@ -308,7 +292,7 @@ export const simulatePossession = (
       };
 
     case 'shot_attempt':
-      return determineShot(offensiveTeam.players);
+      return determineShot(offensiveTeam.players, gameClock, shotClock);
 
     default:
       throw new Error(`Invalid event index: ${eventIndex}`);
