@@ -5,7 +5,6 @@
 import { Player, PlayerSkills } from '../../../data';
 import { Lineup, averageStatRates, playerConstants, possessionConstants } from '../..';
 
-// type ShotTypeKey = 'mid_range' | 'corner_three' | 'above_the_break_three' | 'drive_to_basket' | 'rim' | 'paint';
 type ShotTypeData = {
   [key: string]: {
     basePercentage: number;
@@ -84,6 +83,7 @@ export type PlayerEvent = {
   fta: number;
   points: number;
 
+  // counting stats
   oReb: number;
   dReb: number;
   assist: number;
