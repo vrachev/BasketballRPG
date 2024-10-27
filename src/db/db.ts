@@ -18,7 +18,7 @@ async function openDb() {
 
 async function createTables() {
   const db = await openDb();
-  
+
   const createTable = async (tableName: string, schema: Data.TableSchemaSql) => {
     const columnDefinitions = Object.entries(schema)
       .map(([name, type]) => {
@@ -39,14 +39,16 @@ async function createTables() {
   await createTable(Data.TEAM_TABLE, Data.teamSchemaSql);
   await createTable(Data.TEAM_SEASON_TABLE, Data.teamSeasonSchemaSql);
   await createTable(Data.MATCH_TABLE, Data.matchSchemaSql);
+  await createTable(Data.PLAYER_SKILLS_TABLE, Data.playerSkillsSchemaSql);
 }
 
-async function insert<T extends Record<string, any>>(object: Data.SchemaTs<T>, tableName: string) {
+async function insert<T extends Record<string, any>>(object: Data.SchemaTs<T>, tableName: string): Promise<number | undefined> {
   const db = await openDb();
   const columns = Object.keys(object).join(', ');
   const placeholders = Object.keys(object).map(() => '?').join(', ');
   const values = Object.values(object);
-  await db.run(`INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`, values);
+  const result = await db.run(`INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`, values);
+  return result.lastID;
 }
 
 export { openDb, createTables, insert };
