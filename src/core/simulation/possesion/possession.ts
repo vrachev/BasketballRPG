@@ -114,6 +114,7 @@ export const createPlayerEvent = (pid: number, stats?: Partial<Omit<PlayerEvent,
 
 export type PossessionResult = {
   playerEvents: PlayerEvent[];
+  possessionChange: boolean;
   timeLength: number;
 };
 
@@ -197,9 +198,9 @@ export const determineAssist = (players: Player[]): Player | null => {
  * - need to add logic to determine if there is a OReb/DReb.
  */
 
-export const determineShot = (players: Player[], gameClock: number, shotClock: number): PossessionResult => {
-  const shooter = pickOption(players, players.map(player => player.skills.tendency_score));
-  const assister = determineAssist(players.filter(player => player !== shooter));
+export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, gameClock: number, shotClock: number): PossessionResult => {
+  const shooter = pickOption(offensiveLineup.players, offensiveLineup.players.map(player => player.skills.tendency_score));
+  const assister = determineAssist(offensiveLineup.players.filter(player => player !== shooter));
 
   // Use the mapping to get tendencies and base rates
   const shotTypeTendencies = Object.values(shotTypeMapping).map(
@@ -222,6 +223,8 @@ export const determineShot = (players: Player[], gameClock: number, shotClock: n
 
   let fta: 0 | 1 | 2 | 3 = 0;
   const points = shotTypeMapping[shotType].points;
+  let reboundEvent: ReboundEvent | null = null;
+  let possessionChange = true; // only an offensive rebound retains possession.
 
   if (isMade) {
     const andOneRate = averageStatRates.shootingFouls.andOneFoulRate;
@@ -234,22 +237,40 @@ export const determineShot = (players: Player[], gameClock: number, shotClock: n
       const threePointFoulRate = averageStatRates.shootingFouls.threePointFoulRate;
       fta = pickOption([3, 0], [threePointFoulRate, 1 - threePointFoulRate]);
     }
+
+    if (fta === 0) { // a miss and no FTs means there should be a rebound.
+      reboundEvent = determineRebound(offensiveLineup, defensiveLineup);
+      possessionChange = reboundEvent.possessionChange;
+    }
   }
 
-  const event = createPlayerEvent(shooter.playerInfo.id, {
+  const events = [createPlayerEvent(shooter.playerInfo.id, {
     twoFgm: points === 2 ? 1 : 0,
     twoFga: points === 2 ? 1 : 0,
     threeFgm: points === 3 ? 1 : 0,
     threeFga: points === 3 ? 1 : 0,
-    ftm: fta, // this is jsut fta, need to add function to determine if it's a made foul shot.
+    ftm: determineFts(shooter, fta),
     fta: fta,
     points: shotTypeMapping[shotType].points,
-  });
+  })];
 
-  return {
-    playerEvents: [event],
+  if (assister) {
+    events.push(createPlayerEvent(assister.playerInfo.id, { assist: 1 }));
+  }
+
+  if (reboundEvent) {
+    events.push(reboundEvent.playerEvent);
+  }
+
+
+
+  const possessionResult: PossessionResult = {
+    playerEvents: events,
     timeLength: calculatePossessionLength(gameClock, shotClock),
+    possessionChange: reboundEvent?.possessionChange ?? false,
   };
+
+  return possessionResult;
 };
 
 /**
@@ -289,10 +310,11 @@ export const simulatePossession = (
       return {
         playerEvents: [event],
         timeLength: calculatePossessionLength(gameClock, shotClock),
+        possessionChange: false,
       };
 
     case 'shot_attempt':
-      return determineShot(offensiveTeam.players, gameClock, shotClock);
+      return determineShot(offensiveTeam, defensiveTeam, gameClock, shotClock);
 
     default:
       throw new Error(`Invalid event index: ${eventIndex}`);
@@ -347,6 +369,7 @@ export const determineTurnover = (
       return {
         playerEvents: [turnoverEvent, stealEvent],
         timeLength,
+        possessionChange: true,
       };
 
     case 'foul':
@@ -354,12 +377,14 @@ export const determineTurnover = (
       return {
         playerEvents: [turnoverEvent, foulEvent],
         timeLength,
+        possessionChange: true,
       };
 
     case 'plain_turnover':
       return {
         playerEvents: [turnoverEvent],
         timeLength,
+        possessionChange: true,
       };
 
     default:
@@ -367,14 +392,94 @@ export const determineTurnover = (
   }
 };
 
-const calculatePossessionLength = (gameClock: number, shotClock: number): number => {
-  const mean = 16;
-  const standardDeviation = 4;
+// Kinda janky piecewise function but works well
+const determineFts = (player: Player, fta: number): number => {
+  const ftSkill = player.skills.free_throw;
+  let ftPercentage = 30;
+
+  // Define breakpoints and corresponding probabilities
+  const breakpoints = [0, 25, 40, 50, 60, 70, 80, 90, 100];
+  const probabilities = [30, 45, 64, 72, 78, 85, 90, 93, 95];
+
+  for (let i = 0; i < breakpoints.length - 1; i++) {
+    if (ftSkill <= breakpoints[i + 1]) {
+      // Linear interpolation between breakpoints
+      const range = breakpoints[i + 1] - breakpoints[i];
+      const proportion = (ftSkill - breakpoints[i]) / range;
+      ftPercentage = probabilities[i] + proportion * (probabilities[i + 1] - probabilities[i]);
+      break;
+    }
+  }
+
+  ftPercentage = Math.max(30, Math.min(95, ftPercentage));
+
+  let madeFts = 0;
+  for (let i = 0; i < fta; i++) {
+    if (Math.random() < ftPercentage) {
+      madeFts++;
+    }
+  }
+
+  return madeFts;
+};
+
+type ReboundEvent = {
+  playerEvent: PlayerEvent,
+  rebound: 'oReb' | 'dReb',
+  possessionChange: boolean;
+};
+
+// determine the team and player that wins the rebound.
+const determineRebound = (offensiveLineup: Lineup, defensiveLineup: Lineup): ReboundEvent => {
+  const lineups = {
+    dReb: defensiveLineup.players,
+    oReb: offensiveLineup.players,
+  };
+  const skillKeys = {
+    dReb: 'defensive_rebounding',
+    oReb: 'offensive_rebounding'
+  } as const;
+
+  const reboundRates = [
+    averageStatRates.defensiveReboundRatePerMissedFga,
+    averageStatRates.offensiveReboundRatePerMissedFga
+  ];
+
+  const lineupRebStrengths = [
+    defensiveLineup.players.reduce((sum, p) => sum + p.skills.defensive_rebounding, 0),
+    offensiveLineup.players.reduce((sum, p) => sum + p.skills.offensive_rebounding, 0)
+  ];
+
+  const wonReb: 'oReb' | 'dReb' = pickOptionWithBaseRates(['oReb', 'dReb'], reboundRates, lineupRebStrengths);
+  console.log("reboundRates:", reboundRates, "lineupRebStrengths:", lineupRebStrengths, "wonRebound:", wonReb);
+
+  const teamRebounding = lineups[wonReb];
+  const rebRates = teamRebounding.map(p => p.skills[skillKeys[wonReb]]);
+  const playerRebounding = pickOption(teamRebounding, rebRates);
+
+  const playerEvent = createPlayerEvent(playerRebounding.playerInfo.id, {
+    [wonReb]: 1
+  });
+
+  return {
+    playerEvent,
+    rebound: wonReb,
+    possessionChange: wonReb === 'oReb',
+  };
+};
+
+const generateNormalDistribution = (mean: number, standardDeviation: number): number => {
   let u = 0, v = 0;
   while (u === 0) u = Math.random(); // Converting [0,1) to (0,1)
   while (v === 0) v = Math.random();
   const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-  let possessionLength = Math.round(z * standardDeviation + mean);
+  return Math.round(z * standardDeviation + mean);
+};
+
+const calculatePossessionLength = (gameClock: number, shotClock: number): number => {
+  const mean = 16;
+  const standardDeviation = 4;
+  let possessionLength = generateNormalDistribution(mean, standardDeviation);
 
   // Ensure the possession length is between 1 and 24 seconds
   possessionLength = Math.max(1, Math.min(Math.min(shotClock, gameClock), possessionLength));
