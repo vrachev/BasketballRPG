@@ -7,6 +7,7 @@
 
 export const possessionConstants = {
   shotClock: 24,
+  shotClockReset: 14,
   periodLength: 12 * 60,
   overtimePeriodLength: 5 * 60,
 } as const;

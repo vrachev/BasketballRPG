@@ -2,8 +2,8 @@
 * Simulate a basketball possession
 */
 
-import { Player, PlayerSkills } from '../../../data';
-import { Lineup, averageStatRates, playerConstants, possessionConstants } from '../..';
+import { Player, PlayerSkills } from '../../data';
+import { Lineup, averageStatRates, playerConstants, possessionConstants } from '..';
 
 type ShotTypeData = {
   [key: string]: {
@@ -124,6 +124,20 @@ export type PossessionInput = {
   gameClock: number;
   shotClock: number;
   period: number;
+};
+
+type ReboundEvent = {
+  playerEvent: PlayerEvent,
+  rebound: 'oReb' | 'dReb',
+  possessionChange: boolean;
+};
+
+const generateNormalDistribution = (mean: number, standardDeviation: number): number => {
+  let u = 0, v = 0;
+  while (u === 0) u = Math.random(); // Converting [0,1) to (0,1)
+  while (v === 0) v = Math.random();
+  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
+  return Math.round(z * standardDeviation + mean);
 };
 
 export const normalizeRates = (baseRates: number[], quantifiers: number[], medianValue: number): number[] => {
@@ -268,59 +282,11 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
 
   const possessionResult: PossessionResult = {
     playerEvents: events,
-    timeLength: calculatePossessionLength(gameClock, shotClock),
+    timeLength: determinePossessionLength(gameClock, shotClock),
     possessionChange: reboundEvent?.possessionChange ?? false,
   };
 
   return possessionResult;
-};
-
-/**
- * Here are the cases:
- * 1. Turnover (off) + (?steal (def) | ?foul (off))
- * 2. No shot foul (def) + ?FTs-from-penalty (off)
- * 3. Shot Attempt + (make + ?assist + ?and1FT) | (miss + ((?block | ?Oreb | ? Dreb) | ?(foul + FTs)))
- *    if last FT is missed, there will be a rebound.
- * 4. End of period
- * 5. End of game
- */
-
-export const simulatePossession = (
-  { offensiveTeam, defensiveTeam, gameClock, period, shotClock = possessionConstants.shotClock }: PossessionInput
-): PossessionResult => {
-
-  const options = [
-    'turnover',
-    'non_shooting_foul',
-    'shot_attempt',
-  ];
-
-  const eventProbabilities = [
-    averageStatRates.possessionEndEvents.turnoverRate,
-    averageStatRates.possessionEndEvents.nonShootingFoulDefensiveRate,
-    averageStatRates.possessionEndEvents.shotOrShootingFoulRate,
-  ];
-
-  const eventIndex = pickOption(options, eventProbabilities);
-
-  switch (eventIndex) {
-    case 'turnover':
-      return determineTurnover(offensiveTeam, defensiveTeam, gameClock, shotClock);
-
-    case 'non_shooting_foul':
-      const event = determineFoul(defensiveTeam);
-      return {
-        playerEvents: [event],
-        timeLength: calculatePossessionLength(gameClock, shotClock),
-        possessionChange: false,
-      };
-
-    case 'shot_attempt':
-      return determineShot(offensiveTeam, defensiveTeam, gameClock, shotClock);
-
-    default:
-      throw new Error(`Invalid event index: ${eventIndex}`);
-  }
 };
 
 export const determineFoul = (lineup: Lineup): PlayerEvent => {
@@ -359,7 +325,7 @@ export const determineTurnover = (
   console.log(JSON.stringify(averageStatRates, null, 2));
 
   const turnoverEvent = createPlayerEvent(ballHandler.playerInfo.id, { turnover: 1 });
-  const timeLength = calculatePossessionLength(gameClock, shotClock);
+  const timeLength = determinePossessionLength(gameClock, shotClock);
 
   switch (outcome) {
     case 'steal':
@@ -430,12 +396,6 @@ const determineFts = (player: Player, fta: number): (0 | 1)[] => {
   return ftRes;
 };
 
-type ReboundEvent = {
-  playerEvent: PlayerEvent,
-  rebound: 'oReb' | 'dReb',
-  possessionChange: boolean;
-};
-
 // determine the team and player that wins the rebound.
 const determineRebound = (offensiveLineup: Lineup, defensiveLineup: Lineup): ReboundEvent => {
   const lineups = {
@@ -475,21 +435,69 @@ const determineRebound = (offensiveLineup: Lineup, defensiveLineup: Lineup): Reb
   };
 };
 
-const generateNormalDistribution = (mean: number, standardDeviation: number): number => {
-  let u = 0, v = 0;
-  while (u === 0) u = Math.random(); // Converting [0,1) to (0,1)
-  while (v === 0) v = Math.random();
-  const z = Math.sqrt(-2.0 * Math.log(u)) * Math.cos(2.0 * Math.PI * v);
-  return Math.round(z * standardDeviation + mean);
-};
-
-const calculatePossessionLength = (gameClock: number, shotClock: number): number => {
+const determinePossessionLength = (gameClock: number, shotClock: number): number => {
   const mean = 16;
   const standardDeviation = 4;
   let possessionLength = generateNormalDistribution(mean, standardDeviation);
 
-  // Ensure the possession length is between 1 and 24 seconds
+  // Ensure the possession length is between 1 and 24 seconds, unless the shot clock or game clock is shorter.
   possessionLength = Math.max(1, Math.min(Math.min(shotClock, gameClock), possessionLength));
 
   return possessionLength;
+};
+
+/**
+ * Main function to simulate a possession.
+ * 
+ * Here are the cases:
+ * 1. Turnover (off) + (?steal (def) | ?foul (off))
+ * 2. No shot foul (def) + ?FTs-from-penalty (off)
+ * 3. Shot Attempt + (make + ?assist + ?and1FT) | (miss + ((?block | ?Oreb | ? Dreb) | ?(foul + FTs)))
+ *    if last FT is missed, there will be a rebound.
+ * 4. End of period
+ * 5. End of game
+ */
+
+export const simulatePossession = (
+  { offensiveTeam, defensiveTeam, gameClock, period, shotClock = possessionConstants.shotClock }: PossessionInput
+): PossessionResult => {
+
+  const options = [
+    'turnover',
+    'non_shooting_foul',
+    'shot_attempt',
+  ];
+
+  const eventProbabilities = [
+    averageStatRates.possessionEndEvents.turnoverRate,
+    averageStatRates.possessionEndEvents.nonShootingFoulDefensiveRate,
+    averageStatRates.possessionEndEvents.shotOrShootingFoulRate,
+  ];
+
+  const eventIndex = pickOption(options, eventProbabilities);
+  let possessionResult: PossessionResult;
+
+  switch (eventIndex) {
+    case 'turnover':
+      possessionResult = determineTurnover(offensiveTeam, defensiveTeam, gameClock, shotClock);
+      break;
+
+    case 'non_shooting_foul':
+      const event = determineFoul(defensiveTeam);
+      possessionResult = {
+        playerEvents: [event],
+        timeLength: determinePossessionLength(gameClock, shotClock),
+        possessionChange: false,
+      };
+      break;
+
+    case 'shot_attempt':
+      possessionResult = determineShot(offensiveTeam, defensiveTeam, gameClock, shotClock);
+      break;
+
+    default:
+      throw new Error(`Invalid event index: ${eventIndex}`);
+  }
+
+  return possessionResult;
 };
