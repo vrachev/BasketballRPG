@@ -237,11 +237,15 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
       const threePointFoulRate = averageStatRates.shootingFouls.threePointFoulRate;
       fta = pickOption([3, 0], [threePointFoulRate, 1 - threePointFoulRate]);
     }
+  }
 
-    if (fta === 0) { // a miss and no FTs means there should be a rebound.
-      reboundEvent = determineRebound(offensiveLineup, defensiveLineup);
-      possessionChange = reboundEvent.possessionChange;
-    }
+  const ftRes = determineFts(shooter, fta);
+  const ftm = ftRes.filter(ft => ft === 1).length;
+
+  // if there are no FTs or the last FT is missed, there should be a rebound
+  if (fta === 0 || (ftRes.length > 0 && ftRes.at(-1) === 0)) {
+    reboundEvent = determineRebound(offensiveLineup, defensiveLineup);
+    possessionChange = reboundEvent.possessionChange;
   }
 
   const events = [createPlayerEvent(shooter.playerInfo.id, {
@@ -249,7 +253,7 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
     twoFga: points === 2 ? 1 : 0,
     threeFgm: points === 3 ? 1 : 0,
     threeFga: points === 3 ? 1 : 0,
-    ftm: determineFts(shooter, fta),
+    ftm: ftm,
     fta: fta,
     points: shotTypeMapping[shotType].points,
   })];
@@ -261,8 +265,6 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
   if (reboundEvent) {
     events.push(reboundEvent.playerEvent);
   }
-
-
 
   const possessionResult: PossessionResult = {
     playerEvents: events,
@@ -393,7 +395,10 @@ export const determineTurnover = (
 };
 
 // Kinda janky piecewise function but works well
-const determineFts = (player: Player, fta: number): number => {
+// returns an array of makes/misses, since missing the last FT can lead to a rebound.
+const determineFts = (player: Player, fta: number): (0 | 1)[] => {
+  if (fta === 0) return [];
+
   const ftSkill = player.skills.free_throw;
   let ftPercentage = 30;
 
@@ -413,14 +418,16 @@ const determineFts = (player: Player, fta: number): number => {
 
   ftPercentage = Math.max(30, Math.min(95, ftPercentage));
 
-  let madeFts = 0;
+  let ftRes: (0 | 1)[] = [];
   for (let i = 0; i < fta; i++) {
     if (Math.random() < ftPercentage) {
-      madeFts++;
+      ftRes.push(1);
+    } else {
+      ftRes.push(0);
     }
   }
 
-  return madeFts;
+  return ftRes;
 };
 
 type ReboundEvent = {
