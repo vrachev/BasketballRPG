@@ -73,6 +73,7 @@ export const shootingFoulMapping: ShotTypeData = {
 
 export type PlayerEvent = {
   pid: number;
+  name: string;
 
   // scoring
   twoFgm: number;
@@ -93,8 +94,9 @@ export type PlayerEvent = {
   foul: number;
 };
 
-export const createPlayerEvent = (pid: number, stats?: Partial<Omit<PlayerEvent, 'pid'>>): PlayerEvent => ({
+export const createPlayerEvent = (pid: number, name: string, stats?: Partial<Omit<PlayerEvent, 'pid' | 'name'>>): PlayerEvent => ({
   pid,
+  name,
   twoFgm: 0,
   twoFga: 0,
   threeFgm: 0,
@@ -111,20 +113,6 @@ export const createPlayerEvent = (pid: number, stats?: Partial<Omit<PlayerEvent,
   foul: 0,
   ...stats
 });
-
-export type PossessionResult = {
-  playerEvents: PlayerEvent[];
-  possessionChange: boolean;
-  timeLength: number;
-};
-
-export type PossessionInput = {
-  offensiveTeam: Lineup;
-  defensiveTeam: Lineup;
-  gameClock: number;
-  shotClock: number;
-  period: number;
-};
 
 type ReboundEvent = {
   playerEvent: PlayerEvent,
@@ -164,6 +152,10 @@ export const pickOptionWithBaseRates = <T>(
   }
 
   const normalizedRates = normalizeRates(baseRates, qualifiers, medianValue);
+
+  if (options[0] === 'dReb') {
+    console.log('normalizedRates for rebounds', normalizedRates);
+  }
   return pickOption(options, normalizedRates);
 };
 
@@ -183,6 +175,10 @@ export const pickOption = <T>(options: T[], weights: number[]): T => {
     }
   }
 
+  console.log('options', options);
+  console.log('weights', weights);
+  console.log('totalOdds', totalOdds);
+  console.log('randomValue', randomValue);
   throw new Error(`randomValue is out of bounds: ${randomValue}, totalOdds: ${totalOdds}`);
 };
 
@@ -239,6 +235,7 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
   const points = shotTypeMapping[shotType].points;
   let reboundEvent: ReboundEvent | null = null;
   let possessionChange = true; // only an offensive rebound retains possession.
+  let blockEvent: PlayerEvent | null = null;
 
   if (isMade) {
     const andOneRate = averageStatRates.shootingFouls.andOneFoulRate;
@@ -251,6 +248,8 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
       const threePointFoulRate = averageStatRates.shootingFouls.threePointFoulRate;
       fta = pickOption([3, 0], [threePointFoulRate, 1 - threePointFoulRate]);
     }
+
+    blockEvent = determineBlock(defensiveLineup);
   }
 
   const ftRes = determineFts(shooter, fta);
@@ -262,10 +261,10 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
     possessionChange = reboundEvent.possessionChange;
   }
 
-  const events = [createPlayerEvent(shooter.playerInfo.id, {
-    twoFgm: points === 2 ? 1 : 0,
+  const events = [createPlayerEvent(shooter.playerInfo.id, shooter.playerInfo.full_name, {
+    twoFgm: points === 2 && isMade ? 1 : 0,
     twoFga: points === 2 ? 1 : 0,
-    threeFgm: points === 3 ? 1 : 0,
+    threeFgm: points === 3 && isMade ? 1 : 0,
     threeFga: points === 3 ? 1 : 0,
     ftm: ftm,
     fta: fta,
@@ -273,11 +272,15 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
   })];
 
   if (assister) {
-    events.push(createPlayerEvent(assister.playerInfo.id, { assist: 1 }));
+    events.push(createPlayerEvent(assister.playerInfo.id, assister.playerInfo.full_name, { assist: 1 }));
   }
 
   if (reboundEvent) {
     events.push(reboundEvent.playerEvent);
+  }
+
+  if (blockEvent) {
+    events.push(blockEvent);
   }
 
   const possessionResult: PossessionResult = {
@@ -290,8 +293,8 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
 };
 
 export const determineFoul = (lineup: Lineup): PlayerEvent => {
-  const offender = pickOption(lineup.players, lineup.players.map((p) => 1 - p.skills.defensive_iq));
-  const event = createPlayerEvent(offender.playerInfo.id, { foul: 1 });
+  const offender = pickOption(lineup.players, lineup.players.map((p) => 100 - p.skills.defensive_iq));
+  const event = createPlayerEvent(offender.playerInfo.id, offender.playerInfo.full_name, { foul: 1 });
 
   return event;
 };
@@ -324,7 +327,7 @@ export const determineTurnover = (
   console.log(defensiveTeam.players.map(p => p.skills.defensive_iq));
   console.log(JSON.stringify(averageStatRates, null, 2));
 
-  const turnoverEvent = createPlayerEvent(ballHandler.playerInfo.id, { turnover: 1 });
+  const turnoverEvent = createPlayerEvent(ballHandler.playerInfo.id, ballHandler.playerInfo.full_name, { turnover: 1 });
   const timeLength = determinePossessionLength(gameClock, shotClock);
 
   switch (outcome) {
@@ -333,7 +336,7 @@ export const determineTurnover = (
         defensiveTeam.players,
         defensiveTeam.players.map((p) => p.skills.defensive_iq)
       );
-      const stealEvent = createPlayerEvent(stolenBy.playerInfo.id, { steal: 1 });
+      const stealEvent = createPlayerEvent(stolenBy.playerInfo.id, stolenBy.playerInfo.full_name, { steal: 1 });
       return {
         playerEvents: [turnoverEvent, stealEvent],
         timeLength,
@@ -358,6 +361,25 @@ export const determineTurnover = (
     default:
       throw new Error(`Invalid outcome: ${outcome}`);
   }
+};
+
+const determineBlock = (lineup: Lineup): PlayerEvent | null => {
+  const numPlayers = lineup.players.length;
+  const blockRate = averageStatRates.blockRatePerMissedFga;
+  const leagueAverageSkill = playerConstants.leagueAverageSkill;
+
+  const baseRates = [
+    ...lineup.players.map(() => (blockRate / numPlayers)),
+    (1 - blockRate)
+  ];
+  const qualifier = [
+    ...lineup.players.map(player => player.skills.defensive_iq),
+    leagueAverageSkill // this is a hack since the non-block rate does not need to be qualified.
+  ];
+
+  const blocker = pickOptionWithBaseRates([...lineup.players, null], baseRates, qualifier);
+
+  return blocker ? createPlayerEvent(blocker.playerInfo.id, blocker.playerInfo.full_name, { block: 1 }) : null;
 };
 
 // Kinda janky piecewise function but works well
@@ -386,13 +408,14 @@ const determineFts = (player: Player, fta: number): (0 | 1)[] => {
 
   let ftRes: (0 | 1)[] = [];
   for (let i = 0; i < fta; i++) {
-    if (Math.random() < ftPercentage) {
+    if (Math.random() * 100 < ftPercentage) {
       ftRes.push(1);
     } else {
       ftRes.push(0);
     }
   }
 
+  console.log('ftRes', ftRes);
   return ftRes;
 };
 
@@ -417,14 +440,14 @@ const determineRebound = (offensiveLineup: Lineup, defensiveLineup: Lineup): Reb
     offensiveLineup.players.reduce((sum, p) => sum + p.skills.offensive_rebounding, 0)
   ];
 
-  const wonReb: 'oReb' | 'dReb' = pickOptionWithBaseRates(['oReb', 'dReb'], reboundRates, lineupRebStrengths);
+  const wonReb: 'dReb' | 'oReb' = pickOptionWithBaseRates(['dReb', 'oReb'], reboundRates, lineupRebStrengths, playerConstants.leagueAverageSkill * lineups['dReb'].length);
   console.log("reboundRates:", reboundRates, "lineupRebStrengths:", lineupRebStrengths, "wonRebound:", wonReb);
 
   const teamRebounding = lineups[wonReb];
   const rebRates = teamRebounding.map(p => p.skills[skillKeys[wonReb]]);
   const playerRebounding = pickOption(teamRebounding, rebRates);
 
-  const playerEvent = createPlayerEvent(playerRebounding.playerInfo.id, {
+  const playerEvent = createPlayerEvent(playerRebounding.playerInfo.id, playerRebounding.playerInfo.full_name, {
     [wonReb]: 1
   });
 
@@ -446,6 +469,21 @@ const determinePossessionLength = (gameClock: number, shotClock: number): number
   return possessionLength;
 };
 
+
+export type PossessionResult = {
+  playerEvents: PlayerEvent[];
+  possessionChange: boolean;
+  timeLength: number;
+};
+
+export type PossessionInput = {
+  offensiveTeam: Lineup;
+  defensiveTeam: Lineup;
+  period: number;
+  gameClock: number;
+};
+
+
 /**
  * Main function to simulate a possession.
  * 
@@ -459,9 +497,10 @@ const determinePossessionLength = (gameClock: number, shotClock: number): number
  */
 
 export const simulatePossession = (
-  { offensiveTeam, defensiveTeam, gameClock, period, shotClock = possessionConstants.shotClock }: PossessionInput
+  { offensiveTeam, defensiveTeam, gameClock, period }: PossessionInput
 ): PossessionResult => {
 
+  const shotClock = possessionConstants.shotClock;
   const options = [
     'turnover',
     'non_shooting_foul',
