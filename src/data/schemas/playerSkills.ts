@@ -7,8 +7,6 @@ const playerSkillsSchemaSql = {
   // Foreign keys
   team_id: 'INTEGER',
   player_id: 'INTEGER',
-  player_key: ['player_id', 'players', 'id'] as ForeignKeyType,
-  team_key: ['team_id', 'teams', 'id'] as ForeignKeyType,
 
   // Physical Skills
   strength: 'REAL',
@@ -81,6 +79,10 @@ const playerSkillsSchemaSql = {
   // Rebounding tendencies
   tendency_offensive_rebounding: 'REAL',
   tendency_defensive_rebounding: 'REAL',
+
+  // Foreign key references
+  player_key: ['player_id', 'players', 'id'] as ForeignKeyType,
+  team_key: ['team_id', 'teams', 'id'] as ForeignKeyType,
 } as const;
 
 type PlayerSkills = SchemaTs<typeof playerSkillsSchemaSql>;

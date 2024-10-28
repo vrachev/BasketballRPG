@@ -9,8 +9,6 @@ const playerSeasonSchemaSql = {
   // Foreign keys
   team_id: 'INTEGER',
   player_id: 'INTEGER',
-  player_key: ['player_id', 'players', 'id'] as ForeignKeyType,
-  team_key: ['team_id', 'teams', 'id'] as ForeignKeyType,
 
   // Base stats
   games_played: 'INTEGER',
@@ -38,6 +36,10 @@ const playerSeasonSchemaSql = {
   turnovers: 'INTEGER',
   fouls: 'INTEGER',
   points: 'INTEGER',
+
+  // Foreign key references
+  player_key: ['player_id', 'players', 'id'] as ForeignKeyType,
+  team_key: ['team_id', 'teams', 'id'] as ForeignKeyType,
 } as const;
 
 type PlayerSeason = SchemaTs<typeof playerSeasonSchemaSql>;
