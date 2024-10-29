@@ -270,10 +270,10 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
     threeFga: points === 3 ? 1 : 0,
     ftm: ftm,
     fta: fta,
-    points: shotTypeMapping[shotType].points,
+    points: isMade ? points : 0,
   })];
 
-  if (assister) {
+  if (assister && isMade) {
     events.push(createPlayerEvent(assister.playerInfo.id, assister.playerInfo.full_name, { assist: 1 }));
   }
 
