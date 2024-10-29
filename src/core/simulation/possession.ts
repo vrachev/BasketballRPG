@@ -85,6 +85,7 @@ export type PlayerEvent = {
   points: number;
 
   // counting stats
+  seconds: number;
   oReb: number;
   dReb: number;
   assist: number;
@@ -97,6 +98,7 @@ export type PlayerEvent = {
 export const createPlayerEvent = (pid: number, name: string, stats?: Partial<Omit<PlayerEvent, 'pid' | 'name'>>): PlayerEvent => ({
   pid,
   name,
+  seconds: 0,
   twoFgm: 0,
   twoFga: 0,
   threeFgm: 0,
@@ -286,7 +288,7 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
   const possessionResult: PossessionResult = {
     playerEvents: events,
     timeLength: determinePossessionLength(gameClock, shotClock),
-    possessionChange: reboundEvent?.possessionChange ?? false,
+    possessionChange: possessionChange,
   };
 
   return possessionResult;
@@ -537,6 +539,19 @@ export const simulatePossession = (
     default:
       throw new Error(`Invalid event index: ${eventIndex}`);
   }
+
+  [...offensiveTeam.players, ...defensiveTeam.players].forEach(player => {
+    const existingEvent = possessionResult.playerEvents.find(event => event.pid === player.playerInfo.id);
+    if (existingEvent) {
+      existingEvent.seconds = possessionResult.timeLength;
+    } else {
+      possessionResult.playerEvents.push(createPlayerEvent(
+        player.playerInfo.id,
+        player.playerInfo.full_name,
+        { seconds: possessionResult.timeLength }
+      ));
+    }
+  });
 
   return possessionResult;
 };
