@@ -263,6 +263,8 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
     possessionChange = reboundEvent.possessionChange;
   }
 
+  const pointsScored = (isMade ? points : 0) + ftm;
+
   const events = [createPlayerEvent(shooter.playerInfo.id, shooter.playerInfo.full_name, {
     twoFgm: points === 2 && isMade ? 1 : 0,
     twoFga: points === 2 ? 1 : 0,
@@ -270,7 +272,7 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
     threeFga: points === 3 ? 1 : 0,
     ftm: ftm,
     fta: fta,
-    points: isMade ? points : 0,
+    points: pointsScored,
   })];
 
   if (assister && isMade) {
