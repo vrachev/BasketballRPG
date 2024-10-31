@@ -1,12 +1,23 @@
 {
   "compilerOptions": {
-    "target": "es2021",
-    "module": "commonjs",
-    "outDir": "./dist",
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "strict": true,
     "skipLibCheck": true,
+    "target": "es2022",
+    "allowJs": true,
+    "resolveJsonModule": true,
+    "moduleDetection": "force",
+    "isolatedModules": true,
+    // "verbatimModuleSyntax": true,
+    "strict": true,
+    // "noUncheckedIndexedAccess": true,
+    // "noImplicitOverride": true,
+    "module": "NodeNext",
+    "outDir": "dist",
+    "sourceMap": true,
+    "noEmit": true,
+    "lib": [
+      "es2022"
+    ],
     "types": [
       "@babel/core"
     ],

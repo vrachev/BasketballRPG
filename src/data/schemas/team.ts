@@ -1,6 +1,6 @@
 import { SchemaTs } from "../sqlTypes";
 
-const teamSchemaSql = {
+export const teamSchemaSql = {
   id: "INTEGER PRIMARY KEY AUTOINCREMENT",
   name: "TEXT",
   city: "TEXT",
@@ -9,6 +9,4 @@ const teamSchemaSql = {
   division: "TEXT",
 } as const;
 
-type Team = SchemaTs<typeof teamSchemaSql>;
-
-export { teamSchemaSql, Team };
+export type Team = SchemaTs<typeof teamSchemaSql>;

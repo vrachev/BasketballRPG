@@ -2,7 +2,7 @@ import { SchemaTs } from '../sqlTypes';
 import { PlayerSeason } from './playerSeason';
 import { PlayerSkills } from './playerSkills';
 
-const playerSchemaSql = {
+export const playerSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
 
   // Personal Info
@@ -21,9 +21,9 @@ const playerSchemaSql = {
   experience: 'INTEGER',
 } as const;
 
-type PlayerRaw = SchemaTs<typeof playerSchemaSql>;
+export type PlayerRaw = SchemaTs<typeof playerSchemaSql>;
 
-type PlayerHistory = {
+export type PlayerHistory = {
   playerInfo: PlayerRaw;
   regularSeasons?: PlayerSeason[];
   playoffSeasons?: PlayerSeason[];
@@ -31,12 +31,10 @@ type PlayerHistory = {
   year: number;
 };
 
-type Player = {
+export type Player = {
   playerInfo: PlayerRaw;
   year: number;
   skills: PlayerSkills;
   regularSeason?: PlayerSeason;
   playoffSeason?: PlayerSeason;
 };
-
-export { playerSchemaSql, PlayerRaw, Player, PlayerHistory };

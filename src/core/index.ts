@@ -14,10 +14,10 @@ export {
   getTeamId,
   getTeamPlayers,
   generateTeamSeason,
-  Lineup,
-  PossessionLineup,
   possessionConstants,
   averageStatRates,
   averageGameStatsPerTeam,
   playerConstants,
 };
+
+export type { Lineup, PossessionLineup };
