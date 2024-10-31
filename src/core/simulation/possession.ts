@@ -139,7 +139,7 @@ export const normalizeRates = (baseRates: number[], quantifiers: number[], media
 
   const totalAdjustedRate = adjustedRates.reduce((sum, rate) => sum + rate, 0);
   const normalizedRates = adjustedRates.map(rate => Number((rate / totalAdjustedRate).toFixed(4)));
-  console.log('normalizedRates', normalizedRates);
+  // console.log('normalizedRates', normalizedRates);
   return normalizedRates;
 };
 
@@ -156,7 +156,7 @@ export const pickOptionWithBaseRates = <T>(
   const normalizedRates = normalizeRates(baseRates, qualifiers, medianValue);
 
   if (options[0] === 'dReb') {
-    console.log('normalizedRates for rebounds', normalizedRates);
+    // console.log('normalizedRates for rebounds', normalizedRates);
   }
   return pickOption(options, normalizedRates);
 };
@@ -177,17 +177,17 @@ export const pickOption = <T>(options: T[], weights: number[]): T => {
     }
   }
 
-  console.log('options', options);
-  console.log('weights', weights);
-  console.log('totalOdds', totalOdds);
-  console.log('randomValue', randomValue);
+  // console.log('options', options);
+  // console.log('weights', weights);
+  // console.log('totalOdds', totalOdds);
+  // console.log('randomValue', randomValue);
   throw new Error(`randomValue is out of bounds: ${randomValue}, totalOdds: ${totalOdds}`);
 };
 
 export const determineAssist = (players: Player[]): Player | null => {
   const numPlayers = players.length;
   const assistRate = averageStatRates.assistRatePerMadeFga;
-  console.log('assistRate', assistRate, "should be like .50 or so");
+  // console.log('assistRate', assistRate, "should be like .50 or so");
   const leagueAverageSkill = playerConstants.leagueAverageSkill;
 
   const baseRates = [
@@ -227,7 +227,7 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
   const { basePercentage, skillKey } = shotTypeMapping[shotType];
   const skillQualifier = shooter.skills[skillKey as keyof typeof shooter.skills];
 
-  console.log('shotType', shotType, basePercentage, skillQualifier, shotTypeMapping[shotType].points);
+  // console.log('shotType', shotType, basePercentage, skillQualifier, shotTypeMapping[shotType].points);
   const isMade = pickOptionWithBaseRates([true, false],
     [basePercentage, 1 - basePercentage],
     [skillQualifier, playerConstants.leagueAverageSkill],
@@ -322,14 +322,14 @@ export const determineTurnover = (
     1 - averageStatRates.stealRatePerTurnover - averageStatRates.nonShootingFouls.offensiveFoulRate,
   ];
 
-  console.log('outcomeOptions', outcomeOptions);
-  console.log('outcomeProbabilities', outcomeProbabilities);
+  // console.log('outcomeOptions', outcomeOptions);
+  // console.log('outcomeProbabilities', outcomeProbabilities);
 
   const outcome = pickOption(outcomeOptions, outcomeProbabilities);
   // we'll refine this later, for now just pick a random player.
   const ballHandler: Player = pickOption(offensiveTeam.players, offensiveTeam.players.map(() => 100));
-  console.log(defensiveTeam.players.map(p => p.skills.defensive_iq));
-  console.log(JSON.stringify(averageStatRates, null, 2));
+  // console.log(defensiveTeam.players.map(p => p.skills.defensive_iq));
+  // console.log(JSON.stringify(averageStatRates, null, 2));
 
   const turnoverEvent = createPlayerEvent(ballHandler.playerInfo.id, ballHandler.playerInfo.full_name, { turnover: 1 });
   const timeLength = determinePossessionLength(gameClock, shotClock);
@@ -419,7 +419,7 @@ const determineFts = (player: Player, fta: number): (0 | 1)[] => {
     }
   }
 
-  console.log('ftRes', ftRes);
+  // console.log('ftRes', ftRes);
   return ftRes;
 };
 
@@ -445,7 +445,7 @@ const determineRebound = (offensiveLineup: Lineup, defensiveLineup: Lineup): Reb
   ];
 
   const wonReb: 'dReb' | 'oReb' = pickOptionWithBaseRates(['dReb', 'oReb'], reboundRates, lineupRebStrengths, playerConstants.leagueAverageSkill * lineups['dReb'].length);
-  console.log("reboundRates:", reboundRates, "lineupRebStrengths:", lineupRebStrengths, "wonRebound:", wonReb);
+  // console.log("reboundRates:", reboundRates, "lineupRebStrengths:", lineupRebStrengths, "wonRebound:", wonReb);
 
   const teamRebounding = lineups[wonReb];
   const rebRates = teamRebounding.map(p => p.skills[skillKeys[wonReb]]);

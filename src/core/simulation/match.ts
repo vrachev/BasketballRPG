@@ -80,7 +80,6 @@ export const simulateMatch = ({ homeTeam, awayTeam }: MatchInput): MatchResult =
   let i = 0;
   while (!gameOver) {
     const possession = simulatePossession({ offensiveTeam, defensiveTeam, period, gameClock });
-    console.log(`Possession ${i}`, possession);
     i++;
     gameClock -= possession.timeLength;
     possessionResults.push(possession);

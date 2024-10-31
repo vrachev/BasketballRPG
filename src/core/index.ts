@@ -1,15 +1,18 @@
-import { generatePlayer, fetchPlayerHistory } from "./entities/player";
-import { generateTeam } from "./entities/team";
+import { createPlayer, getPlayerHistory, generatePlayerSkills } from "./entities/player";
+import { createTeams, getTeamId, getTeamPlayers } from "./entities/team";
 import { generateTeamSeason } from "./entities/teamSeason";
 import { Lineup, PossessionLineup } from "./entities/lineup";
 import * as fetchData from "./entities/fetchData";
-import { possessionConstants, averageStatRates, playerConstants, averageGameStatsPerTeam } from "./simulation/possesion/constants";
+import { possessionConstants, averageStatRates, playerConstants, averageGameStatsPerTeam } from "./simulation/constants";
 
 export {
   fetchData,
-  generatePlayer,
-  fetchPlayerHistory,
-  generateTeam,
+  getPlayerHistory,
+  generatePlayerSkills,
+  createPlayer,
+  createTeams,
+  getTeamId,
+  getTeamPlayers,
   generateTeamSeason,
   Lineup,
   PossessionLineup,
