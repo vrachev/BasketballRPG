@@ -3,6 +3,7 @@ import { open } from 'sqlite';
 import path from 'path';
 
 import * as Data from '../data';
+import assert from 'assert';
 
 const DB_PATH = path.join(process.cwd(), 'sqlite', 'database.db');
 
@@ -43,13 +44,14 @@ async function createTables() {
   await createTable(Data.MATCH_TABLE, Data.matchSchemaSql);
 }
 
-async function insert<T extends Record<string, any>>(object: Data.SchemaTs<T>, tableName: string): Promise<number | undefined> {
+async function insert<T extends Record<string, any>>(object: Data.SchemaTs<T>, tableName: string): Promise<number> {
   const db = await openDb();
   const columns = Object.keys(object).join(', ');
   const placeholders = Object.keys(object).map(() => '?').join(', ');
   const values = Object.values(object);
   const result = await db.run(`INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`, values);
-  return result.lastID;
+  assert.strictEqual(typeof result.lastID, 'number', 'lastID must be a number');
+  return result.lastID as number;
 }
 
 export { openDb, createTables, insert };
