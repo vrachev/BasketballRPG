@@ -10,14 +10,14 @@ const DB_PATH = path.join(process.cwd(), 'sqlite', 'database.db');
 // Enable sqlite3 verbose mode to get more debugging info
 sqlite3.verbose();
 
-async function openDb() {
+export async function openDb() {
   return open({
     filename: DB_PATH,
     driver: sqlite3.Database,
   });
 }
 
-async function createTables() {
+export async function createTables() {
   const db = await openDb();
 
   const createTable = async (tableName: string, schema: Data.TableSchemaSql) => {
@@ -44,7 +44,7 @@ async function createTables() {
   await createTable(Data.MATCH_TABLE, Data.matchSchemaSql);
 }
 
-async function insert<T extends Record<string, any>>(object: Data.SchemaTs<T>, tableName: string): Promise<number> {
+export async function insert<T extends Record<string, any>>(object: Data.SchemaTs<T>, tableName: string): Promise<number> {
   const db = await openDb();
   const columns = Object.keys(object).join(', ');
   const placeholders = Object.keys(object).map(() => '?').join(', ');
@@ -53,5 +53,3 @@ async function insert<T extends Record<string, any>>(object: Data.SchemaTs<T>, t
   assert.strictEqual(typeof result.lastID, 'number', 'lastID must be a number');
   return result.lastID as number;
 }
-
-export { openDb, createTables, insert };

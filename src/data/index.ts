@@ -14,7 +14,7 @@ import {
 } from './constants';
 import { InsertableRecord, SchemaTs, TableSchemaSql, isForeignKeyType } from './sqlTypes';
 
-export {
+export type {
   // Schema helpers
   SchemaTs,
   TableSchemaSql,
@@ -28,6 +28,9 @@ export {
   TeamSeason,
   Match,
   PlayerSkills,
+};
+
+export {
   // SQL
   playerSchemaSql,
   teamSchemaSql,

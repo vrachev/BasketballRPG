@@ -2,19 +2,19 @@ import * as data from "../../data";
 import { insert, openDb } from "../../db";
 import { InsertableRecord } from "../../data/sqlTypes";
 
-async function insertPlayer(player: InsertableRecord<data.PlayerRaw>) {
+export async function insertPlayer(player: InsertableRecord<data.PlayerRaw>) {
   await insert(player, data.PLAYER_TABLE);
 }
 
-async function insertTeam(team: InsertableRecord<data.Team>) {
+export async function insertTeam(team: InsertableRecord<data.Team>) {
   await insert(team, data.TEAM_TABLE);
 }
 
-async function insertTeamSeason(teamSeason: InsertableRecord<data.TeamSeason>) {
+export async function insertTeamSeason(teamSeason: InsertableRecord<data.TeamSeason>) {
   await insert(teamSeason, data.TEAM_SEASON_TABLE);
 }
 
-async function insertMatch(match: InsertableRecord<data.Match>) {
+export async function insertMatch(match: InsertableRecord<data.Match>) {
   await insert(match, data.MATCH_TABLE);
 }
 
@@ -23,20 +23,18 @@ async function getAllFromTable(tableName: string): Promise<any[]> {
   return db.all(`SELECT * FROM ${tableName}`);
 }
 
-async function getPlayers() {
+export async function getPlayers() {
   return getAllFromTable(data.PLAYER_TABLE);
 }
 
-async function getTeams() {
+export async function getTeams() {
   return getAllFromTable(data.TEAM_TABLE);
 }
 
-async function getTeamSeasons() {
+export async function getTeamSeasons() {
   return getAllFromTable(data.TEAM_SEASON_TABLE);
 }
 
-async function getMatches() {
+export async function getMatches() {
   return getAllFromTable(data.MATCH_TABLE);
 }
-
-export { insertPlayer, insertTeam, insertTeamSeason, insertMatch, getPlayers, getTeams, getTeamSeasons, getMatches };

@@ -1,6 +1,6 @@
 import { SchemaTs, ForeignKeyType } from '../sqlTypes';
 
-const matchSchemaSql = {
+export const matchSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
   date: 'TEXT',
   home_team_id: 'INTEGER',
@@ -20,6 +20,4 @@ const matchSchemaSql = {
   awayTeam: ['away_team_id', 'teams', 'id'] as ForeignKeyType
 } as const;
 
-type Match = SchemaTs<typeof matchSchemaSql>;
-
-export { matchSchemaSql, Match };
+export type Match = SchemaTs<typeof matchSchemaSql>;

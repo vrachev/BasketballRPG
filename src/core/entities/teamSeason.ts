@@ -2,7 +2,7 @@ import { faker } from '@faker-js/faker';
 import { TeamSeason } from '../../data';
 import { InsertableRecord } from '../../data/sqlTypes';
 
-const generateTeamSeason = (teamId: number, year: number): InsertableRecord<TeamSeason> => {
+export const generateTeamSeason = (teamId: number, year: number): InsertableRecord<TeamSeason> => {
   const wins = faker.number.int({ min: 0, max: 82 });
   const offensive_rating = faker.number.float({ min: 90, max: 120, fractionDigits: 1 });
   const defensive_rating = faker.number.float({ min: 90, max: 120, fractionDigits: 1 });
@@ -22,5 +22,3 @@ const generateTeamSeason = (teamId: number, year: number): InsertableRecord<Team
 
   return teamSeason;
 };
-
-export { generateTeamSeason };
