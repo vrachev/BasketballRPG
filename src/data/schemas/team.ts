@@ -5,7 +5,6 @@ const teamSchemaSql = {
   name: "TEXT",
   city: "TEXT",
   abbreviation: "TEXT",
-  mascot: "TEXT",
   conference: "TEXT",
   division: "TEXT",
 } as const;

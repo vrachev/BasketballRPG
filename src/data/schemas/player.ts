@@ -25,8 +25,8 @@ type PlayerRaw = SchemaTs<typeof playerSchemaSql>;
 
 type PlayerHistory = {
   playerInfo: PlayerRaw;
-  regularSeasons: PlayerSeason[];
-  playoffSeasons: PlayerSeason[];
+  regularSeasons?: PlayerSeason[];
+  playoffSeasons?: PlayerSeason[];
   skills: PlayerSkills[];
   year: number;
 };
@@ -35,8 +35,8 @@ type Player = {
   playerInfo: PlayerRaw;
   year: number;
   skills: PlayerSkills;
-  regularSeason: PlayerSeason;
-  playoffSeason: PlayerSeason;
+  regularSeason?: PlayerSeason;
+  playoffSeason?: PlayerSeason;
 };
 
 export { playerSchemaSql, PlayerRaw, Player, PlayerHistory };
