@@ -9,7 +9,7 @@ type MatchInput = {
   awayTeam: Lineup,
 };
 
-type MatchResult = {
+export type MatchResult = {
   id: number,
   homeTeamStats: PlayerEvent[],
   awayTeamStats: PlayerEvent[],
