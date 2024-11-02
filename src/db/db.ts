@@ -41,7 +41,7 @@ export async function createTables() {
   await createTable(Data.PLAYER_SEASON_TABLE, Data.playerSeasonSchemaSql);
   await createTable(Data.TEAM_TABLE, Data.teamSchemaSql);
   await createTable(Data.TEAM_SEASON_TABLE, Data.teamSeasonSchemaSql);
-  await createTable(Data.MATCH_TABLE, Data.matchSchemaSql);
+  await createTable(Data.SEASON_TABLE, Data.seasonSchemaSql);
 }
 
 export async function insert<T extends Record<string, any>>(object: Data.SchemaTs<T>, tableName: string): Promise<number> {

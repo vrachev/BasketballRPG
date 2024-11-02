@@ -3,6 +3,7 @@ import { InsertableRecord } from '../../data/sqlTypes';
 import { insert, openDb } from '../../db';
 import { getPlayerHistory } from './player';
 import { PlayerHistory } from '@src/data/schemas/player';
+import { getSeason } from './season';
 
 const cities = {
   Eastern: {
@@ -79,22 +80,28 @@ export const getTeamId = async (city: string): Promise<number> => {
   return team.id;
 };
 
-export const getTeamPlayers = async (teamId: number, year: number): Promise<PlayerHistory[]> => {
+export const getTeamPlayers = async (teamId: number, seasonStartingYear: number): Promise<PlayerHistory[]> => {
   const db = await openDb();
+  const season = await getSeason(seasonStartingYear);
+
+  if (!season) {
+    console.warn(`No season found for ${seasonStartingYear}`);
+    return [];
+  }
   const playerIds = await db.all<{ player_id: number; }[]>(`
     SELECT player_id 
     FROM ${PLAYER_SEASON_TABLE} 
-    WHERE team_id = ? AND year = ?
-  `, [teamId, year]);
+    WHERE team_id = ? AND season_id = ?
+  `, [teamId, season.id]);
 
   if (playerIds.length === 0) {
-    console.warn(`No players found for team ${teamId} in ${year}`);
+    console.warn(`No players found for team ${teamId} in ${seasonStartingYear}`);
     return [];
   }
 
   // get full player history for each player
   const playerHistories = await Promise.all(
-    playerIds.map((row) => getPlayerHistory(row.player_id, year))
+    playerIds.map((row) => getPlayerHistory(row.player_id, seasonStartingYear))
   );
 
   return playerHistories;

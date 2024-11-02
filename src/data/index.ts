@@ -3,14 +3,14 @@ import { playerSeasonSchemaSql, PlayerSeason } from './schemas/playerSeason';
 import { playerSkillsSchemaSql, PlayerSkills } from './schemas/playerSkills';
 import { teamSchemaSql, Team } from './schemas/team';
 import { teamSeasonSchemaSql, TeamSeason } from './schemas/teamSeason';
-import { matchSchemaSql, Match } from './schemas/match';
+import { seasonSchemaSql, Season } from './schemas/season';
 import {
   PLAYER_TABLE,
   TEAM_TABLE,
   TEAM_SEASON_TABLE,
-  MATCH_TABLE,
   PLAYER_SEASON_TABLE,
-  PLAYER_SKILLS_TABLE
+  PLAYER_SKILLS_TABLE,
+  SEASON_TABLE,
 } from './constants';
 import { InsertableRecord, SchemaTs, TableSchemaSql, isForeignKeyType } from './sqlTypes';
 
@@ -26,8 +26,8 @@ export type {
   PlayerSeason,
   Team,
   TeamSeason,
-  Match,
   PlayerSkills,
+  Season,
 };
 
 export {
@@ -37,14 +37,14 @@ export {
   teamSeasonSchemaSql,
   playerSeasonSchemaSql,
   playerSkillsSchemaSql,
-  matchSchemaSql,
+  seasonSchemaSql,
   isForeignKeyType,
 
   // Table names
   PLAYER_TABLE,
   TEAM_TABLE,
   TEAM_SEASON_TABLE,
-  MATCH_TABLE,
   PLAYER_SEASON_TABLE,
   PLAYER_SKILLS_TABLE,
+  SEASON_TABLE,
 };

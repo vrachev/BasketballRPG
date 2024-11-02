@@ -1,43 +1,16 @@
-import { faker } from '@faker-js/faker/locale/en_US';
-
 import { createTables, openDb } from './db';
-import { InsertableRecord } from './data/sqlTypes';
-import { PlayerRaw } from './data';
 import { createTeams, getTeamId, getTeamPlayers } from './core/entities/team';
 import * as core from './core';
 import { getPlayerFromHistory } from './core/entities/player';
 import { simulateMatch } from './core/simulation/match';
 import { formatTeamBoxScore } from './display/boxscore';
-
-const generatePlayer = (): InsertableRecord<PlayerRaw> => {
-  const firstName = faker.person.firstName('male');
-  const lastName = faker.person.lastName('male');
-  const fullName = `${firstName} ${lastName}`;
-
-  const player: InsertableRecord<PlayerRaw> = {
-    // Personal Info
-    first_name: firstName,
-    last_name: lastName,
-    full_name: fullName,
-
-    // Physical Info
-    age: 25,
-    height: 78,
-    weight: 200,
-    wingspan: 78,
-
-    // Career Info
-    career_status: 'Active',
-    experience: 0,
-  };
-
-  return player;
-};
+import { createSeason } from './core/entities/season';
 
 async function seedDb() {
   await createTables();
   const db = await openDb();
-  // Insert teams
+
+  await createSeason(2024, 2025);
   await createTeams();
 
   const teamIds = await Promise.all([
@@ -49,20 +22,79 @@ async function seedDb() {
   const team1Ids: number[] = [];
   const team2Ids: number[] = [];
 
+  // Template players
+  const rolePlayerTemplate: core.CreatePlayerInput = {
+    playerInfoInput: {},
+    teamId: 0,
+    seasonStartingYear: 2024,
+    position: 'PG',
+    defaultSkillLevel: 35,
+    defaultTendencyLevel: 20
+  };
+
+  const starPlayerTemplate: core.CreatePlayerInput = {
+    playerInfoInput: {},
+    teamId: 0,
+    seasonStartingYear: 2024,
+    position: 'PG',
+    defaultSkillLevel: 10,
+    defaultTendencyLevel: 70
+  };
+
   // team 1
-  const player1 = await core.createPlayer(generatePlayer(), teamIds[0], core.generatePlayerSkills(1, 2024, teamIds[0], 20, 20), 2024, 'PG');
-  const player2 = await core.createPlayer(generatePlayer(), teamIds[0], core.generatePlayerSkills(2, 2024, teamIds[0], 20, 20), 2024, 'SG');
-  const player3 = await core.createPlayer(generatePlayer(), teamIds[0], core.generatePlayerSkills(3, 2024, teamIds[0], 70, 70), 2024, 'SF');
-  const player4 = await core.createPlayer(generatePlayer(), teamIds[0], core.generatePlayerSkills(4, 2024, teamIds[0], 20, 20), 2024, 'PF');
-  const player5 = await core.createPlayer(generatePlayer(), teamIds[0], core.generatePlayerSkills(5, 2024, teamIds[0], 20, 20), 2024, 'C');
+  const player1 = await core.createPlayer({
+    ...rolePlayerTemplate,
+    teamId: teamIds[0],
+    position: 'PG'
+  });
+  const player2 = await core.createPlayer({
+    ...rolePlayerTemplate,
+    teamId: teamIds[0],
+    position: 'SG'
+  });
+  const player3 = await core.createPlayer({
+    ...starPlayerTemplate,
+    teamId: teamIds[0],
+    position: 'SF'
+  });
+  const player4 = await core.createPlayer({
+    ...rolePlayerTemplate,
+    teamId: teamIds[0],
+    position: 'PF'
+  });
+  const player5 = await core.createPlayer({
+    ...rolePlayerTemplate,
+    teamId: teamIds[0],
+    position: 'C'
+  });
   team1Ids.push(player1, player2, player3, player4, player5);
 
   // team 2
-  const player6 = await core.createPlayer(generatePlayer(), teamIds[1], core.generatePlayerSkills(6, 2024, teamIds[1], 20, 20), 2024, 'PG');
-  const player7 = await core.createPlayer(generatePlayer(), teamIds[1], core.generatePlayerSkills(7, 2024, teamIds[1], 70, 70), 2024, 'SG');
-  const player8 = await core.createPlayer(generatePlayer(), teamIds[1], core.generatePlayerSkills(8, 2024, teamIds[1], 20, 20), 2024, 'SF');
-  const player9 = await core.createPlayer(generatePlayer(), teamIds[1], core.generatePlayerSkills(9, 2024, teamIds[1], 20, 20), 2024, 'PF');
-  const player10 = await core.createPlayer(generatePlayer(), teamIds[1], core.generatePlayerSkills(10, 2024, teamIds[1], 20, 20), 2024, 'C');
+  const player6 = await core.createPlayer({
+    ...rolePlayerTemplate,
+    teamId: teamIds[1],
+    position: 'PG'
+  });
+  const player7 = await core.createPlayer({
+    ...starPlayerTemplate,
+    teamId: teamIds[1],
+    position: 'SG'
+  });
+  const player8 = await core.createPlayer({
+    ...rolePlayerTemplate,
+    teamId: teamIds[1],
+    position: 'SF'
+  });
+  const player9 = await core.createPlayer({
+    ...rolePlayerTemplate,
+    teamId: teamIds[1],
+    position: 'PF'
+  });
+  const player10 = await core.createPlayer({
+    ...rolePlayerTemplate,
+    teamId: teamIds[1],
+    position: 'C'
+  });
   team2Ids.push(player6, player7, player8, player9, player10);
 
   console.log('team1Ids', team1Ids);

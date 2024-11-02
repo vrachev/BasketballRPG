@@ -1,6 +1,7 @@
 import { SchemaTs } from '../sqlTypes';
 import { PlayerSeason } from './playerSeason';
 import { PlayerSkills } from './playerSkills';
+import { Season } from './season';
 
 export const playerSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
@@ -28,12 +29,12 @@ export type PlayerHistory = {
   regularSeasons?: PlayerSeason[];
   playoffSeasons?: PlayerSeason[];
   skills: PlayerSkills[];
-  year: number;
+  season: Season;
 };
 
 export type Player = {
   playerInfo: PlayerRaw;
-  year: number;
+  season: Season;
   skills: PlayerSkills;
   regularSeason?: PlayerSeason;
   playoffSeason?: PlayerSeason;

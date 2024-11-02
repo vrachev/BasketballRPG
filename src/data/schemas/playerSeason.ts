@@ -33,7 +33,7 @@ export const playerSeasonSchemaSql = {
   ast: 'INTEGER',
   stl: 'INTEGER',
   blk: 'INTEGER',
-  to: 'INTEGER',
+  tov: 'INTEGER',
   pf: 'INTEGER',
   pts: 'INTEGER',
 

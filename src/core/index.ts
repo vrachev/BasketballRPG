@@ -1,4 +1,4 @@
-import { createPlayer, getPlayerHistory, generatePlayerSkills } from "./entities/player";
+import { createPlayer, getPlayerHistory, CreatePlayerInput } from "./entities/player";
 import { createTeams, getTeamId, getTeamPlayers } from "./entities/team";
 import { generateTeamSeason } from "./entities/teamSeason";
 import { Lineup, PossessionLineup } from "./entities/lineup";
@@ -8,7 +8,6 @@ import { possessionConstants, averageStatRates, playerConstants, averageGameStat
 export {
   fetchData,
   getPlayerHistory,
-  generatePlayerSkills,
   createPlayer,
   createTeams,
   getTeamId,
@@ -20,4 +19,4 @@ export {
   playerConstants,
 };
 
-export type { Lineup, PossessionLineup };
+export type { Lineup, PossessionLineup, CreatePlayerInput };

@@ -29,7 +29,7 @@ export const gameResultSchemaSql = {
   h_ast: 'INTEGER',
   h_stl: 'INTEGER',
   h_blk: 'INTEGER',
-  h_to: 'INTEGER',
+  h_tov: 'INTEGER',
   h_pf: 'INTEGER',
   h_pts: 'INTEGER',
 
@@ -59,7 +59,7 @@ export const gameResultSchemaSql = {
   a_ast: 'INTEGER',
   a_stl: 'INTEGER',
   a_blk: 'INTEGER',
-  a_to: 'INTEGER',
+  a_tov: 'INTEGER',
   a_pf: 'INTEGER',
   a_pts: 'INTEGER',
 

@@ -32,7 +32,8 @@
         "src/core/*"
       ],
       "@data/*": [
-        "src/data/*"
+        "src/data/*",
+        "src/data/constants/*"
       ],
       "@entities/*": [
         "src/core/entities/*"

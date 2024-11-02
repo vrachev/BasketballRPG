@@ -14,10 +14,6 @@ export async function insertTeamSeason(teamSeason: InsertableRecord<data.TeamSea
   await insert(teamSeason, data.TEAM_SEASON_TABLE);
 }
 
-export async function insertMatch(match: InsertableRecord<data.Match>) {
-  await insert(match, data.MATCH_TABLE);
-}
-
 async function getAllFromTable(tableName: string): Promise<any[]> {
   const db = await openDb();
   return db.all(`SELECT * FROM ${tableName}`);
@@ -33,8 +29,4 @@ export async function getTeams() {
 
 export async function getTeamSeasons() {
   return getAllFromTable(data.TEAM_SEASON_TABLE);
-}
-
-export async function getMatches() {
-  return getAllFromTable(data.MATCH_TABLE);
 }
