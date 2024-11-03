@@ -1,6 +1,6 @@
 import type { ForeignKeyType, SchemaTs } from '../sqlTypes.js';
 
-export const boxScoreSchemaSql = {
+export const playerStatlineSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
   player_id: 'INTEGER',
   game_result_id: 'INTEGER',
@@ -36,4 +36,4 @@ export const boxScoreSchemaSql = {
   season_key: ['season_id', 'seasons', 'id'] as ForeignKeyType,
 } as const;
 
-export type BoxScore = SchemaTs<typeof boxScoreSchemaSql>;
+export type PlayerStatLine = SchemaTs<typeof playerStatlineSchemaSql>;
