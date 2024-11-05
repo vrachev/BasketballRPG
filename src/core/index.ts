@@ -1,9 +1,14 @@
 import { createPlayer, getPlayerHistory, CreatePlayerInput } from "./entities/player";
-import { createTeams, getTeamId, getTeamPlayers } from "./entities/team";
-import { generateTeamSeason } from "./entities/teamSeason";
-import { Lineup, PossessionLineup } from "./entities/lineup";
+import { createTeams, getTeamId, getTeamBySeason } from "./entities/team";
+import { createTeamSeason } from "./entities/teamSeason";
 import * as fetchData from "./entities/fetchData";
-import { possessionConstants, averageStatRates, playerConstants, averageGameStatsPerTeam } from "./simulation/constants";
+import {
+  averageGameStatsPerTeam,
+  averageStatRates,
+  playerConstants,
+  possessionConstants
+} from "./simulation/constants";
+import { processMatch } from "./process/match";
 
 export {
   fetchData,
@@ -11,12 +16,15 @@ export {
   createPlayer,
   createTeams,
   getTeamId,
-  getTeamPlayers,
-  generateTeamSeason,
+  getTeamBySeason,
+  createTeamSeason,
+  processMatch,
+
+  // Constants
   possessionConstants,
   averageStatRates,
   averageGameStatsPerTeam,
   playerConstants,
 };
 
-export type { Lineup, PossessionLineup, CreatePlayerInput };
+export type { CreatePlayerInput };

@@ -1,24 +1,20 @@
-import { faker } from '@faker-js/faker';
-import { TeamSeason } from '../../data';
+import { TEAM_SEASON_TABLE, TeamSeason } from '../../data';
 import { InsertableRecord } from '../../data/sqlTypes';
+import { insert } from '../../db';
 
-export const generateTeamSeason = (teamId: number, seasonId: number): InsertableRecord<TeamSeason> => {
-  const wins = faker.number.int({ min: 0, max: 82 });
-  const offensive_rating = faker.number.float({ min: 90, max: 120, fractionDigits: 1 });
-  const defensive_rating = faker.number.float({ min: 90, max: 120, fractionDigits: 1 });
-
+export const createTeamSeason = async (teamId: number, seasonId: number) => {
   const teamSeason: InsertableRecord<TeamSeason> = {
     team_id: teamId,
     season_id: seasonId,
-    wins: wins,
-    losses: 82 - wins,
-    conference_rank: faker.number.int({ min: 1, max: 15 }),
-    playoff_seed: faker.number.int({ min: 1, max: 8 }),
-    offensive_rating: offensive_rating,
-    defensive_rating: defensive_rating,
-    net_rating: Number((offensive_rating - defensive_rating).toFixed(1)),
-    pace: faker.number.float({ min: 90, max: 105, fractionDigits: 1 }),
+    wins: 0,
+    losses: 0,
+    conference_rank: 0,
+    playoff_seed: 0,
+    offensive_rating: 0,
+    defensive_rating: 0,
+    net_rating: 0,
+    pace: 0,
   };
 
-  return teamSeason;
+  await insert(teamSeason, TEAM_SEASON_TABLE);
 };

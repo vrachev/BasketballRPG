@@ -206,31 +206,30 @@ export const createPlayer = async (input: CreatePlayerInput): Promise<number> =>
   return playerId;
 };
 
-export const getPlayerHistory = async (playerId: number, seasonStartingYear: number): Promise<PlayerHistory> => {
+export const getPlayerHistory = async (playerId: number): Promise<PlayerHistory> => {
   const db = await openDb();
   const playerData = await db.get<PlayerRaw>(`SELECT * FROM ${PLAYER_TABLE} WHERE id = ?`, [playerId]);
-  const currentSeason = await getSeason(seasonStartingYear);
-  if (!currentSeason) {
-    throw new Error(`Season with year ${seasonStartingYear} not found`);
+  if (!playerData) {
+    throw new Error(`Player with id ${playerId} not found`);
   }
   const regularSeasons = await db.all<PlayerSeason[]>(`SELECT * FROM ${PLAYER_SEASON_TABLE} WHERE player_id = ? AND season_type = 'regular_season'`, [playerId]);
   const playoffSeasons = await db.all<PlayerSeason[]>(`SELECT * FROM ${PLAYER_SEASON_TABLE} WHERE player_id = ? AND season_type = 'playoffs'`, [playerId]);
   const skills = await db.all<PlayerSkills[]>(`SELECT * FROM ${PLAYER_SKILLS_TABLE} WHERE player_id = ?`, [playerId]);
-  if (!playerData) {
-    throw new Error(`Player with id ${playerId} not found`);
-  }
   const playerHistory: PlayerHistory = {
     playerInfo: playerData,
     regularSeasons: regularSeasons,
     playoffSeasons: playoffSeasons,
     skills: skills,
-    season: currentSeason,
   };
   return playerHistory;
 };
 
-export const getPlayerFromHistory = (history: PlayerHistory): Player => {
-  const { playerInfo, season } = history;
+export const getPlayerFromHistory = async (history: PlayerHistory, seasonStartingYear: number): Promise<Player> => {
+  const season = await getSeason(seasonStartingYear);
+  if (!season) {
+    throw new Error(`Season with year ${seasonStartingYear} not found`);
+  }
+  const { playerInfo } = history;
 
   // Find skills for the given year
   const skills = history.skills.find(s => s.season_id === season.id);

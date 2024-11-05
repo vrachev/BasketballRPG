@@ -1,8 +1,8 @@
-import { PLAYER_SEASON_TABLE, Team, TEAM_TABLE } from '../../data';
+import { PLAYER_SEASON_TABLE, TeamRaw, TEAM_TABLE, Team, TeamSeason, TEAM_SEASON_TABLE, Season } from '../../data';
 import { InsertableRecord } from '../../data/sqlTypes';
 import { insert, openDb } from '../../db';
-import { getPlayerHistory } from './player';
-import { PlayerHistory } from '@src/data/schemas/player';
+import { getPlayerFromHistory, getPlayerHistory } from './player';
+import { Player } from '@src/data/schemas/player';
 import { getSeason } from './season';
 
 const cities = {
@@ -58,7 +58,7 @@ export const createTeams = async (): Promise<void> => {
   for (const [conference, divisions] of Object.entries(cities)) {
     for (const [division, teams] of Object.entries(divisions)) {
       for (const team of teams) {
-        const teamRecord: InsertableRecord<Team> = {
+        const teamRecord: InsertableRecord<TeamRaw> = {
           name: team.name,
           city: team.city,
           abbreviation: team.abbreviation,
@@ -80,29 +80,63 @@ export const getTeamId = async (city: string): Promise<number> => {
   return team.id;
 };
 
-export const getTeamPlayers = async (teamId: number, seasonStartingYear: number): Promise<PlayerHistory[]> => {
+export const getTeamBySeason = async (teamId: number, seasonStartingYear: number): Promise<Team> => {
   const db = await openDb();
-  const season = await getSeason(seasonStartingYear);
+  const team = await db.get<TeamRaw>(`SELECT * FROM ${TEAM_TABLE} WHERE id = ?`, [teamId]);
 
-  if (!season) {
-    console.warn(`No season found for ${seasonStartingYear}`);
-    return [];
+  if (!team) {
+    throw new Error(`Team with id ${teamId} not found`);
   }
+
+  const season = await getSeason(seasonStartingYear);
+  if (!season) {
+    throw new Error(`Season with year ${seasonStartingYear} not found`);
+  }
+
+  const teamSeason = await db.get<TeamSeason>(
+    `SELECT * FROM ${TEAM_SEASON_TABLE} WHERE team_id = ? AND season_id = ?`,
+    [teamId, season.id]
+  );
+
+  if (!teamSeason) {
+    throw new Error(`Team season not found for team ${teamId} in year ${seasonStartingYear}`);
+  }
+
+  const players = await getTeamPlayersBySeason(teamId, season);
+
+  return {
+    teamInfo: team,
+    season: teamSeason,
+    players
+  };
+};
+
+const getTeamPlayersBySeason = async (
+  teamId: number,
+  season: Season
+): Promise<Player[]> => {
+  const db = await openDb();
+  // Need unique player ids, because we create 2 rows for each player, one for regular season and one for playoffs
   const playerIds = await db.all<{ player_id: number; }[]>(`
-    SELECT player_id 
+    SELECT DISTINCT player_id 
     FROM ${PLAYER_SEASON_TABLE} 
     WHERE team_id = ? AND season_id = ?
   `, [teamId, season.id]);
 
+  console.log('playerIds', playerIds);
+
   if (playerIds.length === 0) {
-    console.warn(`No players found for team ${teamId} in ${seasonStartingYear}`);
+    console.warn(`No players found for team ${teamId} in ${season.start_year}`);
     return [];
   }
 
-  // get full player history for each player
-  const playerHistories = await Promise.all(
-    playerIds.map((row) => getPlayerHistory(row.player_id, seasonStartingYear))
+  const players = await Promise.all(
+    playerIds.map((row) =>
+      getPlayerHistory(row.player_id).then((history) =>
+        getPlayerFromHistory(history, season.start_year)
+      )
+    )
   );
 
-  return playerHistories;
+  return players;
 };

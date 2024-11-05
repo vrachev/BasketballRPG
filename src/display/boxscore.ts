@@ -1,3 +1,4 @@
+import { GameStats } from "@src/core/process/calculateGameStats";
 import { PlayerEvent } from "@src/core/simulation/possession";
 
 type BoxScoreRow = {
@@ -9,30 +10,30 @@ type BoxScoreRow = {
 
 const formatBoxScoreRow = (row: BoxScoreRow): string => {
   const stats = row.stats;
-  const fgm = stats.twoFgm + stats.threeFgm;
-  const fga = stats.twoFga + stats.threeFga;
-  const reb = stats.oReb + stats.dReb;
+  const fgm = stats.two_fgm + stats.three_fgm;
+  const fga = stats.two_fga + stats.three_fga;
+  const reb = stats.off_reb + stats.def_reb;
 
   return [
     row.name.padEnd(20),
     row.number ? `#${row.number}`.padEnd(5) : "".padEnd(5),
-    `${Math.round(row.stats.seconds / 60)}`.padEnd(4),
+    `${Math.round(row.stats.secs_played / 60)}`.padEnd(4),
     `${fgm}-${fga}`.padEnd(8),
-    `${stats.threeFgm}-${stats.threeFga}`.padEnd(8),
+    `${stats.three_fgm}-${stats.three_fga}`.padEnd(8),
     `${stats.ftm}-${stats.fta}`.padEnd(8),
-    `${stats.oReb}`.padEnd(6),
-    `${stats.dReb}`.padEnd(6),
+    `${stats.off_reb}`.padEnd(6),
+    `${stats.def_reb}`.padEnd(6),
     `${reb}`.padEnd(5),
-    `${stats.assist}`.padEnd(5),
-    `${stats.steal}`.padEnd(5),
-    `${stats.block}`.padEnd(5),
-    `${stats.turnover}`.padEnd(4),
-    `${stats.foul}`.padEnd(4),
-    `${stats.points}`.padEnd(4)
+    `${stats.ast}`.padEnd(5),
+    `${stats.stl}`.padEnd(5),
+    `${stats.blk}`.padEnd(5),
+    `${stats.tov}`.padEnd(4),
+    `${stats.pf}`.padEnd(4),
+    `${stats.pts}`.padEnd(4)
   ].join(" ");
 };
 
-export const formatTeamBoxScore = (players: BoxScoreRow[]): string => {
+export const formatTeamBoxScore = (gameStats: GameStats): string => {
   // Header
   const header = [
     "PLAYER".padEnd(20),
@@ -52,47 +53,57 @@ export const formatTeamBoxScore = (players: BoxScoreRow[]): string => {
     "PTS".padEnd(4)
   ].join(" ");
 
-  // Format each player row
-  const playerRows = players.map(player => formatBoxScoreRow(player));
+  // Format player rows for both teams
+  const homePlayerRows = gameStats.homePlayerStats.map(playerStats => formatBoxScoreRow({
+    name: gameStats.homeTeam.players.find(
+      (p) => p.playerInfo.id === playerStats.pid
+    )?.playerInfo.full_name ?? 'Unknown Player',
+    minutes: playerStats.secs_played / 60,
+    stats: playerStats
+  }));
 
-  // Calculate team totals
-  const teamTotals = players.reduce((acc, player) => ({
-    pid: 0,
-    name: "",
-    seconds: 0,
-    twoFgm: acc.twoFgm + player.stats.twoFgm,
-    twoFga: acc.twoFga + player.stats.twoFga,
-    threeFgm: acc.threeFgm + player.stats.threeFgm,
-    threeFga: acc.threeFga + player.stats.threeFga,
-    ftm: acc.ftm + player.stats.ftm,
-    fta: acc.fta + player.stats.fta,
-    points: acc.points + player.stats.points,
-    oReb: acc.oReb + player.stats.oReb,
-    dReb: acc.dReb + player.stats.dReb,
-    assist: acc.assist + player.stats.assist,
-    steal: acc.steal + player.stats.steal,
-    block: acc.block + player.stats.block,
-    turnover: acc.turnover + player.stats.turnover,
-    foul: acc.foul + player.stats.foul
-  }), {
-    pid: 0, name: "", seconds: 0, twoFgm: 0, twoFga: 0, threeFgm: 0, threeFga: 0,
-    ftm: 0, fta: 0, points: 0, oReb: 0, dReb: 0, assist: 0,
-    steal: 0, block: 0, turnover: 0, foul: 0
+  const awayPlayerRows = gameStats.awayPlayerStats.map(playerStats => formatBoxScoreRow({
+    name: gameStats.awayTeam.players.find(
+      (p) => p.playerInfo.id === playerStats.pid
+    )?.playerInfo.full_name ?? 'Unknown Player',
+    minutes: playerStats.secs_played / 60,
+    stats: playerStats
+  }));
+
+  // Format team totals using the pre-calculated team statlines
+  const homeTotalsRow = formatBoxScoreRow({
+    name: gameStats.homeTeam.teamInfo.name,
+    minutes: gameStats.homePlayerStats.reduce((acc, p) => acc + p.secs_played / 60, 0),
+    stats: {
+      ...gameStats.homeTeamStatline,
+      pid: 0,
+      pf: gameStats.homeTeamStatline.fouls,
+      secs_played: gameStats.homePlayerStats.reduce((acc, p) => acc + p.secs_played, 0)
+    }
   });
 
-  // Format team totals row
-  const totalsRow = formatBoxScoreRow({
-    name: "Team Totals",
-    minutes: players.reduce((acc, p) => acc + p.stats.seconds / 60, 0),
-    stats: teamTotals
+  const awayTotalsRow = formatBoxScoreRow({
+    name: gameStats.awayTeam.teamInfo.name,
+    minutes: gameStats.awayPlayerStats.reduce((acc, p) => acc + p.secs_played / 60, 0),
+    stats: {
+      ...gameStats.awayTeamStatline,
+      pid: 0,
+      pf: gameStats.awayTeamStatline.fouls,
+      secs_played: gameStats.awayPlayerStats.reduce((acc, p) => acc + p.secs_played, 0)
+    }
   });
 
   // Combine all parts with separators
   return [
     header,
     "-".repeat(header.length),
-    ...playerRows,
+    ...homePlayerRows,
     "-".repeat(header.length),
-    totalsRow
+    homeTotalsRow,
+    "",
+    "-".repeat(header.length),
+    ...awayPlayerRows,
+    "-".repeat(header.length),
+    awayTotalsRow
   ].join("\n");
 };

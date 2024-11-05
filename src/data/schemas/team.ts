@@ -1,4 +1,6 @@
 import { SchemaTs } from "../sqlTypes";
+import { Player } from "./player";
+import { TeamSeason } from "./teamSeason";
 
 export const teamSchemaSql = {
   id: "INTEGER PRIMARY KEY AUTOINCREMENT",
@@ -9,4 +11,10 @@ export const teamSchemaSql = {
   division: "TEXT",
 } as const;
 
-export type Team = SchemaTs<typeof teamSchemaSql>;
+export type TeamRaw = SchemaTs<typeof teamSchemaSql>;
+
+export type Team = {
+  teamInfo: TeamRaw;
+  season: TeamSeason;
+  players: Player[];
+};

@@ -2,8 +2,9 @@
 * Simulate a basketball possession
 */
 
-import { Player, PlayerSkills } from '../../data';
-import { Lineup, averageStatRates, playerConstants, possessionConstants } from '..';
+import { Player, PlayerSkills, PlayerStatline } from '../../data';
+import { averageStatRates, playerConstants, possessionConstants } from '../';
+import { Lineup } from './match';
 
 type ShotTypeData = {
   [key: string]: {
@@ -71,54 +72,45 @@ export const shootingFoulMapping: ShotTypeData = {
   },
 } as const;
 
-export type PlayerEvent = {
+export type PlayerEvent = PlayerStatline & {
   pid: number;
-  name: string;
-
-  // scoring
-  twoFgm: number;
-  twoFga: number;
-  threeFgm: number;
-  threeFga: number;
-  ftm: number;
-  fta: number;
-  points: number;
-
-  // counting stats
-  seconds: number;
-  oReb: number;
-  dReb: number;
-  assist: number;
-  steal: number;
-  block: number;
-  turnover: number;
-  foul: number;
 };
 
-export const createPlayerEvent = (pid: number, name: string, stats?: Partial<Omit<PlayerEvent, 'pid' | 'name'>>): PlayerEvent => ({
-  pid,
-  name,
-  seconds: 0,
-  twoFgm: 0,
-  twoFga: 0,
-  threeFgm: 0,
-  threeFga: 0,
-  ftm: 0,
-  fta: 0,
-  points: 0,
-  oReb: 0,
-  dReb: 0,
-  turnover: 0,
-  assist: 0,
-  steal: 0,
-  block: 0,
-  foul: 0,
-  ...stats
-});
+export const createPlayerEvent = (pid: number, stats?: Partial<Omit<PlayerEvent, 'pid'>>): PlayerEvent => {
+  const baseStats = {
+    pid,
+    secs_played: 0,
+    fgm: 0,
+    fga: 0,
+    two_fgm: 0,
+    two_fga: 0,
+    three_fgm: 0,
+    three_fga: 0,
+    ftm: 0,
+    fta: 0,
+    pts: 0,
+    off_reb: 0,
+    def_reb: 0,
+    reb: 0,
+    tov: 0,
+    ast: 0,
+    stl: 0,
+    blk: 0,
+    pf: 0
+  };
+
+  return {
+    ...baseStats,
+    ...stats,
+    reb: (stats?.off_reb ?? 0) + (stats?.def_reb ?? 0),
+    fga: (stats?.two_fga ?? 0) + (stats?.three_fga ?? 0),
+    fgm: (stats?.two_fgm ?? 0) + (stats?.three_fgm ?? 0)
+  };
+};
 
 type ReboundEvent = {
   playerEvent: PlayerEvent,
-  rebound: 'oReb' | 'dReb',
+  rebound: 'off_reb' | 'def_reb',
   possessionChange: boolean;
 };
 
@@ -211,8 +203,8 @@ export const determineAssist = (players: Player[]): Player | null => {
  */
 
 export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, gameClock: number, shotClock: number): PossessionResult => {
-  const shooter = pickOption(offensiveLineup.players, offensiveLineup.players.map(player => player.skills.tendency_score));
-  const assister = determineAssist(offensiveLineup.players.filter(player => player !== shooter));
+  const shooter = pickOption(offensiveLineup, offensiveLineup.map(player => player.skills.tendency_score));
+  const assister = determineAssist(offensiveLineup.filter(player => player !== shooter));
 
   // Use the mapping to get tendencies and base rates
   const shotTypeTendencies = Object.values(shotTypeMapping).map(
@@ -265,18 +257,18 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
 
   const pointsScored = (isMade ? points : 0) + ftm;
 
-  const events = [createPlayerEvent(shooter.playerInfo.id, shooter.playerInfo.full_name, {
-    twoFgm: points === 2 && isMade ? 1 : 0,
-    twoFga: points === 2 ? 1 : 0,
-    threeFgm: points === 3 && isMade ? 1 : 0,
-    threeFga: points === 3 ? 1 : 0,
+  const events = [createPlayerEvent(shooter.playerInfo.id, {
+    two_fgm: points === 2 && isMade ? 1 : 0,
+    two_fga: points === 2 ? 1 : 0,
+    three_fgm: points === 3 && isMade ? 1 : 0,
+    three_fga: points === 3 ? 1 : 0,
     ftm: ftm,
     fta: fta,
-    points: pointsScored,
+    pts: pointsScored,
   })];
 
   if (assister && isMade) {
-    events.push(createPlayerEvent(assister.playerInfo.id, assister.playerInfo.full_name, { assist: 1 }));
+    events.push(createPlayerEvent(assister.playerInfo.id, { ast: 1 }));
   }
 
   if (reboundEvent) {
@@ -297,8 +289,8 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
 };
 
 export const determineFoul = (lineup: Lineup): PlayerEvent => {
-  const offender = pickOption(lineup.players, lineup.players.map((p) => 100 - p.skills.defensive_iq));
-  const event = createPlayerEvent(offender.playerInfo.id, offender.playerInfo.full_name, { foul: 1 });
+  const offender = pickOption(lineup, lineup.map((p) => 100 - p.skills.defensive_iq));
+  const event = createPlayerEvent(offender.playerInfo.id, { pf: 1 });
 
   return event;
 };
@@ -310,8 +302,8 @@ export const determineFoul = (lineup: Lineup): PlayerEvent => {
  * 3. turnover (off) + foul (off)
  */
 export const determineTurnover = (
-  offensiveTeam: Lineup,
-  defensiveTeam: Lineup,
+  offensiveLineup: Lineup,
+  defensiveLineup: Lineup,
   gameClock: number,
   shotClock: number
 ): PossessionResult => {
@@ -327,20 +319,20 @@ export const determineTurnover = (
 
   const outcome = pickOption(outcomeOptions, outcomeProbabilities);
   // we'll refine this later, for now just pick a random player.
-  const ballHandler: Player = pickOption(offensiveTeam.players, offensiveTeam.players.map(() => 100));
+  const ballHandler: Player = pickOption(offensiveLineup, offensiveLineup.map(() => 100));
   // console.log(defensiveTeam.players.map(p => p.skills.defensive_iq));
   // console.log(JSON.stringify(averageStatRates, null, 2));
 
-  const turnoverEvent = createPlayerEvent(ballHandler.playerInfo.id, ballHandler.playerInfo.full_name, { turnover: 1 });
+  const turnoverEvent = createPlayerEvent(ballHandler.playerInfo.id, { tov: 1 });
   const timeLength = determinePossessionLength(gameClock, shotClock);
 
   switch (outcome) {
     case 'steal':
       const stolenBy: Player = pickOption(
-        defensiveTeam.players,
-        defensiveTeam.players.map((p) => p.skills.defensive_iq)
+        defensiveLineup,
+        defensiveLineup.map((p) => p.skills.defensive_iq)
       );
-      const stealEvent = createPlayerEvent(stolenBy.playerInfo.id, stolenBy.playerInfo.full_name, { steal: 1 });
+      const stealEvent = createPlayerEvent(stolenBy.playerInfo.id, { stl: 1 });
       return {
         playerEvents: [turnoverEvent, stealEvent],
         timeLength,
@@ -348,7 +340,7 @@ export const determineTurnover = (
       };
 
     case 'foul':
-      const foulEvent = determineFoul(offensiveTeam);
+      const foulEvent = determineFoul(offensiveLineup);
       return {
         playerEvents: [turnoverEvent, foulEvent],
         timeLength,
@@ -368,22 +360,22 @@ export const determineTurnover = (
 };
 
 const determineBlock = (lineup: Lineup): PlayerEvent | null => {
-  const numPlayers = lineup.players.length;
+  const numPlayers = lineup.length;
   const blockRate = averageStatRates.blockRatePerMissedFga;
   const leagueAverageSkill = playerConstants.leagueAverageSkill;
 
   const baseRates = [
-    ...lineup.players.map(() => (blockRate / numPlayers)),
+    ...lineup.map(() => (blockRate / numPlayers)),
     (1 - blockRate)
   ];
   const qualifier = [
-    ...lineup.players.map(player => player.skills.defensive_iq),
+    ...lineup.map(player => player.skills.defensive_iq),
     leagueAverageSkill // this is a hack since the non-block rate does not need to be qualified.
   ];
 
-  const blocker = pickOptionWithBaseRates([...lineup.players, null], baseRates, qualifier);
+  const blocker = pickOptionWithBaseRates([...lineup, null], baseRates, qualifier);
 
-  return blocker ? createPlayerEvent(blocker.playerInfo.id, blocker.playerInfo.full_name, { block: 1 }) : null;
+  return blocker ? createPlayerEvent(blocker.playerInfo.id, { blk: 1 }) : null;
 };
 
 // Kinda janky piecewise function but works well
@@ -426,12 +418,12 @@ const determineFts = (player: Player, fta: number): (0 | 1)[] => {
 // determine the team and player that wins the rebound.
 const determineRebound = (offensiveLineup: Lineup, defensiveLineup: Lineup): ReboundEvent => {
   const lineups = {
-    dReb: defensiveLineup.players,
-    oReb: offensiveLineup.players,
+    def_reb: defensiveLineup,
+    off_reb: offensiveLineup,
   };
   const skillKeys = {
-    dReb: 'defensive_rebounding',
-    oReb: 'offensive_rebounding'
+    def_reb: 'defensive_rebounding',
+    off_reb: 'offensive_rebounding'
   } as const;
 
   const reboundRates = [
@@ -440,25 +432,25 @@ const determineRebound = (offensiveLineup: Lineup, defensiveLineup: Lineup): Reb
   ];
 
   const lineupRebStrengths = [
-    defensiveLineup.players.reduce((sum, p) => sum + p.skills.defensive_rebounding, 0),
-    offensiveLineup.players.reduce((sum, p) => sum + p.skills.offensive_rebounding, 0)
+    defensiveLineup.reduce((sum, p) => sum + p.skills.defensive_rebounding, 0),
+    offensiveLineup.reduce((sum, p) => sum + p.skills.offensive_rebounding, 0)
   ];
 
-  const wonReb: 'dReb' | 'oReb' = pickOptionWithBaseRates(['dReb', 'oReb'], reboundRates, lineupRebStrengths, playerConstants.leagueAverageSkill * lineups['dReb'].length);
+  const wonReb: 'def_reb' | 'off_reb' = pickOptionWithBaseRates(['def_reb', 'off_reb'], reboundRates, lineupRebStrengths, playerConstants.leagueAverageSkill * lineups['def_reb'].length);
   // console.log("reboundRates:", reboundRates, "lineupRebStrengths:", lineupRebStrengths, "wonRebound:", wonReb);
 
   const teamRebounding = lineups[wonReb];
   const rebRates = teamRebounding.map(p => p.skills[skillKeys[wonReb]]);
   const playerRebounding = pickOption(teamRebounding, rebRates);
 
-  const playerEvent = createPlayerEvent(playerRebounding.playerInfo.id, playerRebounding.playerInfo.full_name, {
+  const playerEvent = createPlayerEvent(playerRebounding.playerInfo.id, {
     [wonReb]: 1
   });
 
   return {
     playerEvent,
     rebound: wonReb,
-    possessionChange: wonReb === 'oReb',
+    possessionChange: wonReb === 'off_reb',
   };
 };
 
@@ -481,8 +473,8 @@ export type PossessionResult = {
 };
 
 export type PossessionInput = {
-  offensiveTeam: Lineup;
-  defensiveTeam: Lineup;
+  offensiveLineup: Lineup;
+  defensiveLineup: Lineup;
   period: number;
   gameClock: number;
 };
@@ -501,7 +493,7 @@ export type PossessionInput = {
  */
 
 export const simulatePossession = (
-  { offensiveTeam, defensiveTeam, gameClock, period }: PossessionInput
+  { offensiveLineup, defensiveLineup, gameClock, period }: PossessionInput
 ): PossessionResult => {
 
   const shotClock = possessionConstants.shotClock;
@@ -522,11 +514,11 @@ export const simulatePossession = (
 
   switch (eventIndex) {
     case 'turnover':
-      possessionResult = determineTurnover(offensiveTeam, defensiveTeam, gameClock, shotClock);
+      possessionResult = determineTurnover(offensiveLineup, defensiveLineup, gameClock, shotClock);
       break;
 
     case 'non_shooting_foul':
-      const event = determineFoul(defensiveTeam);
+      const event = determineFoul(defensiveLineup);
       possessionResult = {
         playerEvents: [event],
         timeLength: determinePossessionLength(gameClock, shotClock),
@@ -535,22 +527,21 @@ export const simulatePossession = (
       break;
 
     case 'shot_attempt':
-      possessionResult = determineShot(offensiveTeam, defensiveTeam, gameClock, shotClock);
+      possessionResult = determineShot(offensiveLineup, defensiveLineup, gameClock, shotClock);
       break;
 
     default:
       throw new Error(`Invalid event index: ${eventIndex}`);
   }
 
-  [...offensiveTeam.players, ...defensiveTeam.players].forEach(player => {
+  [...offensiveLineup, ...defensiveLineup].forEach(player => {
     const existingEvent = possessionResult.playerEvents.find(event => event.pid === player.playerInfo.id);
     if (existingEvent) {
-      existingEvent.seconds = possessionResult.timeLength;
+      existingEvent.secs_played = possessionResult.timeLength;
     } else {
       possessionResult.playerEvents.push(createPlayerEvent(
         player.playerInfo.id,
-        player.playerInfo.full_name,
-        { seconds: possessionResult.timeLength }
+        { secs_played: possessionResult.timeLength }
       ));
     }
   });

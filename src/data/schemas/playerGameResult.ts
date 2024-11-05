@@ -1,15 +1,8 @@
 import type { ForeignKeyType, SchemaTs } from '../sqlTypes.js';
 
-export const playerStatlineSchemaSql = {
-  id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
-  player_id: 'INTEGER',
-  game_result_id: 'INTEGER',
-  team_id: 'INTEGER',
-  team_season_id: 'INTEGER',
-  season_id: 'INTEGER',
-
+const playerStatline = {
   // Stats
-  mins: 'INTEGER',
+  secs_played: 'INTEGER',
   fga: 'INTEGER',
   fgm: 'INTEGER',
   two_fga: 'INTEGER',
@@ -27,6 +20,17 @@ export const playerStatlineSchemaSql = {
   tov: 'INTEGER',
   pf: 'INTEGER',
   pts: 'INTEGER',
+} as const;
+
+export const playerStatlineSchemaSql = {
+  id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
+  player_id: 'INTEGER',
+  game_result_id: 'INTEGER',
+  team_id: 'INTEGER',
+  team_season_id: 'INTEGER',
+  season_id: 'INTEGER',
+
+  ...playerStatline,
 
   // Foreign Keys
   player_key: ['player_id', 'players', 'id'] as ForeignKeyType,
@@ -36,4 +40,5 @@ export const playerStatlineSchemaSql = {
   season_key: ['season_id', 'seasons', 'id'] as ForeignKeyType,
 } as const;
 
-export type PlayerStatLine = SchemaTs<typeof playerStatlineSchemaSql>;
+export type PlayerStatline = SchemaTs<typeof playerStatline>;
+export type PlayerGameResult = SchemaTs<typeof playerStatlineSchemaSql>;

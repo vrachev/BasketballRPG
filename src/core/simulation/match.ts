@@ -1,85 +1,56 @@
 // Simulate a basketball match
 
-import { Lineup } from "../entities/lineup";
+import { Player, Team, TeamGameStats } from "@src/data";
 import { possessionConstants } from "./constants";
-import { PlayerEvent, PossessionResult, simulatePossession } from "./possession";
+import { PossessionResult, simulatePossession } from "./possession";
 
-type MatchInput = {
-  homeTeam: Lineup,
-  awayTeam: Lineup,
+export type Lineup = [Player, Player, Player, Player, Player];
+
+export type MatchInput = {
+  homeTeam: Team,
+  awayTeam: Team,
 };
 
-export type MatchResult = {
-  id: number,
-  homeTeamStats: PlayerEvent[],
-  awayTeamStats: PlayerEvent[],
+export type TeamGameEvent = TeamGameStats & {
+  teamId: number;
 };
 
-const rollupPlayerEvents = (events: PlayerEvent[]): PlayerEvent[] => {
-  const eventsByPlayer = new Map<number, PlayerEvent>();
+const getTeamsForPeriod = (
+  period: number,
+  homeTeam: Team,
+  awayTeam: Team
+): [Team, Team] => {
+  if (period === 1) {
+    // TODO implement more realistic tip off. 50/50 for now.
+    const tipOffWinner = Math.random() < 0.5 ? homeTeam : awayTeam;
+    const tipOffLoser = tipOffWinner === homeTeam ? awayTeam : homeTeam;
+    return [tipOffWinner, tipOffLoser];
+  }
 
-  events.forEach(event => {
-    if (!eventsByPlayer.has(event.pid)) {
-
-      eventsByPlayer.set(event.pid, {
-        pid: event.pid,
-        name: event.name,
-        twoFgm: 0,
-        twoFga: 0,
-        threeFgm: 0,
-        threeFga: 0,
-        ftm: 0,
-        fta: 0,
-        points: 0,
-        oReb: 0,
-        dReb: 0,
-        assist: 0,
-        steal: 0,
-        block: 0,
-        turnover: 0,
-        foul: 0,
-        seconds: 0,
-      });
-    }
-
-    const existing = eventsByPlayer.get(event.pid)!;
-
-    eventsByPlayer.set(event.pid, {
-      pid: event.pid,
-      name: event.name,
-      seconds: existing.seconds + event.seconds,
-      twoFgm: existing.twoFgm + event.twoFgm,
-      twoFga: existing.twoFga + event.twoFga,
-      threeFgm: existing.threeFgm + event.threeFgm,
-      threeFga: existing.threeFga + event.threeFga,
-      ftm: existing.ftm + event.ftm,
-      fta: existing.fta + event.fta,
-      points: existing.points + event.points,
-      oReb: existing.oReb + event.oReb,
-      dReb: existing.dReb + event.dReb,
-      assist: existing.assist + event.assist,
-      steal: existing.steal + event.steal,
-      block: existing.block + event.block,
-      turnover: existing.turnover + event.turnover,
-      foul: existing.foul + event.foul
-    });
-  });
-
-  return Array.from(eventsByPlayer.values());
+  // Get previous period's teams and swap based on quarter
+  const offensiveTeam = period % 2 === 1 ? homeTeam : awayTeam;
+  const defensiveTeam = offensiveTeam === homeTeam ? awayTeam : homeTeam;
+  return [offensiveTeam, defensiveTeam];
 };
 
-export const simulateMatch = ({ homeTeam, awayTeam }: MatchInput): MatchResult => {
+const determineLineup = (team: Team): Lineup => {
+  const lineup = team.players.slice(0, 5);
+  return lineup as Lineup;
+};
+
+export const simulateMatch = ({ homeTeam, awayTeam }: MatchInput): PossessionResult[] => {
   let gameClock = possessionConstants.periodLength;
   let period = 1;
 
-  let offensiveTeam = homeTeam;
-  let defensiveTeam = awayTeam;
+  let [offensiveTeam, defensiveTeam] = getTeamsForPeriod(period, homeTeam, awayTeam);
 
   const possessionResults: PossessionResult[] = [];
   let gameOver = false;
   let i = 0;
   while (!gameOver) {
-    const possession = simulatePossession({ offensiveTeam, defensiveTeam, period, gameClock });
+    const offensiveLineup = determineLineup(offensiveTeam);
+    const defensiveLineup = determineLineup(defensiveTeam);
+    const possession = simulatePossession({ offensiveLineup, defensiveLineup, period, gameClock });
     i++;
     gameClock -= possession.timeLength;
     possessionResults.push(possession);
@@ -89,6 +60,7 @@ export const simulateMatch = ({ homeTeam, awayTeam }: MatchInput): MatchResult =
       } else {
         period++;
         gameClock = possessionConstants.periodLength;
+        [offensiveTeam, defensiveTeam] = getTeamsForPeriod(period, homeTeam, awayTeam);
       }
     }
 
@@ -100,24 +72,5 @@ export const simulateMatch = ({ homeTeam, awayTeam }: MatchInput): MatchResult =
     }
   }
 
-  console.log(`Match over after ${i} possessions`);
-  console.log("possessionResults", possessionResults.length);
-
-  // Separate events by team
-  const homeTeamStats = rollupPlayerEvents(
-    possessionResults.flatMap(p => p.playerEvents.filter(e =>
-      homeTeam.players.some(p => p.playerInfo.id === e.pid)
-    ))
-  );
-  const awayTeamStats = rollupPlayerEvents(
-    possessionResults.flatMap(p => p.playerEvents.filter(e =>
-      awayTeam.players.some(p => p.playerInfo.id === e.pid)
-    ))
-  );
-
-  return {
-    id: 1,
-    homeTeamStats,
-    awayTeamStats,
-  };
+  return possessionResults;
 };

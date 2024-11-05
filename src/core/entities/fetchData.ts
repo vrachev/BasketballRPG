@@ -6,7 +6,7 @@ export async function insertPlayer(player: InsertableRecord<data.PlayerRaw>) {
   await insert(player, data.PLAYER_TABLE);
 }
 
-export async function insertTeam(team: InsertableRecord<data.Team>) {
+export async function insertTeam(team: InsertableRecord<data.TeamRaw>) {
   await insert(team, data.TEAM_TABLE);
 }
 

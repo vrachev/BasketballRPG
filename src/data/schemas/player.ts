@@ -29,7 +29,6 @@ export type PlayerHistory = {
   regularSeasons?: PlayerSeason[];
   playoffSeasons?: PlayerSeason[];
   skills: PlayerSkills[];
-  season: Season;
 };
 
 export type Player = {

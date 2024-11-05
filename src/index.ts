@@ -1,8 +1,6 @@
 import { createTables, openDb } from './db';
-import { createTeams, getTeamId, getTeamPlayers } from './core/entities/team';
+import { createTeams, getTeamId } from './core/entities/team';
 import * as core from './core';
-import { getPlayerFromHistory } from './core/entities/player';
-import { simulateMatch } from './core/simulation/match';
 import { formatTeamBoxScore } from './display/boxscore';
 import { createSeason } from './core/entities/season';
 
@@ -17,6 +15,9 @@ async function seedDb() {
     getTeamId('Boston'),
     getTeamId('Philadelphia')
   ]);
+
+  await core.createTeamSeason(teamIds[0], 1);
+  await core.createTeamSeason(teamIds[1], 1);
 
   // Insert 10 players and store their IDs
   const team1Ids: number[] = [];
@@ -97,40 +98,38 @@ async function seedDb() {
   });
   team2Ids.push(player6, player7, player8, player9, player10);
 
-  console.log('team1Ids', team1Ids);
-  console.log('team2Ids', team2Ids);
-
   return teamIds;
-}
-
-async function getLineup(teamId: number, teamName: string) {
-  const playerHistories = await getTeamPlayers(teamId, 2024);
-  const lineup: core.Lineup = { team: teamName, players: playerHistories.map((ph) => getPlayerFromHistory(ph)) };
-  return lineup;
 }
 
 async function main() {
   // const teamIds = await seedDb();
-  const team1 = await getLineup(1, 'Boston Celtics');
-  const team2 = await getLineup(2, 'Philadelphia 76ers');
+  const team1 = await core.getTeamBySeason(1, 2024);
+  const team2 = await core.getTeamBySeason(2, 2024);
+
+  console.log(JSON.stringify(team1, null, 2));
+  console.log(JSON.stringify(team2, null, 2));
 
   // console.log(JSON.stringify(team1, null, 2));
   // console.log(JSON.stringify(team2, null, 2));
 
-  const match = simulateMatch({ homeTeam: team1, awayTeam: team2 });
-  console.log('\nBOSTON CELTICS');
-  console.log(formatTeamBoxScore(match.homeTeamStats.map(stats => ({
-    name: stats.name,
-    minutes: Math.round(stats.seconds / 60),
-    stats
-  }))));
+  const match = core.processMatch({ homeTeam: team1, awayTeam: team2 });
 
-  console.log('\nPHILADELPHIA 76ERS');
-  console.log(formatTeamBoxScore(match.awayTeamStats.map(stats => ({
-    name: stats.name,
-    minutes: Math.round(stats.seconds / 60),
-    stats
-  }))));
+  console.log(formatTeamBoxScore(match));
+
+  // // const match = simulateMatch({ homeTeam: team1, awayTeam: team2 });
+  // console.log('\nBOSTON CELTICS');
+  // console.log(formatTeamBoxScore(match.homeTeamStatline.map(stats => ({
+  //   name: stats.name,
+  //   minutes: Math.round(stats.secs_played / 60),
+  //   stats
+  // }))));
+
+  // console.log('\nPHILADELPHIA 76ERS');
+  // console.log(formatTeamBoxScore(match.awayTeamStatline.map(stats => ({
+  //   name: stats.name,
+  //   minutes: Math.round(stats.secs_played / 60),
+  //   stats
+  // }))));
 }
 
 main().catch((err) => {
