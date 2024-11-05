@@ -22,7 +22,7 @@ const playerStatline = {
   pts: 'INTEGER',
 } as const;
 
-export const playerStatlineSchemaSql = {
+export const playerGameStatsSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
   player_id: 'INTEGER',
   game_result_id: 'INTEGER',
@@ -41,4 +41,4 @@ export const playerStatlineSchemaSql = {
 } as const;
 
 export type PlayerStatline = SchemaTs<typeof playerStatline>;
-export type PlayerGameResult = SchemaTs<typeof playerStatlineSchemaSql>;
+export type PlayerGameResult = SchemaTs<typeof playerGameStatsSchemaSql>;

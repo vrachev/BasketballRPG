@@ -6,3 +6,4 @@ export const PLAYER_SKILLS_TABLE = 'player_skills';
 export const PLAYER_STATLINE_TABLE = 'player_statlines';
 export const SEASON_TABLE = 'seasons';
 export const GAME_RESULT_TABLE = 'game_results';
+export const PLAYER_GAME_STATS_TABLE = 'player_game_stats';

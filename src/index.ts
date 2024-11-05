@@ -106,13 +106,10 @@ async function main() {
   const team1 = await core.getTeamBySeason(1, 2024);
   const team2 = await core.getTeamBySeason(2, 2024);
 
-  console.log(JSON.stringify(team1, null, 2));
-  console.log(JSON.stringify(team2, null, 2));
-
-  // console.log(JSON.stringify(team1, null, 2));
-  // console.log(JSON.stringify(team2, null, 2));
-
-  const match = core.processMatch({ homeTeam: team1, awayTeam: team2 });
+  const match = core.processMatch(
+    { homeTeam: team1, awayTeam: team2, seasonStage: 'regular_season' },
+    new Date()
+  );
 
   console.log(formatTeamBoxScore(match));
 

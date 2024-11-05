@@ -15,6 +15,6 @@ export type TeamRaw = SchemaTs<typeof teamSchemaSql>;
 
 export type Team = {
   teamInfo: TeamRaw;
-  season: TeamSeason;
+  teamSeason: TeamSeason;
   players: Player[];
 };

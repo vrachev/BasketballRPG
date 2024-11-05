@@ -1,5 +1,12 @@
 import type { ForeignKeyType, SchemaTs } from "../sqlTypes.js";
 
+// Helper function to prefix all keys in an object
+export const prefixKeys = <T extends Record<string, any>>(obj: T, prefix: string) => {
+  return Object.fromEntries(
+    Object.entries(obj).map(([key, value]) => [`${prefix}${key}`, value])
+  ) as { [K in keyof T as `${typeof prefix}${string & K}`]: T[K] };
+};
+
 // Raw stats that will be prefixed with 'h_' and 'a_', for home or away teams.
 const teamGameStats = {
   // Raw Stats
@@ -41,13 +48,6 @@ type HomeTeamStatsSchema = {
 
 type AwayTeamStatsSchema = {
   [K in keyof typeof teamGameStats as `a_${string & K}`]: typeof teamGameStats[K]
-};
-
-// Helper function to prefix all keys in an object
-const prefixKeys = <T extends Record<string, string>>(obj: T, prefix: string) => {
-  return Object.fromEntries(
-    Object.entries(obj).map(([key, value]) => [`${prefix}${key}`, value])
-  ) as { [K in keyof T as `${typeof prefix}${string & K}`]: T[K] };
 };
 
 export const gameResultSchemaSql = {

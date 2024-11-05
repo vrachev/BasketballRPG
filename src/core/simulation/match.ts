@@ -9,10 +9,7 @@ export type Lineup = [Player, Player, Player, Player, Player];
 export type MatchInput = {
   homeTeam: Team,
   awayTeam: Team,
-};
-
-export type TeamGameEvent = TeamGameStats & {
-  teamId: number;
+  seasonStage: 'regular_season' | 'playoffs',
 };
 
 const getTeamsForPeriod = (
@@ -38,7 +35,7 @@ const determineLineup = (team: Team): Lineup => {
   return lineup as Lineup;
 };
 
-export const simulateMatch = ({ homeTeam, awayTeam }: MatchInput): PossessionResult[] => {
+export const simulateMatch = ({ homeTeam, awayTeam, seasonStage }: MatchInput): PossessionResult[] => {
   let gameClock = possessionConstants.periodLength;
   let period = 1;
 

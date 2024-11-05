@@ -1,12 +1,12 @@
-import { MatchInput, TeamGameEvent } from '../simulation/match';
+import { MatchInput } from '../simulation/match';
 import { PlayerEvent, PossessionResult } from '../simulation/possession';
-import { Team } from "@src/data";
+import { Team, TeamGameStats } from "@src/data";
 
 export type GameStats = {
   homeTeam: Team;
   awayTeam: Team;
-  homeTeamStatline: TeamGameEvent;
-  awayTeamStatline: TeamGameEvent;
+  homeTeamStatline: TeamGameStats;
+  awayTeamStatline: TeamGameStats;
   homePlayerStats: PlayerEvent[];
   awayPlayerStats: PlayerEvent[];
 };
@@ -31,8 +31,8 @@ export const calculateGameStats = (possessionResults: PossessionResult[], { home
   );
 
   // Calculate team statlines using rollupTeamStats
-  const homeTeamStatline = rollupTeamStats(homePlayerStats, homeTeam.teamInfo.id);
-  const awayTeamStatline = rollupTeamStats(awayPlayerStats, awayTeam.teamInfo.id);
+  const homeTeamStatline = rollupTeamStats(homePlayerStats);
+  const awayTeamStatline = rollupTeamStats(awayPlayerStats);
 
   return { homeTeam, awayTeam, homeTeamStatline, awayTeamStatline, homePlayerStats, awayPlayerStats };
 };
@@ -93,7 +93,7 @@ const rollupPlayerEvents = (events: PlayerEvent[]): PlayerEvent[] => {
   return Array.from(eventsByPlayer.values());
 };
 
-const rollupTeamStats = (events: PlayerEvent[], teamId: number): TeamGameEvent => {
+const rollupTeamStats = (events: PlayerEvent[]): TeamGameStats => {
   // Initialize with zero values
   const stats = events.reduce((acc, event) => ({
     fgm: acc.fgm + event.fgm,
@@ -141,9 +141,10 @@ const rollupTeamStats = (events: PlayerEvent[], teamId: number): TeamGameEvent =
   const def_rating = 100;
   const net_rating = off_rating - def_rating;
 
+  const { pf, ...statsWithoutPf } = stats;
+
   return {
-    teamId,
-    ...stats,
+    ...statsWithoutPf,
     fg_pct,
     two_fg_pct,
     three_fg_pct,
@@ -154,6 +155,6 @@ const rollupTeamStats = (events: PlayerEvent[], teamId: number): TeamGameEvent =
     off_rating,
     def_rating,
     net_rating,
-    fouls: stats.pf  // for teams, pf -> fouls
+    fouls: pf
   };
 };

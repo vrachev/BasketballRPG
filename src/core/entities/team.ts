@@ -106,7 +106,7 @@ export const getTeamBySeason = async (teamId: number, seasonStartingYear: number
 
   return {
     teamInfo: team,
-    season: teamSeason,
+    teamSeason: teamSeason,
     players
   };
 };
@@ -122,8 +122,6 @@ const getTeamPlayersBySeason = async (
     FROM ${PLAYER_SEASON_TABLE} 
     WHERE team_id = ? AND season_id = ?
   `, [teamId, season.id]);
-
-  console.log('playerIds', playerIds);
 
   if (playerIds.length === 0) {
     console.warn(`No players found for team ${teamId} in ${season.start_year}`);
