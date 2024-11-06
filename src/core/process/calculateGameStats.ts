@@ -16,8 +16,6 @@ export const calculateGameStats = (possessionResults: PossessionResult[], { home
   let homePlayerStats: PlayerEvent[] = [];
   let awayPlayerStats: PlayerEvent[] = [];
 
-  console.log('num players', new Set(possessionResults.flatMap(p => p.playerEvents.map(e => e.pid))).size);
-
   // Separate events by team
   homePlayerStats = rollupPlayerEvents(
     possessionResults.flatMap(p => p.playerEvents.filter(e =>

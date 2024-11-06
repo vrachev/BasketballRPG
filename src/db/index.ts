@@ -1,3 +1,3 @@
-import { openDb, createTables, insert } from './db';
+import { openDb, createTables, insert, update } from './db';
 
-export { openDb, createTables, insert };
+export { openDb, createTables, insert, update };

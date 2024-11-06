@@ -8,7 +8,7 @@ export const prefixKeys = <T extends Record<string, any>>(obj: T, prefix: string
 };
 
 // Raw stats that will be prefixed with 'h_' and 'a_', for home or away teams.
-const teamGameStats = {
+export const teamGameStats = {
   // Raw Stats
   fga: 'INTEGER',
   fgm: 'INTEGER',

@@ -46,7 +46,10 @@ export async function createTables() {
   await createTable(Data.PLAYER_GAME_RESULT_TABLE, Data.playerGameResultSchemaSql);
 }
 
-export async function insert<T extends Record<string, any>>(object: Data.SchemaTs<T>, tableName: string): Promise<number> {
+export async function insert<T extends Data.TableSchemaSql>(
+  object: Data.SchemaTs<T>,
+  tableName: string
+): Promise<number> {
   const db = await openDb();
   const columns = Object.keys(object).join(', ');
   const placeholders = Object.keys(object).map(() => '?').join(', ');
@@ -54,4 +57,17 @@ export async function insert<T extends Record<string, any>>(object: Data.SchemaT
   const result = await db.run(`INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`, values);
   assert.strictEqual(typeof result.lastID, 'number', 'lastID must be a number');
   return result.lastID as number;
+}
+
+export async function update<T extends Data.TableSchemaSql>(
+  id: number,
+  updates: Partial<Data.SchemaTs<T>>,
+  tableName: string
+): Promise<void> {
+  const db = await openDb();
+  const setClause = Object.keys(updates)
+    .map(key => `${key} = ?`)
+    .join(', ');
+  const values = [...Object.values(updates), id];
+  await db.run(`UPDATE ${tableName} SET ${setClause} WHERE id = ?`, values);
 }
