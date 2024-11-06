@@ -12,7 +12,7 @@ export const insertGameResult = (
     seasonStage: 'regular_season' | 'playoffs';
     date: Date;
   }
-) => {
+): Promise<number> => {
   const homeStats = prefixKeys(gameStats.homeTeamStatline, 'h_') as Partial<GameResult>;
   const awayStats = prefixKeys(gameStats.awayTeamStatline, 'a_') as Partial<GameResult>;
   const winnerId = gameStats.homeTeamStatline.pts > gameStats.awayTeamStatline.pts

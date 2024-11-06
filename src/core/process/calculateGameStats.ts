@@ -136,6 +136,7 @@ const rollupTeamStats = (events: PlayerEvent[]): TeamGameStats => {
     ? stats.pts / (2 * (stats.fga + 0.44 * stats.fta))
     : 0;
 
+  // TODO: Calculate pace, off_rating, def_rating, and net_rating
   const pace = 100;
   const off_rating = 100;
   const def_rating = 100;

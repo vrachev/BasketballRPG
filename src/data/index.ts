@@ -1,7 +1,7 @@
 import { playerSchemaSql, PlayerRaw, Player } from './schemas/player';
 import { playerSeasonSchemaSql, PlayerSeason } from './schemas/playerSeason';
 import { playerSkillsSchemaSql, PlayerSkills } from './schemas/playerSkills';
-import { playerGameStatsSchemaSql, PlayerStatline, PlayerGameResult } from './schemas/playerGameResult';
+import { playerGameResultSchemaSql, PlayerStatline, PlayerGameResult } from './schemas/playerGameResult';
 import { teamSchemaSql, TeamRaw, Team } from './schemas/team';
 import { teamSeasonSchemaSql, TeamSeason } from './schemas/teamSeason';
 import { seasonSchemaSql, Season } from './schemas/season';
@@ -12,10 +12,9 @@ import {
   TEAM_SEASON_TABLE,
   PLAYER_SEASON_TABLE,
   PLAYER_SKILLS_TABLE,
-  PLAYER_STATLINE_TABLE,
   SEASON_TABLE,
   GAME_RESULT_TABLE,
-  PLAYER_GAME_STATS_TABLE,
+  PLAYER_GAME_RESULT_TABLE,
 } from './constants';
 import { InsertableRecord, SchemaTs, TableSchemaSql, isForeignKeyType } from './sqlTypes';
 
@@ -47,7 +46,7 @@ export {
   teamSeasonSchemaSql,
   playerSeasonSchemaSql,
   playerSkillsSchemaSql,
-  playerGameStatsSchemaSql,
+  playerGameResultSchemaSql,
   seasonSchemaSql,
   gameResultSchemaSql,
   isForeignKeyType,
@@ -61,8 +60,7 @@ export {
   TEAM_SEASON_TABLE,
   PLAYER_SEASON_TABLE,
   PLAYER_SKILLS_TABLE,
-  PLAYER_STATLINE_TABLE,
   SEASON_TABLE,
   GAME_RESULT_TABLE,
-  PLAYER_GAME_STATS_TABLE,
+  PLAYER_GAME_RESULT_TABLE,
 };
