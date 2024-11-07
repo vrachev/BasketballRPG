@@ -51,13 +51,21 @@ export async function insert<T extends Data.TableSchemaSql>(
   tableName: string
 ): Promise<number> {
   const db = await openDb();
-  const columns = Object.keys(object).join(', ');
-  const placeholders = Object.keys(object).map(() => '?').join(', ');
-  const values = Object.values(object);
+  const entries = Object.entries(object);
+  const columns = entries.map(([key]) => key).join(', ');
+  const placeholders = entries.map(() => '?').join(', ');
+  const values = entries.map(([, value]) => roundToThreeDecimals(value));
   const result = await db.run(`INSERT INTO ${tableName} (${columns}) VALUES (${placeholders})`, values);
   assert.strictEqual(typeof result.lastID, 'number', 'lastID must be a number');
   return result.lastID as number;
 }
+
+const roundToThreeDecimals = (value: any): any => {
+  if (typeof value === 'number') {
+    return Math.round(value * 1000) / 1000;
+  }
+  return value;
+};
 
 export async function update<T extends Data.TableSchemaSql>(
   id: number,
@@ -65,9 +73,10 @@ export async function update<T extends Data.TableSchemaSql>(
   tableName: string
 ): Promise<void> {
   const db = await openDb();
-  const setClause = Object.keys(updates)
-    .map(key => `${key} = ?`)
+  const entries = Object.entries(updates);
+  const setClause = entries
+    .map(([key]) => `${key} = ?`)
     .join(', ');
-  const values = [...Object.values(updates), id];
+  const values = [...entries.map(([, value]) => roundToThreeDecimals(value)), id];
   await db.run(`UPDATE ${tableName} SET ${setClause} WHERE id = ?`, values);
 }
