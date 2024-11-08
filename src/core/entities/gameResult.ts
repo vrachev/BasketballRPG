@@ -15,10 +15,10 @@ export const insertGameResult = (
 ): Promise<number> => {
   const homeStats = prefixKeys(gameStats.homeTeamStatline, 'h_') as Partial<GameResult>;
   const awayStats = prefixKeys(gameStats.awayTeamStatline, 'a_') as Partial<GameResult>;
-  const winnerId = gameStats.homeTeamStatline.pts > gameStats.awayTeamStatline.pts
+  const winnerId = gameStats.winner === 'home'
     ? gameStats.homeTeam.teamInfo.id
     : gameStats.awayTeam.teamInfo.id;
-  const loserId = gameStats.homeTeam.teamInfo.id === winnerId
+  const loserId = gameStats.winner === 'home'
     ? gameStats.awayTeam.teamInfo.id
     : gameStats.homeTeam.teamInfo.id;
   const gameResult = {

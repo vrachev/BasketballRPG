@@ -29,10 +29,8 @@ High Level:
 - GUI
 
 Now:
-- don't calculate game win/loss everywhere, use new variables in GameStat
 - continue deduplicating/centralizing stat typing and calculations
   - all stats/adv stats should be caclulated in calculateGameStats.ts, then propogated out
-  - 
 - use relative imports everywhere, per guidelines (tsconfig paths = bad)
 - create standings table
 - update standings table after game

@@ -33,9 +33,8 @@ const updateTeamSeasonStats = async (gameStats: GameStats) => {
   const homeStats = homeTeamStatline;
   const awayStats = awayTeamStatline;
 
-  const isHomeTeamWin = homeStats.pts > awayStats.pts;
-  await updateTeamSeason(gameStats.homeTeam.teamSeason.id, homeStats, isHomeTeamWin);
-  await updateTeamSeason(gameStats.awayTeam.teamSeason.id, awayStats, !isHomeTeamWin);
+  await updateTeamSeason(gameStats.homeTeam.teamSeason.id, homeStats, gameStats.winner === 'home');
+  await updateTeamSeason(gameStats.awayTeam.teamSeason.id, awayStats, gameStats.winner === 'away');
 };
 
 const updatePlayerSeasonStats = async (

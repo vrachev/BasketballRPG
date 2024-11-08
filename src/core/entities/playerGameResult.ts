@@ -18,7 +18,7 @@ export const insertPlayerGameResults = async (
       season_id: gameStats.homeTeam.teamSeason.season_id,
       season_type: seasonStage,
       date: date.toISOString(),
-      win: gameStats.homeTeamStatline.pts > gameStats.awayTeamStatline.pts ? 1 : 0,
+      win: gameStats.winner === 'home' ? 1 : 0,
       ...playerStats,
     };
   });
@@ -32,7 +32,7 @@ export const insertPlayerGameResults = async (
       season_id: gameStats.awayTeam.teamSeason.season_id,
       season_type: seasonStage,
       date: date.toISOString(),
-      win: gameStats.awayTeamStatline.pts > gameStats.homeTeamStatline.pts ? 1 : 0,
+      win: gameStats.winner === 'away' ? 1 : 0,
       ...playerStats,
     };
   });
