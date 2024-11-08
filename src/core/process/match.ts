@@ -27,7 +27,6 @@ export const processMatch = async (
   return gameStats;
 };
 
-
 const updateTeamSeasonStats = async (gameStats: GameStats) => {
   const { homeTeamStatline, awayTeamStatline } = gameStats;
   const homeStats = homeTeamStatline;

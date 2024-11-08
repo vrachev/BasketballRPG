@@ -1,4 +1,4 @@
-import { PLAYER_SEASON_TABLE, TeamRaw, TEAM_TABLE, Team, TeamSeason, TEAM_SEASON_TABLE, Season, Lineup } from '../../data';
+import { PLAYER_SEASON_TABLE, TeamInfo, TEAM_TABLE, Team, TeamSeason, TEAM_SEASON_TABLE, Season, Lineup } from '../../data';
 import { InsertableRecord } from '../../data/sqlTypes';
 import { insert, openDb } from '../../db';
 import { getPlayerFromHistory, getPlayerHistory } from './player';
@@ -58,7 +58,7 @@ export const createTeams = async (): Promise<void> => {
   for (const [conference, divisions] of Object.entries(cities)) {
     for (const [division, teams] of Object.entries(divisions)) {
       for (const team of teams) {
-        const teamRecord: InsertableRecord<TeamRaw> = {
+        const teamRecord: InsertableRecord<TeamInfo> = {
           name: team.name,
           city: team.city,
           abbreviation: team.abbreviation,
@@ -82,7 +82,7 @@ export const getTeamId = async (city: string): Promise<number> => {
 
 export const getTeamBySeason = async (teamId: number, seasonStartingYear: number): Promise<Team> => {
   const db = await openDb();
-  const team = await db.get<TeamRaw>(`SELECT * FROM ${TEAM_TABLE} WHERE id = ?`, [teamId]);
+  const team = await db.get<TeamInfo>(`SELECT * FROM ${TEAM_TABLE} WHERE id = ?`, [teamId]);
 
   if (!team) {
     throw new Error(`Team with id ${teamId} not found`);

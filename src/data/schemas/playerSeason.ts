@@ -1,5 +1,5 @@
 import { SchemaTs, ForeignKeyType } from '../sqlTypes';
-import { gameStatline } from './gameResult';
+import { statline } from './gameResult';
 export const playerSeasonSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
   team_id: 'INTEGER',
@@ -13,7 +13,7 @@ export const playerSeasonSchemaSql = {
   games_started: 'INTEGER',
   wins: 'INTEGER',
   losses: 'INTEGER',
-  ...gameStatline,
+  ...statline,
 
   // Foreign key references
   player_key: ['player_id', 'players', 'id'] as ForeignKeyType,

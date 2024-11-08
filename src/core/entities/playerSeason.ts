@@ -1,7 +1,7 @@
-import { PLAYER_SEASON_TABLE, PlayerSeason, GameStatline } from '../../data';
+import { PLAYER_SEASON_TABLE, PlayerSeason, Statline } from '../../data';
 import { update, openDb } from '../../db';
 import { PlayerEvent } from '../simulation/possession';
-import type { GameStatlineRaw } from '../../data';
+import type { StatlineRaw } from '../../data';
 
 export const updatePlayerSeason = async (
   playerSeasonId: number,
@@ -21,7 +21,7 @@ export const updatePlayerSeason = async (
   const gamesPlayed = playerSeason.games_played;
 
   // Extract just the GameStatlineRaw properties by removing pid
-  const { pid, ...playerStats }: { pid: number; } & GameStatlineRaw = playerEvent;
+  const { pid, ...playerStats }: { pid: number; } & StatlineRaw = playerEvent;
 
   // Calculate new stats
   const updates: Partial<PlayerSeason> = {
@@ -38,7 +38,7 @@ export const updatePlayerSeason = async (
     const newWeight = 1 / (gamesPlayed + 1);
 
     Object.entries(playerStats).forEach(([key, value]) => {
-      updates[key as keyof GameStatline] = playerSeason[key as keyof GameStatline] * oldWeight + value * newWeight;
+      updates[key as keyof Statline] = playerSeason[key as keyof Statline] * oldWeight + value * newWeight;
     });
   }
 

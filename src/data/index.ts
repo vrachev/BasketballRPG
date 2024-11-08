@@ -1,11 +1,18 @@
-import { playerSchemaSql, PlayerRaw, Player } from './schemas/player';
+import { playerSchemaSql, PlayerInfo, Player } from './schemas/player';
 import { playerSeasonSchemaSql, PlayerSeason } from './schemas/playerSeason';
 import { playerSkillsSchemaSql, PlayerSkills } from './schemas/playerSkills';
 import { playerGameResultSchemaSql, PlayerGameResult } from './schemas/playerGameResult';
-import { teamSchemaSql, Lineup, TeamRaw, Team } from './schemas/team';
+import { teamSchemaSql, Lineup, TeamInfo, Team } from './schemas/team';
 import { teamSeasonSchemaSql, TeamSeason } from './schemas/teamSeason';
 import { seasonSchemaSql, Season } from './schemas/season';
-import { prefixKeys, gameResultSchemaSql, GameStatline, GameResult, GameStatlineRaw, GameStatlineAdvanced } from './schemas/gameResult';
+import {
+  GameResult,
+  Statline,
+  StatlineAdvanced,
+  StatlineRaw,
+  gameResultSchemaSql,
+  prefixKeys,
+} from './schemas/gameResult';
 import {
   PLAYER_TABLE,
   TEAM_TABLE,
@@ -25,18 +32,18 @@ export type {
   InsertableRecord,
 
   // Typescript types
-  PlayerRaw,
+  PlayerInfo,
   Player,
   PlayerSeason,
   Lineup,
-  TeamRaw,
+  TeamInfo,
   Team,
   TeamSeason,
-  GameStatline,
+  Statline,
   PlayerSkills,
   Season,
-  GameStatlineRaw,
-  GameStatlineAdvanced,
+  StatlineRaw,
+  StatlineAdvanced,
   PlayerGameResult,
   GameResult,
 };

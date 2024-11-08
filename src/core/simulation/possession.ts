@@ -2,9 +2,26 @@
 * Simulate a basketball possession
 */
 
-import { Player, PlayerSkills, GameStatlineRaw } from '../../data';
+import { Player, PlayerSkills, StatlineRaw } from '../../data';
 import { averageStatRates, playerConstants, possessionConstants } from '../';
 import { Lineup } from '../../data';
+
+export type PossessionInput = {
+  offensiveLineup: Lineup;
+  defensiveLineup: Lineup;
+  period: number;
+  gameClock: number;
+};
+
+export type PossessionResult = {
+  playerEvents: PlayerEvent[];
+  possessionChange: boolean;
+  timeLength: number;
+};
+
+export type PlayerEvent = StatlineRaw & {
+  pid: number;
+};
 
 type ShotTypeData = {
   [key: string]: {
@@ -14,6 +31,12 @@ type ShotTypeData = {
     baseRate: number;
     points: number;
   };
+};
+
+type ReboundEvent = {
+  playerEvent: PlayerEvent,
+  rebound: 'off_reb' | 'def_reb',
+  possessionChange: boolean;
 };
 
 export const shotTypeMapping: ShotTypeData = {
@@ -72,10 +95,6 @@ export const shootingFoulMapping: ShotTypeData = {
   },
 } as const;
 
-export type PlayerEvent = GameStatlineRaw & {
-  pid: number;
-};
-
 export const createPlayerEvent = (pid: number, stats?: Partial<Omit<PlayerEvent, 'pid'>>): PlayerEvent => {
   const baseStats = {
     pid,
@@ -106,12 +125,6 @@ export const createPlayerEvent = (pid: number, stats?: Partial<Omit<PlayerEvent,
     fga: (stats?.two_fga ?? 0) + (stats?.three_fga ?? 0),
     fgm: (stats?.two_fgm ?? 0) + (stats?.three_fgm ?? 0)
   };
-};
-
-type ReboundEvent = {
-  playerEvent: PlayerEvent,
-  rebound: 'off_reb' | 'def_reb',
-  possessionChange: boolean;
 };
 
 const generateNormalDistribution = (mean: number, standardDeviation: number): number => {
@@ -464,21 +477,6 @@ const determinePossessionLength = (gameClock: number, shotClock: number): number
 
   return possessionLength;
 };
-
-
-export type PossessionResult = {
-  playerEvents: PlayerEvent[];
-  possessionChange: boolean;
-  timeLength: number;
-};
-
-export type PossessionInput = {
-  offensiveLineup: Lineup;
-  defensiveLineup: Lineup;
-  period: number;
-  gameClock: number;
-};
-
 
 /**
  * Main function to simulate a possession.

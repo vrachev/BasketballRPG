@@ -1,5 +1,5 @@
 import {
-  PlayerRaw,
+  PlayerInfo,
   PlayerSeason,
   PlayerSkills,
   PLAYER_SEASON_TABLE,
@@ -25,12 +25,12 @@ type PlayerInfoInput = {
   isStarting?: boolean;
 };
 
-const generatePlayerInfo = (input: PlayerInfoInput): InsertableRecord<PlayerRaw> => {
+const generatePlayerInfo = (input: PlayerInfoInput): InsertableRecord<PlayerInfo> => {
   const firstName = input.firstName || faker.person.firstName('male');
   const lastName = input.lastName || faker.person.lastName('male');
   const fullName = `${firstName} ${lastName}`;
 
-  const player: InsertableRecord<PlayerRaw> = {
+  const player: InsertableRecord<PlayerInfo> = {
     // Personal Info
     first_name: firstName,
     last_name: lastName,
@@ -221,7 +221,7 @@ export const createPlayer = async (input: CreatePlayerInput): Promise<number> =>
 
 export const getPlayerHistory = async (playerId: number): Promise<PlayerHistory> => {
   const db = await openDb();
-  const playerData = await db.get<PlayerRaw>(`SELECT * FROM ${PLAYER_TABLE} WHERE id = ?`, [playerId]);
+  const playerData = await db.get<PlayerInfo>(`SELECT * FROM ${PLAYER_TABLE} WHERE id = ?`, [playerId]);
   if (!playerData) {
     throw new Error(`Player with id ${playerId} not found`);
   }

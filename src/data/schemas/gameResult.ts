@@ -7,7 +7,7 @@ export const prefixKeys = <T extends Record<string, any>>(obj: T, prefix: string
   ) as { [K in keyof T as `${typeof prefix}${string & K}`]: T[K] };
 };
 
-export const gameStatlineRaw = {
+export const statlineRaw = {
   secs_played: 'INTEGER',
   fga: 'INTEGER',
   fgm: 'INTEGER',
@@ -28,7 +28,7 @@ export const gameStatlineRaw = {
   pts: 'INTEGER',
 } as const;
 
-export const advancedGameStats = {
+export const statlineAdvanced = {
   fg_pct: 'REAL',
   two_fg_pct: 'REAL',
   three_fg_pct: 'REAL',
@@ -42,18 +42,18 @@ export const advancedGameStats = {
 } as const;
 
 // Raw stats that will be prefixed with 'h_' and 'a_', for home or away teams.
-export const gameStatline = {
-  ...gameStatlineRaw,
-  ...advancedGameStats,
+export const statline = {
+  ...statlineRaw,
+  ...statlineAdvanced,
 } as const;
 
 // Create raw schema types for home and away stats
 type HomeTeamStatsSchema = {
-  [K in keyof typeof gameStatline as `h_${string & K}`]: typeof gameStatline[K]
+  [K in keyof typeof statline as `h_${string & K}`]: typeof statline[K]
 };
 
 type AwayTeamStatsSchema = {
-  [K in keyof typeof gameStatline as `a_${string & K}`]: typeof gameStatline[K]
+  [K in keyof typeof statline as `a_${string & K}`]: typeof statline[K]
 };
 
 export const gameResultSchemaSql = {
@@ -71,10 +71,10 @@ export const gameResultSchemaSql = {
   loser_id: 'INTEGER',
 
   // Home Team Stats
-  ...prefixKeys(gameStatline, 'h_'),
+  ...prefixKeys(statline, 'h_'),
 
   // Away Team Stats
-  ...prefixKeys(gameStatline, 'a_'),
+  ...prefixKeys(statline, 'a_'),
 
   // Foreign Keys
   home_team_key: ['home_team_id', 'teams', 'id'] as ForeignKeyType,
@@ -84,12 +84,12 @@ export const gameResultSchemaSql = {
   season_key: ['season_id', 'seasons', 'id'] as ForeignKeyType,
 } as const;
 
-export type GameStatline = SchemaTs<typeof gameStatline>;
 
 // Combine raw schemas first, then apply SchemaTs
 export type GameResult = SchemaTs<
   typeof gameResultSchemaSql & HomeTeamStatsSchema & AwayTeamStatsSchema
 >;
 
-export type GameStatlineRaw = SchemaTs<typeof gameStatlineRaw>;
-export type GameStatlineAdvanced = SchemaTs<typeof advancedGameStats>;
+export type Statline = SchemaTs<typeof statline>;
+export type StatlineRaw = SchemaTs<typeof statlineRaw>;
+export type StatlineAdvanced = SchemaTs<typeof statlineAdvanced>;

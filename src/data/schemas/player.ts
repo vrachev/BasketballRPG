@@ -28,17 +28,17 @@ export const playerSchemaSql = {
   is_starting: 'INTEGER',
 } as const;
 
-export type PlayerRaw = SchemaTs<typeof playerSchemaSql>;
+export type PlayerInfo = SchemaTs<typeof playerSchemaSql>;
 
 export type PlayerHistory = {
-  playerInfo: PlayerRaw;
+  playerInfo: PlayerInfo;
   regularSeasons?: PlayerSeason[];
   playoffSeasons?: PlayerSeason[];
   skills: PlayerSkills[];
 };
 
 export type Player = {
-  playerInfo: PlayerRaw;
+  playerInfo: PlayerInfo;
   season: Season;
   skills: PlayerSkills;
   regularSeason?: PlayerSeason;

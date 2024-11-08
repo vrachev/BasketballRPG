@@ -1,4 +1,4 @@
-import { TEAM_SEASON_TABLE, GameStatline, TeamSeason } from '../../data';
+import { TEAM_SEASON_TABLE, Statline, TeamSeason } from '../../data';
 import { InsertableRecord } from '../../data/sqlTypes';
 import { insert, update, openDb } from '../../db';
 
@@ -48,7 +48,7 @@ export const createTeamSeason = async (teamId: number, seasonId: number) => {
   await insert(teamSeason, TEAM_SEASON_TABLE);
 };
 
-export const updateTeamSeason = async (teamSeasonId: number, teamStats: GameStatline, win: boolean) => {
+export const updateTeamSeason = async (teamSeasonId: number, teamStats: Statline, win: boolean) => {
   const db = await openDb();
   const teamSeason = await db.get<TeamSeason>(`
     SELECT * FROM ${TEAM_SEASON_TABLE} 
@@ -73,7 +73,7 @@ export const updateTeamSeason = async (teamSeasonId: number, teamStats: GameStat
     const newWeight = 1 / (gamesPlayed + 1);
 
     Object.entries(teamStats).forEach(([key, value]) => {
-      updates[key as keyof GameStatline] = teamSeason[key as keyof GameStatline] * oldWeight + value * newWeight;
+      updates[key as keyof Statline] = teamSeason[key as keyof Statline] * oldWeight + value * newWeight;
     });
   }
 
