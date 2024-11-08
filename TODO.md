@@ -29,18 +29,23 @@ High Level:
 - GUI
 
 Now:
-- revamp how things are exported/imported
-- finish possession simulation
-  - finish determine shot (add logic for FTs made, and OReb/DReb)
-  - add logic for end of quarter / end of game possessions
-  - add special logic for shotClock violations (optional)
-- fix possession simulation tests
-- add some testing for possession constants
+- don't calculate game win/loss everywhere, use new variables in GameStat
+- continue deduplicating/centralizing stat typing and calculations
+  - all stats/adv stats should be caclulated in calculateGameStats.ts, then propogated out
+  - 
+- use relative imports everywhere, per guidelines (tsconfig paths = bad)
+- update playerSeason table after a game
+- create standings table
+- update standings table after game
+- create a view for sortable season averages (both players/teams)
+- testing in general
 
 later:
-- Add 30 Teams (hardcoded names)
+- Balancing probabilities and outcomes
 - Determine ranking distribution (eg: 60 is all-star, 70 is all-nba, 80 is MVP, 90 is goat, 100 is goat++)
 - Function to calculate an overall ranking
 - Function to create a team of players, given a target overall ranking (maybe a few other params)
 - Function to calculate a team ranking
-- Basic function to simulate a game
+- finish possession simulation
+  - add logic for end of quarter / end of game possessions (how players decide to play it) 
+  - add special logic for shotClock violations (optional)
