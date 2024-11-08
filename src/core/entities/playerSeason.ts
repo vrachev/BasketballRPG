@@ -1,7 +1,7 @@
-import { PLAYER_SEASON_TABLE, PlayerSeason, Statline } from '../../data';
+import { PLAYER_SEASON_TABLE, PlayerSeason } from '../../data';
 import { update, openDb } from '../../db';
 import { PlayerEvent } from '../simulation/possession';
-import type { StatlineRaw } from '../../data';
+import type { StatlineRaw, StatlinePlayer } from '../../data';
 
 export const updatePlayerSeason = async (
   playerSeasonId: number,
@@ -32,15 +32,10 @@ export const updatePlayerSeason = async (
     losses: !win ? playerSeason.losses + 1 : playerSeason.losses
   };
 
-  // Only update the stat fields with weighted averages if not the first game
-  if (gamesPlayed > 0) {
-    const oldWeight = gamesPlayed / (gamesPlayed + 1);
-    const newWeight = 1 / (gamesPlayed + 1);
-
-    Object.entries(playerStats).forEach(([key, value]) => {
-      updates[key as keyof Statline] = playerSeason[key as keyof Statline] * oldWeight + value * newWeight;
-    });
-  }
+  // Add new stats to existing totals
+  Object.entries(playerStats).forEach(([key, value]) => {
+    updates[key as keyof StatlinePlayer] = playerSeason[key as keyof StatlinePlayer] + value;
+  });
 
   await update(playerSeasonId, updates, PLAYER_SEASON_TABLE);
 };

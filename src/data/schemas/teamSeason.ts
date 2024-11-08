@@ -1,5 +1,5 @@
 import { SchemaTs, ForeignKeyType } from '../sqlTypes';
-import { statline } from './gameResult';
+import { statlineTeam } from './gameResult';
 
 // TODO support playoff averages
 export const teamSeasonSchemaSql = {
@@ -13,7 +13,7 @@ export const teamSeasonSchemaSql = {
   playoff_seed: 'INTEGER',
 
   // Averages
-  ...statline,
+  ...statlineTeam,
 
   team_key: ['team_id', 'teams', 'id'] as ForeignKeyType,
   season_key: ['season_id', 'seasons', 'id'] as ForeignKeyType,

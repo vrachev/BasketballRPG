@@ -28,7 +28,7 @@ export const statlineRaw = {
   pts: 'INTEGER',
 } as const;
 
-export const statlineAdvanced = {
+export const statlineAdvancedTeam = {
   fg_pct: 'REAL',
   two_fg_pct: 'REAL',
   three_fg_pct: 'REAL',
@@ -42,18 +42,18 @@ export const statlineAdvanced = {
 } as const;
 
 // Raw stats that will be prefixed with 'h_' and 'a_', for home or away teams.
-export const statline = {
+export const statlineTeam = {
   ...statlineRaw,
-  ...statlineAdvanced,
+  ...statlineAdvancedTeam,
 } as const;
 
 // Create raw schema types for home and away stats
 type HomeTeamStatsSchema = {
-  [K in keyof typeof statline as `h_${string & K}`]: typeof statline[K]
+  [K in keyof typeof statlineTeam as `h_${string & K}`]: typeof statlineTeam[K]
 };
 
 type AwayTeamStatsSchema = {
-  [K in keyof typeof statline as `a_${string & K}`]: typeof statline[K]
+  [K in keyof typeof statlineTeam as `a_${string & K}`]: typeof statlineTeam[K]
 };
 
 export const gameResultSchemaSql = {
@@ -71,10 +71,10 @@ export const gameResultSchemaSql = {
   loser_id: 'INTEGER',
 
   // Home Team Stats
-  ...prefixKeys(statline, 'h_'),
+  ...prefixKeys(statlineTeam, 'h_'),
 
   // Away Team Stats
-  ...prefixKeys(statline, 'a_'),
+  ...prefixKeys(statlineTeam, 'a_'),
 
   // Foreign Keys
   home_team_key: ['home_team_id', 'teams', 'id'] as ForeignKeyType,
@@ -90,6 +90,6 @@ export type GameResult = SchemaTs<
   typeof gameResultSchemaSql & HomeTeamStatsSchema & AwayTeamStatsSchema
 >;
 
-export type Statline = SchemaTs<typeof statline>;
 export type StatlineRaw = SchemaTs<typeof statlineRaw>;
-export type StatlineAdvanced = SchemaTs<typeof statlineAdvanced>;
+export type StatlineAdvancedTeam = SchemaTs<typeof statlineAdvancedTeam>;
+export type StatlineTeam = SchemaTs<typeof statlineTeam>;

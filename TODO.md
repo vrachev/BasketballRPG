@@ -29,8 +29,6 @@ High Level:
 - GUI
 
 Now:
-- continue deduplicating/centralizing stat typing and calculations
-  - all stats/adv stats should be caclulated in calculateGameStats.ts, then propogated out
 - use relative imports everywhere, per guidelines (tsconfig paths = bad)
 - create standings table
 - update standings table after game

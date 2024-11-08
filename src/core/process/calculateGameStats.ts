@@ -1,13 +1,13 @@
 import { MatchInput } from '../simulation/match';
 import { PlayerEvent, PossessionResult } from '../simulation/possession';
-import { Team, Statline, StatlineAdvanced } from "@src/data";
+import { Team, StatlineTeam, StatlineAdvancedPlayer } from "../../data";
 
-type PlayerStatline = PlayerEvent & StatlineAdvanced;
+type PlayerStatline = PlayerEvent & StatlineAdvancedPlayer;
 export type GameStats = {
   homeTeam: Team;
   awayTeam: Team;
-  homeTeamStatline: Statline;
-  awayTeamStatline: Statline;
+  homeTeamStatline: StatlineTeam;
+  awayTeamStatline: StatlineTeam;
   homePlayerStats: PlayerStatline[];
   awayPlayerStats: PlayerStatline[];
   winner: 'home' | 'away';
@@ -64,7 +64,7 @@ const rollupPlayerEvents = (events: PlayerEvent[]): PlayerStatline[] => {
         stl: 0,
         blk: 0,
         tov: 0,
-        fouls: 0
+        fouls: 0,
       });
     }
 
@@ -93,7 +93,7 @@ const rollupPlayerEvents = (events: PlayerEvent[]): PlayerStatline[] => {
   });
 
   // Now map to PlayerStatline with advanced stats
-  return Array.from(eventsByPlayer.values()).map(stats => {
+  const playerStatlines: PlayerStatline[] = Array.from(eventsByPlayer.values()).map<PlayerStatline>((stats) => {
     const fg_pct = stats.fga > 0 ? stats.fgm / stats.fga : 0;
     const two_fg_pct = stats.two_fga > 0 ? stats.two_fgm / stats.two_fga : 0;
     const three_fg_pct = stats.three_fga > 0 ? stats.three_fgm / stats.three_fga : 0;
@@ -103,7 +103,6 @@ const rollupPlayerEvents = (events: PlayerEvent[]): PlayerStatline[] => {
       ? stats.pts / (2 * (stats.fga + 0.44 * stats.fta))
       : 0;
 
-    // TODO: Calculate pace, off_rating, def_rating, and net_rating
     return {
       ...stats,
       fg_pct,
@@ -112,15 +111,13 @@ const rollupPlayerEvents = (events: PlayerEvent[]): PlayerStatline[] => {
       ft_pct,
       efg_pct,
       ts_pct,
-      pace: 100,
-      off_rating: 100,
-      def_rating: 100,
-      net_rating: 0
     };
   });
+
+  return playerStatlines;
 };
 
-const rollupTeamStats = (events: PlayerStatline[]): Statline => {
+const rollupTeamStats = (events: PlayerStatline[]): StatlineTeam => {
   // sum up stats
   const stats = events.reduce((acc, event) => ({
     secs_played: acc.secs_played + event.secs_played,

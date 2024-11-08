@@ -155,7 +155,7 @@ const generatePlayerSeason = (
     wins: 0,
     losses: 0,
 
-    // Raw Averages
+    // Raw Totals
     secs_played: 0,
     fga: 0,
     fgm: 0,
@@ -175,17 +175,13 @@ const generatePlayerSeason = (
     fouls: 0,
     pts: 0,
 
-    // Advanced Averages
+    // Advanced Stats
     fg_pct: 0,
     two_fg_pct: 0,
     three_fg_pct: 0,
     ft_pct: 0,
     efg_pct: 0,
     ts_pct: 0,
-    pace: 0,
-    off_rating: 0,
-    def_rating: 0,
-    net_rating: 0,
   };
   return playerSeason;
 };

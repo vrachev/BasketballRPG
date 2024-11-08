@@ -105,7 +105,10 @@ export const getTeamBySeason = async (teamId: number, seasonStartingYear: number
   const players = await getTeamPlayersBySeason(teamId, season);
   const startingLineup = players.filter(p => p.playerInfo.is_starting === 1);
   if (startingLineup.length !== 5) {
-    throw new Error(`Starting lineup for team ${teamId} in year ${seasonStartingYear} does not have 5 players`);
+    throw new Error(
+      `Starting lineup for team ${teamId} in year ${seasonStartingYear} does not have 5 players, ` +
+      `there are ${startingLineup.length} players`
+    );
   }
 
   return {
