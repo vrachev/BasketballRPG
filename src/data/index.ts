@@ -9,7 +9,6 @@ import {
   GameResult,
   StatlineTeam,
   StatlineRaw,
-  StatlineAdvancedTeam,
   gameResultSchemaSql,
   prefixKeys,
 } from './schemas/gameResult';
@@ -42,7 +41,6 @@ export type {
   PlayerSkills,
   Season,
   StatlineRaw,
-  StatlineAdvancedTeam,
   StatlineTeam,
   PlayerGameResult,
   GameResult,

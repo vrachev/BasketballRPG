@@ -28,23 +28,14 @@ export const statlineRaw = {
   pts: 'INTEGER',
 } as const;
 
-export const statlineAdvancedTeam = {
-  fg_pct: 'REAL',
-  two_fg_pct: 'REAL',
-  three_fg_pct: 'REAL',
-  ft_pct: 'REAL',
-  efg_pct: 'REAL',
-  ts_pct: 'REAL',
-  pace: 'REAL',
-  off_rating: 'REAL',
-  def_rating: 'REAL',
-  net_rating: 'REAL',
-} as const;
+// const statlineTeamExtras = {
+//   possessions: 'INTEGER',
+// } as const;
 
 // Raw stats that will be prefixed with 'h_' and 'a_', for home or away teams.
 export const statlineTeam = {
   ...statlineRaw,
-  ...statlineAdvancedTeam,
+  // ...statlineTeamExtras,
 } as const;
 
 // Create raw schema types for home and away stats
@@ -91,5 +82,4 @@ export type GameResult = SchemaTs<
 >;
 
 export type StatlineRaw = SchemaTs<typeof statlineRaw>;
-export type StatlineAdvancedTeam = SchemaTs<typeof statlineAdvancedTeam>;
 export type StatlineTeam = SchemaTs<typeof statlineTeam>;

@@ -31,18 +31,6 @@ export const createTeamSeason = async (teamId: number, seasonId: number) => {
     tov: 0,
     fouls: 0,
     pts: 0,
-
-    // Derived Averages
-    fg_pct: 0,
-    two_fg_pct: 0,
-    three_fg_pct: 0,
-    ft_pct: 0,
-    efg_pct: 0,
-    ts_pct: 0,
-    pace: 0,
-    off_rating: 0,
-    def_rating: 0,
-    net_rating: 0
   };
 
   await insert(teamSeason, TEAM_SEASON_TABLE);
@@ -67,15 +55,10 @@ export const updateTeamSeason = async (teamSeasonId: number, teamStats: Statline
     losses: !win ? teamSeason.losses + 1 : teamSeason.losses
   };
 
-  // Only update the stat fields with weighted averages if not the first game
-  if (gamesPlayed > 0) {
-    const oldWeight = gamesPlayed / (gamesPlayed + 1);
-    const newWeight = 1 / (gamesPlayed + 1);
-
-    Object.entries(teamStats).forEach(([key, value]) => {
-      updates[key as keyof StatlineTeam] = teamSeason[key as keyof StatlineTeam] * oldWeight + value * newWeight;
-    });
-  }
+  // Add new stats to existing totals
+  Object.entries(teamStats).forEach(([key, value]) => {
+    updates[key as keyof StatlineTeam] = teamSeason[key as keyof StatlineTeam] + value;
+  });
 
   await update(teamSeasonId, updates, TEAM_SEASON_TABLE);
 };

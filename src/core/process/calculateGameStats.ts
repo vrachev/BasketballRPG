@@ -96,7 +96,7 @@ const rollupPlayerEvents = (events: PlayerEvent[]): PlayerEvent[] => {
 
 const rollupTeamStats = (events: PlayerEvent[]): StatlineTeam => {
   // sum up stats
-  const stats = events.reduce((acc, event) => ({
+  const stats: StatlineTeam = events.reduce((acc, event) => ({
     secs_played: acc.secs_played + event.secs_played,
     fgm: acc.fgm + event.fgm,
     fga: acc.fga + event.fga,
@@ -114,7 +114,7 @@ const rollupTeamStats = (events: PlayerEvent[]): StatlineTeam => {
     stl: acc.stl + event.stl,
     blk: acc.blk + event.blk,
     tov: acc.tov + event.tov,
-    fouls: acc.fouls + event.fouls
+    fouls: acc.fouls + event.fouls,
   }), {
     secs_played: 0,
     fgm: 0, fga: 0,
@@ -124,38 +124,8 @@ const rollupTeamStats = (events: PlayerEvent[]): StatlineTeam => {
     pts: 0,
     off_reb: 0, def_reb: 0, reb: 0,
     ast: 0, stl: 0, blk: 0,
-    tov: 0, fouls: 0
+    tov: 0, fouls: 0,
   });
 
-  // Calculate basic percentages
-  const fg_pct = stats.fga > 0 ? stats.fgm / stats.fga : 0;
-  const two_fg_pct = stats.two_fga > 0 ? stats.two_fgm / stats.two_fga : 0;
-  const three_fg_pct = stats.three_fga > 0 ? stats.three_fgm / stats.three_fga : 0;
-  const ft_pct = stats.fta > 0 ? stats.ftm / stats.fta : 0;
-
-  // Calculate advanced stats
-  const efg_pct = stats.fga > 0 ? (stats.fgm + 0.5 * stats.three_fgm) / stats.fga : 0;
-  const ts_pct = (stats.fga > 0 || stats.fta > 0)
-    ? stats.pts / (2 * (stats.fga + 0.44 * stats.fta))
-    : 0;
-
-  // TODO: Calculate pace, off_rating, def_rating, and net_rating
-  const pace = 100;
-  const off_rating = 100;
-  const def_rating = 100;
-  const net_rating = off_rating - def_rating;
-
-  return {
-    ...stats,
-    fg_pct,
-    two_fg_pct,
-    three_fg_pct,
-    ft_pct,
-    efg_pct,
-    ts_pct,
-    pace,
-    off_rating,
-    def_rating,
-    net_rating,
-  };
+  return stats;
 };
