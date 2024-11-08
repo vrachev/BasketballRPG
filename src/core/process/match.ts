@@ -8,15 +8,14 @@ import { calculateGameStats, GameStats } from './calculateGameStats';
 
 export const processMatch = async (
   matchInput: MatchInput,
-  date: Date
 ): Promise<GameStats> => {
   // Simulate match and calculate game stats
   const possessionResults = simulateMatch(matchInput);
   const gameStats = calculateGameStats(possessionResults, matchInput);
 
   // Insert game results
-  const gameResultId = await insertGameResult({ gameStats, seasonStage: matchInput.seasonStage, date });
-  await insertPlayerGameResults(gameStats, gameResultId, matchInput.seasonStage, date);
+  const gameResultId = await insertGameResult({ gameStats, seasonStage: matchInput.seasonStage, date: matchInput.date });
+  await insertPlayerGameResults(gameStats, gameResultId, matchInput.seasonStage, matchInput.date);
 
   // Update team seasons
   await updateTeamSeasonStats(gameStats);

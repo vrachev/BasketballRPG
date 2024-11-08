@@ -8,6 +8,7 @@ import { Lineup } from "../../data";
 export type MatchInput = {
   homeTeam: Team,
   awayTeam: Team,
+  date: Date,
   seasonStage: 'regular_season' | 'playoffs',
 };
 
