@@ -1,4 +1,4 @@
-import { PLAYER_SEASON_TABLE, TeamRaw, TEAM_TABLE, Team, TeamSeason, TEAM_SEASON_TABLE, Season } from '../../data';
+import { PLAYER_SEASON_TABLE, TeamRaw, TEAM_TABLE, Team, TeamSeason, TEAM_SEASON_TABLE, Season, Lineup } from '../../data';
 import { InsertableRecord } from '../../data/sqlTypes';
 import { insert, openDb } from '../../db';
 import { getPlayerFromHistory, getPlayerHistory } from './player';
@@ -103,11 +103,16 @@ export const getTeamBySeason = async (teamId: number, seasonStartingYear: number
   }
 
   const players = await getTeamPlayersBySeason(teamId, season);
+  const startingLineup = players.filter(p => p.playerInfo.is_starting === 1);
+  if (startingLineup.length !== 5) {
+    throw new Error(`Starting lineup for team ${teamId} in year ${seasonStartingYear} does not have 5 players`);
+  }
 
   return {
     teamInfo: team,
     teamSeason: teamSeason,
-    players
+    players,
+    startingLineup: startingLineup as Lineup,
   };
 };
 

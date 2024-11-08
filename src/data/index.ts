@@ -1,11 +1,11 @@
 import { playerSchemaSql, PlayerRaw, Player } from './schemas/player';
 import { playerSeasonSchemaSql, PlayerSeason } from './schemas/playerSeason';
 import { playerSkillsSchemaSql, PlayerSkills } from './schemas/playerSkills';
-import { playerGameResultSchemaSql, PlayerStatline, PlayerGameResult } from './schemas/playerGameResult';
-import { teamSchemaSql, TeamRaw, Team } from './schemas/team';
+import { playerGameResultSchemaSql, PlayerGameResult } from './schemas/playerGameResult';
+import { teamSchemaSql, Lineup, TeamRaw, Team } from './schemas/team';
 import { teamSeasonSchemaSql, TeamSeason } from './schemas/teamSeason';
 import { seasonSchemaSql, Season } from './schemas/season';
-import { prefixKeys, gameResultSchemaSql, TeamGameStats, GameResult } from './schemas/gameResult';
+import { prefixKeys, gameResultSchemaSql, GameStatline, GameResult, GameStatlineRaw, GameStatlineAdvanced } from './schemas/gameResult';
 import {
   PLAYER_TABLE,
   TEAM_TABLE,
@@ -28,13 +28,15 @@ export type {
   PlayerRaw,
   Player,
   PlayerSeason,
+  Lineup,
   TeamRaw,
   Team,
   TeamSeason,
-  TeamGameStats,
+  GameStatline,
   PlayerSkills,
   Season,
-  PlayerStatline,
+  GameStatlineRaw,
+  GameStatlineAdvanced,
   PlayerGameResult,
   GameResult,
 };

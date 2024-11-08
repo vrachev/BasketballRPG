@@ -7,17 +7,16 @@ export const prefixKeys = <T extends Record<string, any>>(obj: T, prefix: string
   ) as { [K in keyof T as `${typeof prefix}${string & K}`]: T[K] };
 };
 
-// Raw stats that will be prefixed with 'h_' and 'a_', for home or away teams.
-export const teamGameStats = {
-  // Raw Stats
+export const gameStatlineRaw = {
+  secs_played: 'INTEGER',
   fga: 'INTEGER',
   fgm: 'INTEGER',
   two_fga: 'INTEGER',
   two_fgm: 'INTEGER',
   three_fga: 'INTEGER',
   three_fgm: 'INTEGER',
-  fta: 'INTEGER',
   ftm: 'INTEGER',
+  fta: 'INTEGER',
   off_reb: 'INTEGER',
   def_reb: 'INTEGER',
   reb: 'INTEGER',
@@ -27,8 +26,9 @@ export const teamGameStats = {
   tov: 'INTEGER',
   fouls: 'INTEGER',
   pts: 'INTEGER',
+} as const;
 
-  // Derived Stats
+export const advancedGameStats = {
   fg_pct: 'REAL',
   two_fg_pct: 'REAL',
   three_fg_pct: 'REAL',
@@ -41,13 +41,19 @@ export const teamGameStats = {
   net_rating: 'REAL',
 } as const;
 
+// Raw stats that will be prefixed with 'h_' and 'a_', for home or away teams.
+export const gameStatline = {
+  ...gameStatlineRaw,
+  ...advancedGameStats,
+} as const;
+
 // Create raw schema types for home and away stats
 type HomeTeamStatsSchema = {
-  [K in keyof typeof teamGameStats as `h_${string & K}`]: typeof teamGameStats[K]
+  [K in keyof typeof gameStatline as `h_${string & K}`]: typeof gameStatline[K]
 };
 
 type AwayTeamStatsSchema = {
-  [K in keyof typeof teamGameStats as `a_${string & K}`]: typeof teamGameStats[K]
+  [K in keyof typeof gameStatline as `a_${string & K}`]: typeof gameStatline[K]
 };
 
 export const gameResultSchemaSql = {
@@ -65,10 +71,10 @@ export const gameResultSchemaSql = {
   loser_id: 'INTEGER',
 
   // Home Team Stats
-  ...prefixKeys(teamGameStats, 'h_'),
+  ...prefixKeys(gameStatline, 'h_'),
 
   // Away Team Stats
-  ...prefixKeys(teamGameStats, 'a_'),
+  ...prefixKeys(gameStatline, 'a_'),
 
   // Foreign Keys
   home_team_key: ['home_team_id', 'teams', 'id'] as ForeignKeyType,
@@ -78,9 +84,12 @@ export const gameResultSchemaSql = {
   season_key: ['season_id', 'seasons', 'id'] as ForeignKeyType,
 } as const;
 
-export type TeamGameStats = SchemaTs<typeof teamGameStats>;
+export type GameStatline = SchemaTs<typeof gameStatline>;
 
 // Combine raw schemas first, then apply SchemaTs
 export type GameResult = SchemaTs<
   typeof gameResultSchemaSql & HomeTeamStatsSchema & AwayTeamStatsSchema
 >;
+
+export type GameStatlineRaw = SchemaTs<typeof gameStatlineRaw>;
+export type GameStatlineAdvanced = SchemaTs<typeof advancedGameStats>;

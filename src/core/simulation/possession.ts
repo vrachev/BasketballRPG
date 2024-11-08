@@ -2,9 +2,9 @@
 * Simulate a basketball possession
 */
 
-import { Player, PlayerSkills, PlayerStatline } from '../../data';
+import { Player, PlayerSkills, GameStatlineRaw } from '../../data';
 import { averageStatRates, playerConstants, possessionConstants } from '../';
-import { Lineup } from './match';
+import { Lineup } from '../../data';
 
 type ShotTypeData = {
   [key: string]: {
@@ -72,7 +72,7 @@ export const shootingFoulMapping: ShotTypeData = {
   },
 } as const;
 
-export type PlayerEvent = PlayerStatline & {
+export type PlayerEvent = GameStatlineRaw & {
   pid: number;
 };
 
@@ -96,7 +96,7 @@ export const createPlayerEvent = (pid: number, stats?: Partial<Omit<PlayerEvent,
     ast: 0,
     stl: 0,
     blk: 0,
-    pf: 0
+    fouls: 0
   };
 
   return {
@@ -290,7 +290,7 @@ export const determineShot = (offensiveLineup: Lineup, defensiveLineup: Lineup, 
 
 export const determineFoul = (lineup: Lineup): PlayerEvent => {
   const offender = pickOption(lineup, lineup.map((p) => 100 - p.skills.defensive_iq));
-  const event = createPlayerEvent(offender.playerInfo.id, { pf: 1 });
+  const event = createPlayerEvent(offender.playerInfo.id, { fouls: 1 });
 
   return event;
 };

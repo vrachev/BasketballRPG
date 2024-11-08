@@ -34,7 +34,6 @@ Now:
   - all stats/adv stats should be caclulated in calculateGameStats.ts, then propogated out
   - 
 - use relative imports everywhere, per guidelines (tsconfig paths = bad)
-- update playerSeason table after a game
 - create standings table
 - update standings table after game
 - create a view for sortable season averages (both players/teams)

@@ -1,14 +1,15 @@
 import { MatchInput } from '../simulation/match';
 import { PlayerEvent, PossessionResult } from '../simulation/possession';
-import { Team, TeamGameStats } from "@src/data";
+import { Team, GameStatline } from "@src/data";
 
 export type GameStats = {
   homeTeam: Team;
   awayTeam: Team;
-  homeTeamStatline: TeamGameStats;
-  awayTeamStatline: TeamGameStats;
+  homeTeamStatline: GameStatline;
+  awayTeamStatline: GameStatline;
   homePlayerStats: PlayerEvent[];
   awayPlayerStats: PlayerEvent[];
+  winner: 'home' | 'away';
 };
 
 export const calculateGameStats = (possessionResults: PossessionResult[], { homeTeam, awayTeam }: MatchInput): GameStats => {
@@ -32,7 +33,9 @@ export const calculateGameStats = (possessionResults: PossessionResult[], { home
   const homeTeamStatline = rollupTeamStats(homePlayerStats);
   const awayTeamStatline = rollupTeamStats(awayPlayerStats);
 
-  return { homeTeam, awayTeam, homeTeamStatline, awayTeamStatline, homePlayerStats, awayPlayerStats };
+  const winner = homeTeamStatline.pts > awayTeamStatline.pts ? 'home' : 'away';
+
+  return { homeTeam, awayTeam, homeTeamStatline, awayTeamStatline, homePlayerStats, awayPlayerStats, winner };
 };
 
 const rollupPlayerEvents = (events: PlayerEvent[]): PlayerEvent[] => {
@@ -59,7 +62,7 @@ const rollupPlayerEvents = (events: PlayerEvent[]): PlayerEvent[] => {
         stl: 0,
         blk: 0,
         tov: 0,
-        pf: 0
+        fouls: 0
       });
     }
 
@@ -84,16 +87,17 @@ const rollupPlayerEvents = (events: PlayerEvent[]): PlayerEvent[] => {
       stl: existing.stl + event.stl,
       blk: existing.blk + event.blk,
       tov: existing.tov + event.tov,
-      pf: existing.pf + event.pf
+      fouls: existing.fouls + event.fouls
     });
   });
 
   return Array.from(eventsByPlayer.values());
 };
 
-const rollupTeamStats = (events: PlayerEvent[]): TeamGameStats => {
+const rollupTeamStats = (events: PlayerEvent[]): GameStatline => {
   // Initialize with zero values
   const stats = events.reduce((acc, event) => ({
+    secs_played: acc.secs_played + event.secs_played,
     fgm: acc.fgm + event.fgm,
     fga: acc.fga + event.fga,
     two_fgm: acc.two_fgm + event.two_fgm,
@@ -110,8 +114,9 @@ const rollupTeamStats = (events: PlayerEvent[]): TeamGameStats => {
     stl: acc.stl + event.stl,
     blk: acc.blk + event.blk,
     tov: acc.tov + event.tov,
-    pf: acc.pf + event.pf
+    fouls: acc.fouls + event.fouls
   }), {
+    secs_played: 0,
     fgm: 0, fga: 0,
     two_fgm: 0, two_fga: 0,
     three_fgm: 0, three_fga: 0,
@@ -119,7 +124,7 @@ const rollupTeamStats = (events: PlayerEvent[]): TeamGameStats => {
     pts: 0,
     off_reb: 0, def_reb: 0, reb: 0,
     ast: 0, stl: 0, blk: 0,
-    tov: 0, pf: 0
+    tov: 0, fouls: 0
   });
 
   // Calculate basic percentages
@@ -140,10 +145,8 @@ const rollupTeamStats = (events: PlayerEvent[]): TeamGameStats => {
   const def_rating = 100;
   const net_rating = off_rating - def_rating;
 
-  const { pf, ...statsWithoutPf } = stats;
-
   return {
-    ...statsWithoutPf,
+    ...stats,
     fg_pct,
     two_fg_pct,
     three_fg_pct,
@@ -154,6 +157,5 @@ const rollupTeamStats = (events: PlayerEvent[]): TeamGameStats => {
     off_rating,
     def_rating,
     net_rating,
-    fouls: pf
   };
 };

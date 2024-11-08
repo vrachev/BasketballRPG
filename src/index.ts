@@ -25,16 +25,16 @@ async function seedDb() {
 
   // Template players
   const rolePlayerTemplate: core.CreatePlayerInput = {
-    playerInfoInput: {},
+    playerInfoInput: { isStarting: true },
     teamId: 0,
     seasonStartingYear: 2024,
     position: 'PG',
     defaultSkillLevel: 35,
-    defaultTendencyLevel: 20
+    defaultTendencyLevel: 20,
   };
 
   const starPlayerTemplate: core.CreatePlayerInput = {
-    playerInfoInput: {},
+    playerInfoInput: { isStarting: true },
     teamId: 0,
     seasonStartingYear: 2024,
     position: 'PG',
@@ -102,9 +102,18 @@ async function seedDb() {
 }
 
 async function main() {
-  // const teamIds = await seedDb();
+  const teamIds = await seedDb();
   const team1 = await core.getTeamBySeason(1, 2024);
   const team2 = await core.getTeamBySeason(2, 2024);
+
+  const matches = [];
+  for (let i = 0; i < 100; i++) {
+    const match = await core.processMatch(
+      { homeTeam: team1, awayTeam: team2, seasonStage: 'regular_season' },
+      new Date()
+    );
+    matches.push(match);
+  }
 
   const match = await core.processMatch(
     { homeTeam: team1, awayTeam: team2, seasonStage: 'regular_season' },

@@ -1,10 +1,9 @@
 // Simulate a basketball match
 
-import { Player, Team, TeamGameStats } from "@src/data";
+import { Team } from "../../data";
 import { possessionConstants } from "./constants";
 import { PossessionResult, simulatePossession } from "./possession";
-
-export type Lineup = [Player, Player, Player, Player, Player];
+import { Lineup } from "../../data";
 
 export type MatchInput = {
   homeTeam: Team,

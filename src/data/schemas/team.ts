@@ -13,8 +13,11 @@ export const teamSchemaSql = {
 
 export type TeamRaw = SchemaTs<typeof teamSchemaSql>;
 
+export type Lineup = [Player, Player, Player, Player, Player];
+
 export type Team = {
   teamInfo: TeamRaw;
   teamSeason: TeamSeason;
   players: Player[];
+  startingLineup: Lineup;
 };

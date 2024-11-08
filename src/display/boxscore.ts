@@ -28,7 +28,7 @@ const formatBoxScoreRow = (row: BoxScoreRow): string => {
     `${stats.stl}`.padEnd(5),
     `${stats.blk}`.padEnd(5),
     `${stats.tov}`.padEnd(4),
-    `${stats.pf}`.padEnd(4),
+    `${stats.fouls}`.padEnd(4),
     `${stats.pts}`.padEnd(4)
   ].join(" ");
 };
@@ -49,7 +49,7 @@ export const formatTeamBoxScore = (gameStats: GameStats): string => {
     "STL".padEnd(5),
     "BLK".padEnd(5),
     "TO".padEnd(4),
-    "PF".padEnd(4),
+    "FOULS".padEnd(4),
     "PTS".padEnd(4)
   ].join(" ");
 
@@ -77,7 +77,7 @@ export const formatTeamBoxScore = (gameStats: GameStats): string => {
     stats: {
       ...gameStats.homeTeamStatline,
       pid: 0,
-      pf: gameStats.homeTeamStatline.fouls,
+      fouls: gameStats.homeTeamStatline.fouls,
       secs_played: gameStats.homePlayerStats.reduce((acc, p) => acc + p.secs_played, 0)
     }
   });
@@ -88,7 +88,7 @@ export const formatTeamBoxScore = (gameStats: GameStats): string => {
     stats: {
       ...gameStats.awayTeamStatline,
       pid: 0,
-      pf: gameStats.awayTeamStatline.fouls,
+      fouls: gameStats.awayTeamStatline.fouls,
       secs_played: gameStats.awayPlayerStats.reduce((acc, p) => acc + p.secs_played, 0)
     }
   });

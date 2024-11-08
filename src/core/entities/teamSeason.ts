@@ -1,7 +1,6 @@
-import { TEAM_SEASON_TABLE, TeamGameStats, TeamSeason } from '../../data';
+import { TEAM_SEASON_TABLE, GameStatline, TeamSeason } from '../../data';
 import { InsertableRecord } from '../../data/sqlTypes';
 import { insert, update, openDb } from '../../db';
-import { GameStats } from '../process/calculateGameStats';
 
 export const createTeamSeason = async (teamId: number, seasonId: number) => {
   const teamSeason: InsertableRecord<TeamSeason> = {
@@ -14,6 +13,7 @@ export const createTeamSeason = async (teamId: number, seasonId: number) => {
     playoff_seed: 0,
 
     // Raw Averages
+    secs_played: 0,
     fga: 0,
     fgm: 0,
     two_fga: 0,
@@ -48,7 +48,7 @@ export const createTeamSeason = async (teamId: number, seasonId: number) => {
   await insert(teamSeason, TEAM_SEASON_TABLE);
 };
 
-export const updateTeamSeason = async (teamSeasonId: number, teamStats: TeamGameStats, win: boolean) => {
+export const updateTeamSeason = async (teamSeasonId: number, teamStats: GameStatline, win: boolean) => {
   const db = await openDb();
   const teamSeason = await db.get<TeamSeason>(`
     SELECT * FROM ${TEAM_SEASON_TABLE} 
@@ -73,7 +73,7 @@ export const updateTeamSeason = async (teamSeasonId: number, teamStats: TeamGame
     const newWeight = 1 / (gamesPlayed + 1);
 
     Object.entries(teamStats).forEach(([key, value]) => {
-      updates[key as keyof TeamGameStats] = teamSeason[key as keyof TeamGameStats] * oldWeight + value * newWeight;
+      updates[key as keyof GameStatline] = teamSeason[key as keyof GameStatline] * oldWeight + value * newWeight;
     });
   }
 

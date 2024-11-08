@@ -22,6 +22,7 @@ type PlayerInfoInput = {
   height?: number;
   weight?: number;
   wingspan?: number;
+  isStarting?: boolean;
 };
 
 const generatePlayerInfo = (input: PlayerInfoInput): InsertableRecord<PlayerRaw> => {
@@ -44,6 +45,7 @@ const generatePlayerInfo = (input: PlayerInfoInput): InsertableRecord<PlayerRaw>
     // Career Info
     career_status: 'Active',
     experience: 0,
+    is_starting: input.isStarting ? 1 : 0,
   };
 
   return player;
@@ -140,30 +142,29 @@ const generatePlayerSeason = (
   seasonType: SeasonType
 ): InsertableRecord<PlayerSeason> => {
   const playerSeason: InsertableRecord<PlayerSeason> = {
-    // Foreign keys
+    // Keys
     player_id: playerId,
     team_id: teamId,
     season_id: seasonId,
     season_type: seasonType,
     position: position,
 
-    // Base stats
+    // Stats
     games_played: 0,
     games_started: 0,
-    mins: 0,
-    fgm: 0,
+    wins: 0,
+    losses: 0,
+
+    // Raw Averages
+    secs_played: 0,
     fga: 0,
-    fg_pct: 0,
-    three_fgm: 0,
-    three_fga: 0,
-    three_fg_pct: 0,
-    two_fgm: 0,
+    fgm: 0,
     two_fga: 0,
-    two_fg_pct: 0,
-    efg_pct: 0,
-    ftm: 0,
+    two_fgm: 0,
+    three_fga: 0,
+    three_fgm: 0,
     fta: 0,
-    ft_pct: 0,
+    ftm: 0,
     off_reb: 0,
     def_reb: 0,
     reb: 0,
@@ -171,8 +172,20 @@ const generatePlayerSeason = (
     stl: 0,
     blk: 0,
     tov: 0,
-    pf: 0,
-    pts: 0
+    fouls: 0,
+    pts: 0,
+
+    // Advanced Averages
+    fg_pct: 0,
+    two_fg_pct: 0,
+    three_fg_pct: 0,
+    ft_pct: 0,
+    efg_pct: 0,
+    ts_pct: 0,
+    pace: 0,
+    off_rating: 0,
+    def_rating: 0,
+    net_rating: 0,
   };
   return playerSeason;
 };
