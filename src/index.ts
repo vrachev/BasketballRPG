@@ -109,15 +109,13 @@ async function main() {
   const matches = [];
   for (let i = 0; i < 100; i++) {
     const match = await core.processMatch(
-      { homeTeam: team1, awayTeam: team2, seasonStage: 'regular_season' },
-      new Date()
+      { homeTeam: team1, awayTeam: team2, date: new Date(), seasonStage: 'regular_season' },
     );
     matches.push(match);
   }
 
   const match = await core.processMatch(
-    { homeTeam: team1, awayTeam: team2, seasonStage: 'regular_season' },
-    new Date()
+    { homeTeam: team1, awayTeam: team2, date: new Date(), seasonStage: 'regular_season' },
   );
 
   console.log(formatTeamBoxScore(match));
