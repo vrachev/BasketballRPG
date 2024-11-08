@@ -1,2 +1,2 @@
-# BBallLegends
-Attempting to create a basketball career building simulation game!
+# Basketball RPG
+A basketball career building simulation game [in progress]
