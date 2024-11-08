@@ -1,21 +1,6 @@
 import type { ForeignKeyType, SchemaTs } from '../sqlTypes';
 import { statlineRaw } from './gameResult';
 
-export const statlineAdvancedPlayer = {
-  fg_pct: 'REAL',
-  two_fg_pct: 'REAL',
-  three_fg_pct: 'REAL',
-  ft_pct: 'REAL',
-  efg_pct: 'REAL',
-  ts_pct: 'REAL',
-} as const;
-
-// Raw stats that will be prefixed with 'h_' and 'a_', for home or away teams.
-export const statlinePlayer = {
-  ...statlineRaw,
-  ...statlineAdvancedPlayer,
-} as const;
-
 export const playerGameResultSchemaSql = {
   id: 'INTEGER PRIMARY KEY AUTOINCREMENT',
   player_id: 'INTEGER',
@@ -26,7 +11,7 @@ export const playerGameResultSchemaSql = {
   win: 'INTEGER', // 0 is loss, 1 is win
   date: 'TEXT',
 
-  ...statlinePlayer,
+  ...statlineRaw,
 
   // Foreign Keys
   player_key: ['player_id', 'players', 'id'] as ForeignKeyType,
@@ -36,6 +21,3 @@ export const playerGameResultSchemaSql = {
 } as const;
 
 export type PlayerGameResult = SchemaTs<typeof playerGameResultSchemaSql>;
-
-export type StatlineAdvancedPlayer = SchemaTs<typeof statlineAdvancedPlayer>;
-export type StatlinePlayer = SchemaTs<typeof statlineRaw & typeof statlineAdvancedPlayer>;

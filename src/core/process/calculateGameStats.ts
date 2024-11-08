@@ -1,22 +1,21 @@
 import { MatchInput } from '../simulation/match';
 import { PlayerEvent, PossessionResult } from '../simulation/possession';
-import { Team, StatlineTeam, StatlineAdvancedPlayer } from "../../data";
+import { Team, StatlineTeam, StatlineRaw } from "../../data";
 
-type PlayerStatline = PlayerEvent & StatlineAdvancedPlayer;
 export type GameStats = {
   homeTeam: Team;
   awayTeam: Team;
   homeTeamStatline: StatlineTeam;
   awayTeamStatline: StatlineTeam;
-  homePlayerStats: PlayerStatline[];
-  awayPlayerStats: PlayerStatline[];
+  homePlayerStats: PlayerEvent[];
+  awayPlayerStats: PlayerEvent[];
   winner: 'home' | 'away';
 };
 
 export const calculateGameStats = (possessionResults: PossessionResult[], { homeTeam, awayTeam }: MatchInput): GameStats => {
   // Initialize player stats arrays
-  let homePlayerStats: PlayerStatline[] = [];
-  let awayPlayerStats: PlayerStatline[] = [];
+  let homePlayerStats: PlayerEvent[] = [];
+  let awayPlayerStats: PlayerEvent[] = [];
 
   // Separate events by team
   homePlayerStats = rollupPlayerEvents(
@@ -39,10 +38,9 @@ export const calculateGameStats = (possessionResults: PossessionResult[], { home
   return { homeTeam, awayTeam, homeTeamStatline, awayTeamStatline, homePlayerStats, awayPlayerStats, winner };
 };
 
-const rollupPlayerEvents = (events: PlayerEvent[]): PlayerStatline[] => {
+const rollupPlayerEvents = (events: PlayerEvent[]): PlayerEvent[] => {
   const eventsByPlayer = new Map<number, PlayerEvent>();
 
-  // First, rollup the basic stats
   events.forEach(event => {
     if (!eventsByPlayer.has(event.pid)) {
       eventsByPlayer.set(event.pid, {
@@ -92,32 +90,11 @@ const rollupPlayerEvents = (events: PlayerEvent[]): PlayerStatline[] => {
     });
   });
 
-  // Now map to PlayerStatline with advanced stats
-  const playerStatlines: PlayerStatline[] = Array.from(eventsByPlayer.values()).map<PlayerStatline>((stats) => {
-    const fg_pct = stats.fga > 0 ? stats.fgm / stats.fga : 0;
-    const two_fg_pct = stats.two_fga > 0 ? stats.two_fgm / stats.two_fga : 0;
-    const three_fg_pct = stats.three_fga > 0 ? stats.three_fgm / stats.three_fga : 0;
-    const ft_pct = stats.fta > 0 ? stats.ftm / stats.fta : 0;
-    const efg_pct = stats.fga > 0 ? (stats.fgm + 0.5 * stats.three_fgm) / stats.fga : 0;
-    const ts_pct = (stats.fga > 0 || stats.fta > 0)
-      ? stats.pts / (2 * (stats.fga + 0.44 * stats.fta))
-      : 0;
-
-    return {
-      ...stats,
-      fg_pct,
-      two_fg_pct,
-      three_fg_pct,
-      ft_pct,
-      efg_pct,
-      ts_pct,
-    };
-  });
-
-  return playerStatlines;
+  const playerEvents = Array.from(eventsByPlayer.values());
+  return playerEvents;
 };
 
-const rollupTeamStats = (events: PlayerStatline[]): StatlineTeam => {
+const rollupTeamStats = (events: PlayerEvent[]): StatlineTeam => {
   // sum up stats
   const stats = events.reduce((acc, event) => ({
     secs_played: acc.secs_played + event.secs_played,

@@ -1,7 +1,7 @@
 import { PLAYER_SEASON_TABLE, PlayerSeason } from '../../data';
 import { update, openDb } from '../../db';
 import { PlayerEvent } from '../simulation/possession';
-import type { StatlineRaw, StatlinePlayer } from '../../data';
+import type { StatlineRaw } from '../../data';
 
 export const updatePlayerSeason = async (
   playerSeasonId: number,
@@ -34,7 +34,7 @@ export const updatePlayerSeason = async (
 
   // Add new stats to existing totals
   Object.entries(playerStats).forEach(([key, value]) => {
-    updates[key as keyof StatlinePlayer] = playerSeason[key as keyof StatlinePlayer] + value;
+    updates[key as keyof StatlineRaw] = playerSeason[key as keyof StatlineRaw] + value;
   });
 
   await update(playerSeasonId, updates, PLAYER_SEASON_TABLE);

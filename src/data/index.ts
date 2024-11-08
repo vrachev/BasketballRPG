@@ -4,12 +4,7 @@ import { playerSkillsSchemaSql, PlayerSkills } from './schemas/playerSkills';
 import { teamSchemaSql, Lineup, TeamInfo, Team } from './schemas/team';
 import { teamSeasonSchemaSql, TeamSeason } from './schemas/teamSeason';
 import { seasonSchemaSql, Season } from './schemas/season';
-import {
-  PlayerGameResult,
-  StatlineAdvancedPlayer,
-  StatlinePlayer,
-  playerGameResultSchemaSql,
-} from './schemas/playerGameResult';
+import { PlayerGameResult, playerGameResultSchemaSql } from './schemas/playerGameResult';
 import {
   GameResult,
   StatlineTeam,
@@ -48,9 +43,7 @@ export type {
   Season,
   StatlineRaw,
   StatlineAdvancedTeam,
-  StatlineAdvancedPlayer,
   StatlineTeam,
-  StatlinePlayer,
   PlayerGameResult,
   GameResult,
 };

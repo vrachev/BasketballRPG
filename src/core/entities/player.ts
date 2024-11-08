@@ -174,14 +174,6 @@ const generatePlayerSeason = (
     tov: 0,
     fouls: 0,
     pts: 0,
-
-    // Advanced Stats
-    fg_pct: 0,
-    two_fg_pct: 0,
-    three_fg_pct: 0,
-    ft_pct: 0,
-    efg_pct: 0,
-    ts_pct: 0,
   };
   return playerSeason;
 };
