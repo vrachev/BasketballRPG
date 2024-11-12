@@ -1,5 +1,5 @@
 import { createPlayer, getPlayerHistory, CreatePlayerInput } from "./entities/player";
-import { createTeams, getTeamId, getTeamBySeason } from "./entities/team";
+import { createTeams, getTeamId, getTeamIds, getTeams, getTeam } from "./entities/team";
 import { createTeamSeason } from "./entities/teamSeason";
 import {
   averageGameStatsPerTeam,
@@ -14,7 +14,9 @@ export {
   createPlayer,
   createTeams,
   getTeamId,
-  getTeamBySeason,
+  getTeamIds,
+  getTeams,
+  getTeam,
   createTeamSeason,
   processMatch,
 

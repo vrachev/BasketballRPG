@@ -2,8 +2,8 @@ import { TEAM_SEASON_TABLE, StatlineTeam, TeamSeason } from '../../data';
 import { InsertableRecord } from '../../data/sqlTypes';
 import { insert, update, openDb } from '../../db';
 
-export const createTeamSeason = async (teamId: number, seasonId: number) => {
-  const teamSeason: InsertableRecord<TeamSeason> = {
+export const createTeamSeason = async (teamIds: number[], seasonId: number) => {
+  const teamSeasons = teamIds.map(teamId => ({
     team_id: teamId,
     season_id: seasonId,
     games_played: 0,
@@ -31,9 +31,11 @@ export const createTeamSeason = async (teamId: number, seasonId: number) => {
     tov: 0,
     fouls: 0,
     pts: 0,
-  };
+  } as InsertableRecord<TeamSeason>));
 
-  await insert(teamSeason, TEAM_SEASON_TABLE);
+  await Promise.all(teamSeasons.map(teamSeason =>
+    insert(teamSeason, TEAM_SEASON_TABLE)
+  ));
 };
 
 export const updateTeamSeason = async (teamSeasonId: number, teamStats: StatlineTeam, win: boolean) => {

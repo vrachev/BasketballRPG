@@ -3,6 +3,7 @@ import { createTeams, getTeamId } from './core/entities/team';
 import * as core from './core';
 import { formatTeamBoxScore } from './display/boxscore';
 import { createSeason } from './core/entities/season';
+import { NBAScheduler } from './core/season/createSchedule';
 
 async function seedDb() {
   await createTables();
@@ -11,19 +12,13 @@ async function seedDb() {
   await createSeason(2024, 2025);
   await createTeams();
 
-  const teamIds = await Promise.all([
-    getTeamId('Boston'),
-    getTeamId('Philadelphia')
-  ]);
+  const teamIds = await core.getTeamIds();
 
-  await core.createTeamSeason(teamIds[0], 1);
-  await core.createTeamSeason(teamIds[1], 1);
+  // await core.createTeamSeason(teamIds[0], 1);
+  // await core.createTeamSeason(teamIds[1], 1);
+  await core.createTeamSeason(teamIds, 1);
 
-  // Insert 10 players and store their IDs
-  const team1Ids: number[] = [];
-  const team2Ids: number[] = [];
-
-  // Template players
+  // Create 5 players for each team
   const rolePlayerTemplate: core.CreatePlayerInput = {
     playerInfoInput: { isStarting: true },
     teamId: 0,
@@ -42,83 +37,47 @@ async function seedDb() {
     defaultTendencyLevel: 70
   };
 
-  // team 1
-  const player1 = await core.createPlayer({
-    ...rolePlayerTemplate,
-    teamId: teamIds[0],
-    position: 'PG'
-  });
-  const player2 = await core.createPlayer({
-    ...rolePlayerTemplate,
-    teamId: teamIds[0],
-    position: 'SG'
-  });
-  const player3 = await core.createPlayer({
-    ...starPlayerTemplate,
-    teamId: teamIds[0],
-    position: 'SF'
-  });
-  const player4 = await core.createPlayer({
-    ...rolePlayerTemplate,
-    teamId: teamIds[0],
-    position: 'PF'
-  });
-  const player5 = await core.createPlayer({
-    ...rolePlayerTemplate,
-    teamId: teamIds[0],
-    position: 'C'
-  });
-  team1Ids.push(player1, player2, player3, player4, player5);
+  // Create players for each team
+  for (const teamId of teamIds) {
+    // Create 4 role players and 1 star player
+    const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
 
-  // team 2
-  const player6 = await core.createPlayer({
-    ...rolePlayerTemplate,
-    teamId: teamIds[1],
-    position: 'PG'
-  });
-  const player7 = await core.createPlayer({
-    ...starPlayerTemplate,
-    teamId: teamIds[1],
-    position: 'SG'
-  });
-  const player8 = await core.createPlayer({
-    ...rolePlayerTemplate,
-    teamId: teamIds[1],
-    position: 'SF'
-  });
-  const player9 = await core.createPlayer({
-    ...rolePlayerTemplate,
-    teamId: teamIds[1],
-    position: 'PF'
-  });
-  const player10 = await core.createPlayer({
-    ...rolePlayerTemplate,
-    teamId: teamIds[1],
-    position: 'C'
-  });
-  team2Ids.push(player6, player7, player8, player9, player10);
+    for (let i = 0; i < positions.length; i++) {
+      const template = i === 2 ? starPlayerTemplate : rolePlayerTemplate;
+      await core.createPlayer({
+        ...template,
+        teamId: teamId,
+        position: positions[i],
+      });
+    }
+  }
 
   return teamIds;
 }
 
 async function main() {
-  const teamIds = await seedDb();
-  const team1 = await core.getTeamBySeason(1, 2024);
-  const team2 = await core.getTeamBySeason(2, 2024);
+  // const teamIds = await seedDb();
+  const team1 = await core.getTeam(1, 2024);
+  const team2 = await core.getTeam(2, 2024);
 
-  const matches = [];
-  for (let i = 0; i < 100; i++) {
-    const match = await core.processMatch(
-      { homeTeam: team1, awayTeam: team2, date: new Date(), seasonStage: 'regular_season' },
-    );
-    matches.push(match);
-  }
+  const teams = await core.getTeams(2024);
 
-  const match = await core.processMatch(
-    { homeTeam: team1, awayTeam: team2, date: new Date(), seasonStage: 'regular_season' },
-  );
+  const scheduler = new NBAScheduler(teams);
+  const schedule = scheduler.generateSchedule();
 
-  console.log(formatTeamBoxScore(match));
+  // const matches = [];
+  // for (let i = 0; i < 100; i++) {
+  //   const match = await core.processMatch(
+  //     { homeTeam: team1, awayTeam: team2, date: new Date(), seasonStage: 'regular_season' },
+  //   );
+  //   matches.push(match);
+  // }
+
+  // const match = await core.processMatch(
+  //   { homeTeam: team1, awayTeam: team2, date: new Date(), seasonStage: 'regular_season' },
+  // );
+
+  // console.log(formatTeamBoxScore(match));
 
   // // const match = simulateMatch({ homeTeam: team1, awayTeam: team2 });
   // console.log('\nBOSTON CELTICS');

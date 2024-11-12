@@ -73,50 +73,81 @@ export const createTeams = async (): Promise<void> => {
 
 export const getTeamId = async (city: string): Promise<number> => {
   const db = await openDb();
-  const team = await db.get<{ id: number; }>(`SELECT id FROM ${TEAM_TABLE} WHERE city = ?`, [city]);
+  const team = await db.get<TeamInfo>(`SELECT id FROM ${TEAM_TABLE} WHERE city = ?`, [city]);
   if (!team) {
     throw new Error(`Team with city ${city} not found`);
   }
   return team.id;
 };
 
-export const getTeamBySeason = async (teamId: number, seasonStartingYear: number): Promise<Team> => {
+export const getTeamIds = async (): Promise<number[]> => {
   const db = await openDb();
-  const team = await db.get<TeamInfo>(`SELECT * FROM ${TEAM_TABLE} WHERE id = ?`, [teamId]);
-
-  if (!team) {
-    throw new Error(`Team with id ${teamId} not found`);
+  const teams = await db.all<TeamInfo[]>(`SELECT id FROM ${TEAM_TABLE}`);
+  if (teams.length === 0) {
+    throw new Error(`No teams found`);
   }
+  return teams.map(team => team.id);
+};
 
+export const getTeams = async (
+  seasonStartingYear: number,
+  teamId?: number
+): Promise<Team[]> => {
+  const db = await openDb();
   const season = await getSeason(seasonStartingYear);
   if (!season) {
     throw new Error(`Season with year ${seasonStartingYear} not found`);
   }
 
-  const teamSeason = await db.get<TeamSeason>(
-    `SELECT * FROM ${TEAM_SEASON_TABLE} WHERE team_id = ? AND season_id = ?`,
-    [teamId, season.id]
+  // Get all teams or specific team
+  const teams = await db.all<TeamInfo[]>(
+    `SELECT * FROM ${TEAM_TABLE} ${teamId ? 'WHERE id = ?' : ''}`,
+    teamId ? [teamId] : []
   );
 
-  if (!teamSeason) {
-    throw new Error(`Team season not found for team ${teamId} in year ${seasonStartingYear}`);
+  if (teams.length === 0) {
+    throw new Error(`No teams found${teamId ? ` with id ${teamId}` : ''}`);
   }
 
-  const players = await getTeamPlayersBySeason(teamId, season);
-  const startingLineup = players.filter(p => p.playerInfo.is_starting === 1);
-  if (startingLineup.length !== 5) {
-    throw new Error(
-      `Starting lineup for team ${teamId} in year ${seasonStartingYear} does not have 5 players, ` +
-      `there are ${startingLineup.length} players`
-    );
-  }
+  // Get team seasons and players for each team
+  const teamsWithData = await Promise.all(
+    teams.map(async (team) => {
+      const teamSeason = await db.get<TeamSeason>(
+        `SELECT * FROM ${TEAM_SEASON_TABLE} WHERE team_id = ? AND season_id = ?`,
+        [team.id, season.id]
+      );
 
-  return {
-    teamInfo: team,
-    teamSeason: teamSeason,
-    players,
-    startingLineup: startingLineup as Lineup,
-  };
+      if (!teamSeason) {
+        throw new Error(`Team season not found for team ${team.id} in year ${seasonStartingYear}`);
+      }
+
+      const players = await getTeamPlayersBySeason(team.id, season);
+      const startingLineup = players.filter(p => p.playerInfo.is_starting === 1);
+      if (startingLineup.length !== 5) {
+        throw new Error(
+          `Starting lineup for team ${team.id} in year ${seasonStartingYear} does not have 5 players, ` +
+          `there are ${startingLineup.length} players`
+        );
+      }
+
+      return {
+        teamInfo: team,
+        teamSeason,
+        players,
+        startingLineup: startingLineup as Lineup,
+      };
+    })
+  );
+
+  return teamsWithData;
+};
+
+export const getTeam = async (
+  teamId: number,
+  seasonStartingYear: number
+): Promise<Team> => {
+  const teams = await getTeams(seasonStartingYear, teamId);
+  return teams[0];
 };
 
 const getTeamPlayersBySeason = async (
