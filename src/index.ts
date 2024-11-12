@@ -63,7 +63,7 @@ async function main() {
   const teams = await core.getTeams(2024);
 
   const scheduler = new NBAScheduler(teams);
-  const schedule = scheduler.generateSchedule();
+  const schedule = scheduler.generateSchedule(2024);
 
   // const matches = [];
   // for (let i = 0; i < 100; i++) {

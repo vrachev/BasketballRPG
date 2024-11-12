@@ -9,11 +9,12 @@ type Game = {
 };
 
 export class NBAScheduler {
-  private teams: Team[];
-  private readonly GAMES_PER_TEAM = 82;
+  private readonly teams: Team[];
+  private readonly gamesPerTeam: number;
 
-  constructor(teams: Team[]) {
+  constructor(teams: Team[], gamesPerTeam: number = 82) {
     this.teams = teams;
+    this.gamesPerTeam = gamesPerTeam;
   }
 
   private shuffleArray<T>(array: T[]): T[] {
@@ -25,108 +26,249 @@ export class NBAScheduler {
     return shuffled;
   }
 
-  private createInitialSchedule(): Game[] {
-    const schedule: Game[] = [];
-    const gameCounts = new Map<string, number>();  // Track games between each pair
+  private canTeamPlayOnDate(team: Team, date: Date, teamGamesPerDay: Map<string, number>): boolean {
+    const dateKey = date.toISOString().split('T')[0];
+    const teamKey = `${dateKey}-${team.teamInfo.id}`;
+    const gamesOnDay = teamGamesPerDay.get(teamKey) || 0;
+    return gamesOnDay < 1; // Max 1 game per team per day
+  }
 
-    // Helper to safely add games and track counts
+  private recordGameOnDate(team: Team, date: Date, teamGamesPerDay: Map<string, number>): void {
+    const dateKey = date.toISOString().split('T')[0];
+    const teamKey = `${dateKey}-${team.teamInfo.id}`;
+    teamGamesPerDay.set(teamKey, (teamGamesPerDay.get(teamKey) || 0) + 1);
+  }
+
+  private createInitialSchedule(year: number): Game[] {
+    const games: Game[] = [];
+    const gameCounts = new Map<string, number>();
+    const gamesPerTeam = new Map<TeamId, number>();
+    const teamGamesPerDay = new Map<string, number>();
+    const processedPairs = new Set<string>();
+
+    // Initialize counters
+    this.teams.forEach(team => {
+      gamesPerTeam.set(team.teamInfo.id, 0);
+    });
+
+    // Helper to safely add a game and track counts
     const addGame = (homeTeam: Team, awayTeam: Team) => {
       const pairKey = [homeTeam.teamInfo.id, awayTeam.teamInfo.id].sort().join('-');
-      const currentCount = gameCounts.get(pairKey) || 0;
 
-      // Determine how many games these teams should play
-      let targetGames = 2; // Default for non-conference
-      if (homeTeam.teamInfo.conference === awayTeam.teamInfo.conference) {
-        if (homeTeam.teamInfo.division === awayTeam.teamInfo.division) {
-          targetGames = 4; // Division opponents
-        } else {
-          targetGames = 3; // Conference opponents (we'll adjust some to 4 later)
-        }
-      }
-
-      // Only add the game if we haven't reached the target
-      if (currentCount < targetGames) {
-        schedule.push({
-          homeTeam,
-          awayTeam,
-          date: new Date(2024, 9, 22)
-        });
-        gameCounts.set(pairKey, currentCount + 1);
-      }
+      games.push({
+        homeTeam,
+        awayTeam,
+        date: new Date() // Temporary date
+      });
+      gameCounts.set(pairKey, (gameCounts.get(pairKey) || 0) + 1);
+      gamesPerTeam.set(homeTeam.teamInfo.id, (gamesPerTeam.get(homeTeam.teamInfo.id) || 0) + 1);
+      gamesPerTeam.set(awayTeam.teamInfo.id, (gamesPerTeam.get(awayTeam.teamInfo.id) || 0) + 1);
     };
 
-    // 1. First handle division games (4 games against each division opponent)
+    // Process division games (4 games × 4 opponents = 16 games)
+    console.log("Processing division games...");
     this.teams.forEach(team => {
       const divisionOpponents = this.teams.filter(t =>
-        t.teamInfo.division === team.teamInfo.division &&
-        t.teamInfo.id !== team.teamInfo.id
+        t.teamInfo.id !== team.teamInfo.id &&
+        t.teamInfo.division === team.teamInfo.division
       );
 
       divisionOpponents.forEach(opponent => {
-        // Create 4 games, alternating home/away
-        for (let i = 0; i < 4; i++) {
-          const isHome = i % 2 === 0;
-          addGame(
-            isHome ? team : opponent,
-            isHome ? opponent : team
-          );
+        const pairKey = [team.teamInfo.id, opponent.teamInfo.id].sort().join('-');
+        if (!processedPairs.has(pairKey)) {
+          // Add 4 games (2 home, 2 away for each team)
+          addGame(team, opponent);
+          addGame(team, opponent);
+          addGame(opponent, team);
+          addGame(opponent, team);
+          processedPairs.add(pairKey);
         }
       });
     });
 
-    // 2. Handle conference games
+    // Process conference games (36 games)
+    console.log("Processing conference games...");
+
+    // First, group teams by conference
+    const conferenceTeams = new Map<string, Team[]>();
     this.teams.forEach(team => {
-      const conferenceOpponents = this.teams.filter(t =>
-        t.teamInfo.conference === team.teamInfo.conference &&
-        t.teamInfo.division !== team.teamInfo.division
-      );
+      const conf = team.teamInfo.conference;
+      if (!conferenceTeams.has(conf)) {
+        conferenceTeams.set(conf, []);
+      }
+      conferenceTeams.get(conf)!.push(team);
+    });
 
-      // Randomly select 6 teams for 4 games
-      const fourGameOpponents = this.shuffleArray(conferenceOpponents).slice(0, 6);
-
-      // Create 4 games against selected opponents
-      fourGameOpponents.forEach(opponent => {
-        for (let i = 0; i < 4; i++) {
-          const isHome = i % 2 === 0;
-          addGame(
-            isHome ? team : opponent,
-            isHome ? opponent : team
-          );
-        }
+    // For each conference, create a balanced schedule
+    conferenceTeams.forEach((teams, conference) => {
+      // Get non-division opponents for each team
+      const nonDivOpponents = new Map<TeamId, Team[]>();
+      teams.forEach(team => {
+        nonDivOpponents.set(team.teamInfo.id, teams.filter(t =>
+          t.teamInfo.id !== team.teamInfo.id &&
+          t.teamInfo.division !== team.teamInfo.division
+        ));
       });
 
-      // Create 3 games against remaining conference opponents
-      conferenceOpponents
-        .filter(t => !fourGameOpponents.includes(t))
-        .forEach(opponent => {
-          for (let i = 0; i < 3; i++) {
-            const isHome = i % 3 !== 2;
-            addGame(
-              isHome ? team : opponent,
-              isHome ? opponent : team
-            );
+      // For each team, assign their 4-game and 3-game opponents
+      teams.forEach(team => {
+        const opponents = nonDivOpponents.get(team.teamInfo.id)!;
+        const shuffledOpponents = this.shuffleArray([...opponents]);
+
+        // First 6 opponents get 4 games
+        for (let i = 0; i < 6; i++) {
+          const opponent = shuffledOpponents[i];
+          const pairKey = [team.teamInfo.id, opponent.teamInfo.id].sort().join('-');
+
+          if (!processedPairs.has(pairKey)) {
+            // Add 4 games (2 home, 2 away)
+            addGame(team, opponent);
+            addGame(team, opponent);
+            addGame(opponent, team);
+            addGame(opponent, team);
+            processedPairs.add(pairKey);
           }
-        });
+        }
+
+        // Remaining opponents get 3 games
+        for (let i = 6; i < opponents.length; i++) {
+          const opponent = shuffledOpponents[i];
+          const pairKey = [team.teamInfo.id, opponent.teamInfo.id].sort().join('-');
+
+          if (!processedPairs.has(pairKey)) {
+            // Add 3 games (balanced home/away)
+            addGame(team, opponent);
+            addGame(opponent, team);
+
+            // Third game alternates based on team ID
+            if (team.teamInfo.id < opponent.teamInfo.id) {
+              addGame(team, opponent);
+            } else {
+              addGame(opponent, team);
+            }
+            processedPairs.add(pairKey);
+          }
+        }
+      });
     });
 
-    // 3. Handle inter-conference games (2 games against each team)
+    // Verify conference game counts
     this.teams.forEach(team => {
-      const opposingConferenceTeams = this.teams.filter(t =>
+      const confGames = games.filter(g =>
+        (g.homeTeam.teamInfo.id === team.teamInfo.id || g.awayTeam.teamInfo.id === team.teamInfo.id) &&
+        g.homeTeam.teamInfo.conference === g.awayTeam.teamInfo.conference &&
+        g.homeTeam.teamInfo.division !== g.awayTeam.teamInfo.division
+      ).length;
+
+      if (confGames !== 36) {
+        console.error(`${team.teamInfo.name} has ${confGames} conference games instead of 36`);
+      }
+    });
+
+    // Process non-conference games (30 games)
+    console.log("Processing non-conference games...");
+    this.teams.forEach(team => {
+      const nonConfOpponents = this.teams.filter(t =>
+        t.teamInfo.id !== team.teamInfo.id &&
         t.teamInfo.conference !== team.teamInfo.conference
       );
 
-      opposingConferenceTeams.forEach(opponent => {
-        for (let i = 0; i < 2; i++) {
-          const isHome = i === 0;
-          addGame(
-            isHome ? team : opponent,
-            isHome ? opponent : team
-          );
+      nonConfOpponents.forEach(opponent => {
+        const pairKey = [team.teamInfo.id, opponent.teamInfo.id].sort().join('-');
+        if (!processedPairs.has(pairKey)) {
+          addGame(team, opponent);
+          addGame(opponent, team);
+          processedPairs.add(pairKey);
         }
       });
     });
 
-    return schedule;
+    // Debug output
+    console.log("\nGame counts per team:");
+    this.teams.forEach(team => {
+      const totalGames = gamesPerTeam.get(team.teamInfo.id) || 0;
+      const divGames = this.teams.filter(t =>
+        t.teamInfo.id !== team.teamInfo.id &&
+        t.teamInfo.division === team.teamInfo.division
+      ).length * 4;
+      const confGames = games.filter(g =>
+        (g.homeTeam.teamInfo.id === team.teamInfo.id || g.awayTeam.teamInfo.id === team.teamInfo.id) &&
+        g.homeTeam.teamInfo.conference === g.awayTeam.teamInfo.conference &&
+        g.homeTeam.teamInfo.division !== g.awayTeam.teamInfo.division
+      ).length;
+      const nonConfGames = games.filter(g =>
+        (g.homeTeam.teamInfo.id === team.teamInfo.id || g.awayTeam.teamInfo.id === team.teamInfo.id) &&
+        g.homeTeam.teamInfo.conference !== g.awayTeam.teamInfo.conference
+      ).length;
+
+      console.log(`${team.teamInfo.name}: ${totalGames} total (${divGames} div, ${confGames} conf, ${nonConfGames} non-conf)`);
+    });
+
+    // Verify each team has exactly 82 games
+    this.teams.forEach(team => {
+      const totalGames = gamesPerTeam.get(team.teamInfo.id) || 0;
+      if (totalGames !== this.gamesPerTeam) {
+        throw new Error(`Team ${team.teamInfo.name} has ${totalGames} games instead of ${this.gamesPerTeam}`);
+      }
+    });
+
+    // Now assign dates to all games
+    const availableDates = this.shuffleArray(this.getSeasonDates(year));
+    const unscheduledGames = [...games];
+    const scheduledGames: Game[] = [];
+
+    while (unscheduledGames.length > 0) {
+      // Find the team with the most remaining games
+      const teamGamesRemaining = new Map<TeamId, number>();
+      unscheduledGames.forEach(game => {
+        const homeId = game.homeTeam.teamInfo.id;
+        const awayId = game.awayTeam.teamInfo.id;
+        teamGamesRemaining.set(homeId, (teamGamesRemaining.get(homeId) || 0) + 1);
+        teamGamesRemaining.set(awayId, (teamGamesRemaining.get(awayId) || 0) + 1);
+      });
+
+      // Sort games by teams with most remaining games
+      unscheduledGames.sort((a, b) => {
+        const aMax = Math.max(
+          teamGamesRemaining.get(a.homeTeam.teamInfo.id) || 0,
+          teamGamesRemaining.get(a.awayTeam.teamInfo.id) || 0
+        );
+        const bMax = Math.max(
+          teamGamesRemaining.get(b.homeTeam.teamInfo.id) || 0,
+          teamGamesRemaining.get(b.awayTeam.teamInfo.id) || 0
+        );
+        return bMax - aMax;
+      });
+
+      const game = unscheduledGames[0];
+
+      // Find next available date where both teams can play
+      const gameDate = availableDates.find(date =>
+        this.canTeamPlayOnDate(game.homeTeam, date, teamGamesPerDay) &&
+        this.canTeamPlayOnDate(game.awayTeam, date, teamGamesPerDay)
+      );
+
+      if (!gameDate) {
+        console.error('Failed to schedule game:', {
+          homeTeam: game.homeTeam.teamInfo.name,
+          awayTeam: game.awayTeam.teamInfo.name,
+          remainingGames: unscheduledGames.length,
+          remainingDates: availableDates.length
+        });
+        throw new Error('No available dates for remaining games');
+      }
+
+      // Record the game
+      game.date = gameDate;
+      this.recordGameOnDate(game.homeTeam, gameDate, teamGamesPerDay);
+      this.recordGameOnDate(game.awayTeam, gameDate, teamGamesPerDay);
+      availableDates.splice(availableDates.indexOf(gameDate), 1);
+
+      scheduledGames.push(game);
+      unscheduledGames.shift();
+    }
+
+    return scheduledGames;
   }
 
   private printScheduleAnalysis(schedule: Game[]) {
@@ -198,10 +340,52 @@ export class NBAScheduler {
       const games = conferenceGames.get(team.teamInfo.id)!;
       console.log(`${team.teamInfo.name}: ${games.east} vs East, ${games.west} vs West`);
     });
+
+    console.log('\nSchedule Date Range:');
+    const dates = schedule.map(g => g.date.getTime());
+    const firstGame = new Date(Math.min(...dates));
+    const lastGame = new Date(Math.max(...dates));
+    console.log(`Season runs from ${firstGame.toDateString()} to ${lastGame.toDateString()}`);
+
+    console.log('\nGames per month:');
+    const monthCounts = new Map<string, number>();
+    schedule.forEach(game => {
+      const monthKey = game.date.toLocaleString('default', { month: 'long', year: 'numeric' });
+      monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
+    });
+
+    Array.from(monthCounts.entries())
+      .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+      .forEach(([month, count]) => {
+        console.log(`${month}: ${count} games`);
+      });
   }
 
-  public generateSchedule(): MatchInput[] {
-    const schedule = this.createInitialSchedule();
+  private getSeasonDates(year: number): Date[] {
+    const startDate = new Date(year, 9, 22); // October 22nd
+    const endDate = new Date(year + 1, 3, 14); // April 14th next year
+    const dates: Date[] = [];
+
+    let currentDate = new Date(startDate);
+    while (currentDate <= endDate) {
+      // Skip Christmas Day
+      if (currentDate.getMonth() === 11 && currentDate.getDate() === 25) {
+        currentDate.setDate(currentDate.getDate() + 1);
+        continue;
+      }
+
+      // Add each date multiple times to allow multiple games per day
+      for (let i = 0; i < 8; i++) { // Allow up to 8 games per day
+        dates.push(new Date(currentDate));
+      }
+      currentDate.setDate(currentDate.getDate() + 1);
+    }
+
+    return this.shuffleArray(dates);
+  }
+
+  public generateSchedule(year: number): MatchInput[] {
+    const schedule = this.createInitialSchedule(year);
     this.printScheduleAnalysis(schedule);
 
     return schedule.map(game => ({
