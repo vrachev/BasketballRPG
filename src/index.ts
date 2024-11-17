@@ -3,7 +3,7 @@ import { createTeams, getTeamId } from './core/entities/team';
 import * as core from './core';
 import { formatTeamBoxScore } from './display/boxscore';
 import { createSeason } from './core/entities/season';
-import { NBAScheduler } from './core/season/createSchedule';
+import { generateSchedule } from './core/season/createSchedule';
 
 async function seedDb() {
   await createTables();
@@ -62,8 +62,7 @@ async function main() {
 
   const teams = await core.getTeams(2024);
 
-  const scheduler = new NBAScheduler(teams);
-  const schedule = scheduler.generateSchedule(2024);
+  const schedule = generateSchedule(teams, 'regular_season', 2024);
 
   // const matches = [];
   // for (let i = 0; i < 100; i++) {
