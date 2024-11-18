@@ -59,7 +59,6 @@ export function generateSchedule(
 
     assignGameDates(allGames, teams, year);
     verifyScheduleConstraints(teams, allGames, year);
-    printScheduleAnalysis(teams, allGames);
 
     // Convert games to MatchInput format
     return allGames.map(game => ({
@@ -152,7 +151,6 @@ const createSchedule = (teams: Team[], year: number): TeamGameRecord => {
     };
   }
 
-  console.log("Processing division games...");
   for (const team of teams) {
     const divisionOpponents = teams.filter(t =>
       t.teamInfo.id !== team.teamInfo.id &&
@@ -181,7 +179,6 @@ const createSchedule = (teams: Team[], year: number): TeamGameRecord => {
     }
   }
 
-  console.log("Processing conference games...");
   const conferenceTeams = new Map<string, Team[]>();
   for (const team of teams) {
     const conf = team.teamInfo.conference;
@@ -256,8 +253,6 @@ function createConferenceSchedule(teams: Team[], teamGameRecord: TeamGameRecord,
       if (div2Teams.length !== TEAMS_PER_DIV) {
         throw new Error(`Division ${div2Name} has ${div2Teams.length} teams instead of ${TEAMS_PER_DIV}`);
       }
-
-      console.log(`\nProcessing ${div1Name} vs ${div2Name}`);
 
       // Fixed pattern for 4-game and 3-game series
       const pattern = generatePatternWithOffset(year);
@@ -416,13 +411,16 @@ function balanceHomeAwayGames(teams: Team[], teamGameRecord: TeamGameRecord, loc
     iterations++;
   }
 
-  if (iterations === MAX_ITERATIONS) {
-    console.warn(`Warning: Home/away balance may not be optimal (stopped after ${MAX_ITERATIONS} iterations)`);
+  if (currentImbalance > 0) {
+    throw new Error(
+      `Failed to balance home/away games after ${MAX_ITERATIONS} iterations.\n` +
+      `Current imbalance: ${currentImbalance}`
+    );
   }
 }
 
 function verifyScheduleConstraints(teams: Team[], allGames: Game[], year: number): void {
-  console.log('\n=== Schedule Constraint Verification ===\n');
+  console.log('Verifying schedule constraints');
 
   // Calculate expected games from constants
   const expectedDivGames = DIV_SERIES.series * DIV_SERIES.games_per_series;
@@ -516,10 +514,7 @@ function verifyScheduleConstraints(teams: Team[], allGames: Game[], year: number
     }
   }
 
-  console.log('✅ Schedule constraints verified');
-
   // Verify date constraints
-  console.log('\nVerifying date constraints...');
   const { start: SEASON_START, end: SEASON_END } = getSeasonDates(year);
 
   // Check season start/end dates
@@ -571,10 +566,49 @@ function verifyScheduleConstraints(teams: Team[], allGames: Game[], year: number
     }
   }
 
+  // Verify minimum games per week
+  const minGamesPerWeek = 10;
+
+  // Group games by week
+  const weekGames = new Map<string, Game[]>();
+  for (const game of allGames) {
+    // Get start of week (Sunday) for this game
+    const weekStart = new Date(game.date);
+    weekStart.setUTCDate(weekStart.getUTCDate() - weekStart.getUTCDay());
+    weekStart.setUTCHours(0, 0, 0, 0);
+
+    const weekKey = weekStart.toISOString();
+    if (!weekGames.has(weekKey)) {
+      weekGames.set(weekKey, []);
+    }
+    weekGames.get(weekKey)!.push(game);
+  }
+
+  // Check each week has minimum number of games, accounting for partial weeks
+  for (const [weekStart, games] of weekGames) {
+    const weekDate = new Date(weekStart);
+    const weekEnd = new Date(weekDate);
+    weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
+
+    // Skip minimum game check for partial weeks at start/end of season
+    if (weekDate < SEASON_START || weekEnd > SEASON_END) {
+      continue;
+    }
+
+    if (games.length < minGamesPerWeek) {
+      throw new Error(
+        `Week of ${weekDate.toDateString()} only has ${games.length} games scheduled.\n` +
+        `Minimum required games per week: ${minGamesPerWeek}`
+      );
+    }
+  }
+
   console.log('✅ Schedule constraints verified');
 }
 
-function printScheduleAnalysis(teams: Team[], allGames: Game[]) {
+export function toStringScheduleInfo(teams: Team[], allGames: Game[]): string {
+  let message = '';
+
   const homeGames = new Map<TeamId, number>();
   const awayGames = new Map<TeamId, number>();
   const conferenceGames = new Map<TeamId, { east: number, west: number; }>();
@@ -613,15 +647,14 @@ function printScheduleAnalysis(teams: Team[], allGames: Game[]) {
     teamPairings.set(pairingKey, (teamPairings.get(pairingKey) || 0) + 1);
   }
 
-  // Print results
-  console.log('\n=== Schedule Analysis ===\n');
-
-  console.log('Home/Away Game Distribution:');
+  // Build home/away distribution message
+  message += 'Home/Away Game Distribution:\n';
   for (const team of teams) {
-    console.log(`${team.teamInfo.name}: ${homeGames.get(team.teamInfo.id)} home, ${awayGames.get(team.teamInfo.id)} away`);
+    message += `${team.teamInfo.name}: ${homeGames.get(team.teamInfo.id)} home, ${awayGames.get(team.teamInfo.id)} away\n`;
   }
 
-  console.log('\nCeltics Home/Away Distribution:');
+  // Build Celtics distribution message
+  message += '\nCeltics Home/Away Distribution:\n';
   const celtics = teams.find(t => t.teamInfo.name === 'Celtics');
   if (celtics) {
     for (const opponent of teams) {
@@ -637,40 +670,14 @@ function printScheduleAnalysis(teams: Team[], allGames: Game[]) {
             g.awayTeam.teamInfo.id === celtics.teamInfo.id &&
             g.homeTeam.teamInfo.id === opponent.teamInfo.id
           ).length;
-          console.log(`  vs ${opponent.teamInfo.name}: ${homeCount} home, ${awayCount} away`);
+          message += `  vs ${opponent.teamInfo.name}: ${homeCount} home, ${awayCount} away\n`;
         }
       }
     }
   }
 
-  console.log('\nCeltics Full Schedule:');
-  const celticsGames = allGames
-    .filter(g => g.homeTeam.teamInfo.name === 'Celtics' || g.awayTeam.teamInfo.name === 'Celtics')
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  if (celticsGames.length > 0) {
-    let currentMonth = '';
-    for (const game of celticsGames) {
-      const monthYear = game.date.toLocaleString('default', { month: 'long', year: 'numeric' });
-      if (monthYear !== currentMonth) {
-        console.log(`\n${monthYear}`);
-        currentMonth = monthYear;
-      }
-      const dateStr = game.date.toLocaleString('default', { weekday: 'short', month: 'short', day: 'numeric' });
-      const opponent = game.homeTeam.teamInfo.name === 'Celtics'
-        ? `vs ${game.awayTeam.teamInfo.name}`
-        : `@ ${game.homeTeam.teamInfo.name}`;
-      console.log(`  ${dateStr.padEnd(16)} ${opponent}`);
-    }
-  }
-
-  console.log('\nSchedule Date Range:');
-  const dates = allGames.map(g => g.date.getTime());
-  const firstGame = new Date(Math.min(...dates));
-  const lastGame = new Date(Math.max(...dates));
-  console.log(`Season runs from ${firstGame.toDateString()} to ${lastGame.toDateString()}`);
-
-  console.log('\nGames per month:');
+  // Build games per month message
+  message += '\nGames per month:\n';
   const monthCounts = new Map<string, number>();
   for (const game of allGames) {
     const monthKey = game.date.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -679,10 +686,10 @@ function printScheduleAnalysis(teams: Team[], allGames: Game[]) {
 
   for (const [month, count] of Array.from(monthCounts.entries())
     .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())) {
-    console.log(`${month}: ${count} games`);
+    message += `${month}: ${count} games\n`;
   }
 
-  return;
+  return message;
 }
 
 function addDays(date: Date, days: number): Date {
@@ -742,15 +749,10 @@ function canPlayOnDate(teamId: number, date: Date, teamGames: Map<number, Date[]
 }
 
 function assignGameDates(games: Game[], teams: Team[], year: number): void {
-  console.log('\n=== Assigning Game Dates ===\n');
   const { start: SEASON_START, end: SEASON_END } = getSeasonDates(year);
   const totalDays = Math.floor((SEASON_END.getTime() - SEASON_START.getTime()) / (1000 * 60 * 60 * 24)) + 1;
 
   const targetGamesPerDay = Math.ceil(games.length / totalDays);
-  console.log(`Season start: ${SEASON_START.toDateString()}`);
-  console.log(`Season end: ${SEASON_END.toDateString()}`);
-  console.log(`Total games to schedule: ${games.length}`);
-  console.log(`Target games per day: ${targetGamesPerDay}`);
 
   // Create a map to track games by team
   const teamGames = new Map<number, Date[]>();
@@ -818,10 +820,6 @@ function assignGameDates(games: Game[], teams: Team[], year: number): void {
       const unscheduledIndex = unscheduledGames.indexOf(gameToSchedule);
       unscheduledGames.splice(unscheduledIndex, 1);
 
-      if (gamesScheduled % 100 === 0) {
-        console.log(`Scheduled ${gamesScheduled} games (${Math.round(gamesScheduled / games.length * 100)}%)`);
-      }
-
       possibleGames = possibleGames.filter(game =>
         !teamsScheduledForDay.has(game.homeTeam.teamInfo.id) &&
         !teamsScheduledForDay.has(game.awayTeam.teamInfo.id)
@@ -869,16 +867,6 @@ function assignGameDates(games: Game[], teams: Team[], year: number): void {
       }
     }
   }
-
-  console.log(`\nScheduling complete:`);
-  console.log(`- ${gamesScheduled} games scheduled`);
-  console.log(`- Season spans ${totalDays} days`);
-  console.log('\nGames per month:');
-  Array.from(monthlyGames.entries())
-    .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
-    .forEach(([month, count]) => {
-      console.log(`${month}: ${count} games`);
-    });
 }
 
 function getSeasonDates(year: number) {
