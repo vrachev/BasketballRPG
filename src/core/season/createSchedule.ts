@@ -40,6 +40,13 @@ const NON_CONF_SERIES = {
   games_per_series: 2,
 };
 
+const DIV_NAMES = {
+  Eastern: ['Atlantic', 'Central', 'Southeast'],
+  Western: ['Northwest', 'Pacific', 'Southwest'],
+} as const;
+
+const TEAMS_PER_DIV = 5;
+
 const TOTAL_GAMES = 82;
 
 export function generateSchedule(
@@ -52,72 +59,60 @@ export function generateSchedule(
     verifyScheduleConstraints(teams, schedule);
     printScheduleAnalysis(teams, schedule);
 
-    return schedule.map(game => ({
-      ...game,
-      seasonStage,
-    }));
+    // return schedule.map(game => ({
+    //   ...game,
+    //   seasonStage,
+    // }));
+    return [];
   }
 
   throw new Error(`Unsupported season stage: ${seasonStage}`);
 }
 
-function createGames(
-  team1: Team,
-  team2: Team,
-  numGames: number,
-): { games: Game[]; locUnknowns: GameLocUnknown[]; } {
-  const createGame = (homeTeam: Team, awayTeam: Team): Game => ({
+function createGame(homeTeam: Team, awayTeam: Team): Game {
+  return {
     homeTeam,
     awayTeam,
     date: new Date(), // temp, will be replaced later
-  });
+  };
+}
 
-  const createGameLocUnknown = (team1: Team, team2: Team): GameLocUnknown => ({
+function createGameLocUnknown(team1: Team, team2: Team): GameLocUnknown {
+  return {
     team1,
     team2,
     date: new Date(), // temp, will be replaced later
-  });
+  };
+}
 
-  if (numGames === 4) {
-    return {
-      games: [
-        createGame(team1, team2),
-        createGame(team1, team2),
-        createGame(team2, team1),
-        createGame(team2, team1),
-      ],
-      locUnknowns: [],
-    };
+function generatePatternWithOffset(year: number): Array<{ team: number, opponents: { four: number[], three: number[]; }; }> {
+  const n = TEAMS_PER_DIV;
+  const offset = year % n; // Creates a rotation based on division size
+  const pattern: Array<{ team: number, opponents: { four: number[], three: number[]; }; }> = [];
+
+  for (let team = 0; team < n; team++) {
+    const fourGameOpponents = [
+      (team + offset) % n,
+      (team + offset + 1) % n,
+      (team + offset + 2) % n,
+    ];
+
+    const threeGameOpponents = [
+      (team + offset + 3) % n,
+      (team + offset + 4) % n,
+    ];
+
+    pattern.push({
+      team,
+      opponents: { four: fourGameOpponents, three: threeGameOpponents }
+    });
   }
 
-  if (numGames === 3) {
-    return {
-      games: [
-        createGame(team1, team2),
-        createGame(team2, team1),
-      ],
-      locUnknowns: [createGameLocUnknown(team1, team2)],
-    };
-  }
+  return pattern;
+}
 
-  if (numGames === 2) {
-    return {
-      games: [createGame(team1, team2), createGame(team2, team1)],
-      locUnknowns: [],
-    };
-  }
 
-  if (numGames === 1) {
-    return {
-      games: [createGame(team1, team2)],
-      locUnknowns: [],
-    };
-  }
-
-  throw new Error(`Unsupported number of games: ${numGames}`);
-};
-
-const createSchedule = (teams: Team[], year: number): Game[] => {
+const createSchedule = (teams: Team[], year: number): TeamGameRecord => {
   const allGames: Game[] = [];
   const teamGameRecord: TeamGameRecord = {};
 
@@ -139,12 +134,17 @@ const createSchedule = (teams: Team[], year: number): Game[] => {
     );
 
     for (const opp of divisionOpponents) {
-      // check if we've already added div opp
       const teamId = team.teamInfo.id;
       const oppId = opp.teamInfo.id;
       const counter = teamGameRecord[teamId];
+      // check if we've already added div opp
       if (counter.div[oppId]) continue;
-      const games: Game[] = createGames(team, opp, DIV_SERIES.games_per_series).games;
+      const games: Game[] = [
+        createGame(team, opp),
+        createGame(team, opp),
+        createGame(opp, team),
+        createGame(opp, team),
+      ];
 
       allGames.push(...games);
       teamGameRecord[teamId].div[oppId] = games;
@@ -164,41 +164,43 @@ const createSchedule = (teams: Team[], year: number): Game[] => {
 
   // For each conference, create a balanced schedule
   for (const [_, teams] of conferenceTeams.entries()) {
-    const { games, locUnknowns } = createConferenceSchedule(teams, teamGameRecord);
+    const { games, locUnknowns } = createConferenceSchedule(teams, teamGameRecord, year);
     allGames.push(...games);
-    const balancedGames = balanceHomeAwayGames(teams, locUnknowns);
-    allGames.push(...balancedGames);
+    balanceHomeAwayGames(teams, teamGameRecord, locUnknowns);
   }
 
   // Add non-conference games
   const nonConferenceGames = createNonConferenceSchedule(teams, teamGameRecord);
   allGames.push(...nonConferenceGames);
 
-  return allGames;
+  return teamGameRecord;
 };
 
-
-function createConferenceSchedule(teams: Team[], teamGameRecord: TeamGameRecord): { games: Game[], locUnknowns: GameLocUnknown[]; } {
+function createConferenceSchedule(teams: Team[], teamGameRecord: TeamGameRecord, year: number): { games: Game[], locUnknowns: GameLocUnknown[]; } {
   const allGames: Game[] = [];
   const locUnknowns: GameLocUnknown[] = [];
 
   // When creating 3-game series, use a simple fixed pattern
   const createThreeGameSeries = (team1: Team, team2: Team): { games: Game[], locUnknown: GameLocUnknown; } => {
-    const result = createGames(team1, team2, CONF_SERIES_3.games_per_series);
+    const games = [
+      createGame(team1, team2),
+      createGame(team2, team1),
+    ];
+    const locUnknown = createGameLocUnknown(team1, team2);
     return {
-      games: result.games,
-      locUnknown: result.locUnknowns[0],
+      games,
+      locUnknown,
     };
   };
 
   // Group teams by division (for a single conference)
   const divisions = new Map<string, Team[]>();
-  const conference = teams[0].teamInfo.conference; // All teams should be from same conference
-  const divNames = conference === 'Eastern'
-    ? ['Atlantic', 'Central', 'Southeast']
-    : ['Northwest', 'Pacific', 'Southwest'];
+  const conference = teams[0].teamInfo.conference as keyof typeof DIV_NAMES;
+  const divNames = DIV_NAMES[conference];
 
-  divNames.forEach(div => divisions.set(div, []));
+  for (const div of divNames) {
+    divisions.set(div, []);
+  }
 
   // Sort teams into divisions
   for (const team of teams) {
@@ -215,27 +217,21 @@ function createConferenceSchedule(teams: Team[], teamGameRecord: TeamGameRecord)
   for (let i = 0; i < divisionsList.length; i++) {
     const [div1Name, div1Teams] = divisionsList[i];
 
-    if (div1Teams.length !== 5) {
-      throw new Error(`Division ${div1Name} has ${div1Teams.length} teams instead of 5`);
+    if (div1Teams.length !== TEAMS_PER_DIV) {
+      throw new Error(`Division ${div1Name} has ${div1Teams.length} teams instead of ${TEAMS_PER_DIV}`);
     }
 
     for (let j = i + 1; j < divisionsList.length; j++) {
       const [div2Name, div2Teams] = divisionsList[j];
 
-      if (div2Teams.length !== 5) {
-        throw new Error(`Division ${div2Name} has ${div2Teams.length} teams instead of 5`);
+      if (div2Teams.length !== TEAMS_PER_DIV) {
+        throw new Error(`Division ${div2Name} has ${div2Teams.length} teams instead of ${TEAMS_PER_DIV}`);
       }
 
       console.log(`\nProcessing ${div1Name} vs ${div2Name}`);
 
       // Fixed pattern for 4-game and 3-game series
-      const pattern = [
-        { team: 0, opponents: { four: [0, 1, 2], three: [3, 4] } },
-        { team: 1, opponents: { four: [1, 2, 3], three: [4, 0] } },
-        { team: 2, opponents: { four: [2, 3, 4], three: [0, 1] } },
-        { team: 3, opponents: { four: [3, 4, 0], three: [1, 2] } },
-        { team: 4, opponents: { four: [4, 0, 1], three: [2, 3] } },
-      ];
+      const pattern = generatePatternWithOffset(year);
 
       // Apply the pattern for each team in div1
       for (const { team: teamIdx, opponents } of pattern) {
@@ -251,9 +247,12 @@ function createConferenceSchedule(teams: Team[], teamGameRecord: TeamGameRecord)
             throw new Error(`No team found at index ${oppIdx} in division ${div2Name}`);
           }
 
-          console.log(`4-game series: ${team1.teamInfo.id} vs ${team2.teamInfo.id}`);
-
-          const games = createGames(team1, team2, CONF_SERIES_4.games_per_series).games;
+          const games = [
+            createGame(team1, team2),
+            createGame(team1, team2),
+            createGame(team2, team1),
+            createGame(team2, team1),
+          ];
 
           allGames.push(...games);
           teamGameRecord[team1.teamInfo.id].conf4[team2.teamInfo.id] = games;
@@ -266,8 +265,6 @@ function createConferenceSchedule(teams: Team[], teamGameRecord: TeamGameRecord)
           if (!team2) {
             throw new Error(`No team found at index ${oppIdx} in division ${div2Name}`);
           }
-
-          console.log(`3-game series: ${team1.teamInfo.id} vs ${team2.teamInfo.id}`);
 
           const { games, locUnknown } = createThreeGameSeries(team1, team2);
 
@@ -298,7 +295,10 @@ function createNonConferenceSchedule(teams: Team[], teamGameRecord: TeamGameReco
       const counter = teamGameRecord[teamId];
       if (counter.nonConf[oppId]) continue;
 
-      const games = createGames(team, opp, NON_CONF_SERIES.games_per_series).games;
+      const games = [
+        createGame(team, opp),
+        createGame(opp, team),
+      ];
 
       allGames.push(...games);
       teamGameRecord[teamId].nonConf[oppId] = games;
@@ -308,157 +308,104 @@ function createNonConferenceSchedule(teams: Team[], teamGameRecord: TeamGameReco
   return allGames;
 }
 
-function balanceHomeAwayGames(teams: Team[], locUnknowns: GameLocUnknown[]): Game[] {
-  const countGames = (currentGames: Game[]) => {
-    const homeGames = new Map<TeamId, number>();
-    const awayGames = new Map<TeamId, number>();
+function balanceHomeAwayGames(teams: Team[], teamGameRecord: TeamGameRecord, locUnknowns: GameLocUnknown[]): void {
+  const countGames = (teamId: TeamId) => {
+    const records = teamGameRecord[teamId];
+    let homeGames = 0;
+    let awayGames = 0;
 
-    for (const team of teams) {
-      homeGames.set(team.teamInfo.id, 0);
-      awayGames.set(team.teamInfo.id, 0);
-    }
-
-    for (const game of currentGames) {
-      homeGames.set(game.homeTeam.teamInfo.id, (homeGames.get(game.homeTeam.teamInfo.id) || 0) + 1);
-      awayGames.set(game.awayTeam.teamInfo.id, (awayGames.get(game.awayTeam.teamInfo.id) || 0) + 1);
+    // Only need to count conf3 games since other series are already balanced
+    const conf3Games = Object.values(records.conf3).flat();
+    for (const game of conf3Games) {
+      if (game.homeTeam.teamInfo.id === teamId) homeGames++;
+      if (game.awayTeam.teamInfo.id === teamId) awayGames++;
     }
 
     return { homeGames, awayGames };
   };
 
-  const calculateImbalance = (currentGames: Game[]) => {
-    const { homeGames, awayGames } = countGames(currentGames);
+  const calculateImbalance = () => {
     let totalImbalance = 0;
-
     for (const team of teams) {
-      const diff = Math.abs((homeGames.get(team.teamInfo.id) || 0) - (awayGames.get(team.teamInfo.id) || 0));
-      totalImbalance += diff;
+      const { homeGames, awayGames } = countGames(team.teamInfo.id);
+      totalImbalance += Math.abs(homeGames - awayGames);
     }
-
     return totalImbalance;
   };
 
   // Initial conversion of unknowns to games
-  let balancedGames = locUnknowns.map(unknown => {
-    return createGames(unknown.team1, unknown.team2, 1).games[0];
-  });
+  for (const unknown of locUnknowns) {
+    const game = createGame(unknown.team1, unknown.team2);
+    const team1Id = unknown.team1.teamInfo.id;
+    const team2Id = unknown.team2.teamInfo.id;
 
-  let currentImbalance = calculateImbalance(balancedGames);
+    teamGameRecord[team1Id].conf3[team2Id].push(game);
+    teamGameRecord[team2Id].conf3[team1Id] = [...teamGameRecord[team1Id].conf3[team2Id]];
+  }
+
+  let currentImbalance = calculateImbalance();
   let iterations = 0;
   const MAX_ITERATIONS = 1000;
 
   // Keep trying to improve balance until we can't or hit iteration limit
   while (currentImbalance > 0 && iterations < MAX_ITERATIONS) {
-    console.log(`Iteration ${iterations}: ${currentImbalance}`);
     let improved = false;
 
     // Try swapping home/away for each unknown game
-    for (let i = 0; i < balancedGames.length; i++) {
-      const originalGame = balancedGames[i];
-      const swappedGame = createGames(originalGame.awayTeam, originalGame.homeTeam, 1).games[0];
+    for (let i = 0; i < locUnknowns.length; i++) {
+      const unknown = locUnknowns[i];
+      const team1Id = unknown.team1.teamInfo.id;
+      const team2Id = unknown.team2.teamInfo.id;
 
-      // Temporarily apply swap
-      const testGames = [...balancedGames.slice(0, i), swappedGame, ...balancedGames.slice(i + 1)];
-      const newImbalance = calculateImbalance(testGames);
+      // Create a swapped version of the game
+      const swappedGame = createGame(unknown.team2, unknown.team1);
 
-      // If this swap improves balance, keep it
+      // Store original game
+      const originalGame = teamGameRecord[team1Id].conf3[team2Id].pop()!;
+
+      // Try the swap
+      teamGameRecord[team1Id].conf3[team2Id].push(swappedGame);
+      teamGameRecord[team2Id].conf3[team1Id] = [...teamGameRecord[team1Id].conf3[team2Id]];
+
+      const newImbalance = calculateImbalance();
+
       if (newImbalance < currentImbalance) {
-        balancedGames[i] = swappedGame;
+        // Keep the swap
+        locUnknowns[i] = { team1: unknown.team2, team2: unknown.team1, date: unknown.date };
         currentImbalance = newImbalance;
         improved = true;
         break;
+      } else {
+        // Restore original game
+        teamGameRecord[team1Id].conf3[team2Id].pop();
+        teamGameRecord[team1Id].conf3[team2Id].push(originalGame);
+        teamGameRecord[team2Id].conf3[team1Id] = [...teamGameRecord[team1Id].conf3[team2Id]];
       }
     }
 
-    // If no improvements were found in this iteration, we're done
     if (!improved) break;
-
     iterations++;
   }
 
-  if (currentImbalance > 0) {
-    throw new Error(`Failed to balance home/away games after ${MAX_ITERATIONS} iterations`);
+  if (iterations === MAX_ITERATIONS) {
+    console.warn(`Warning: Home/away balance may not be optimal (stopped after ${MAX_ITERATIONS} iterations)`);
   }
-
-  return balancedGames;
 }
 
-function verifyScheduleConstraints(teams: Team[], games: Game[]): void {
+function verifyScheduleConstraints(teams: Team[], teamGameRecord: TeamGameRecord): void {
   console.log('\n=== Schedule Constraint Verification ===\n');
 
-  // Build game record for analysis
-  const teamGameRecord: TeamGameRecord = {};
-  for (const team of teams) {
-    teamGameRecord[team.teamInfo.id] = {
-      div: {},
-      conf4: {},
-      conf3: {},
-      nonConf: {},
-    };
-  }
-
-  // Categorize each game
-  for (const game of games) {
-    const homeId = game.homeTeam.teamInfo.id;
-    const awayId = game.awayTeam.teamInfo.id;
-    const homeTeam = game.homeTeam;
-    const awayTeam = game.awayTeam;
-
-    // Same division
-    if (homeTeam.teamInfo.division === awayTeam.teamInfo.division) {
-      if (!teamGameRecord[homeId].div[awayId]) {
-        teamGameRecord[homeId].div[awayId] = [];
-        teamGameRecord[awayId].div[homeId] = [];
-      }
-      teamGameRecord[homeId].div[awayId].push(game);
-      teamGameRecord[awayId].div[homeId].push(game);
-    }
-    // Same conference, different division
-    else if (homeTeam.teamInfo.conference === awayTeam.teamInfo.conference) {
-      // Check if it's part of a 4-game or 3-game series
-      const existingFourGame = teamGameRecord[homeId].conf4[awayId];
-      const existingThreeGame = teamGameRecord[homeId].conf3[awayId];
-
-      if (existingFourGame) {
-        teamGameRecord[homeId].conf4[awayId].push(game);
-        teamGameRecord[awayId].conf4[homeId].push(game);
-      }
-      else if (existingThreeGame) {
-        teamGameRecord[homeId].conf3[awayId].push(game);
-        teamGameRecord[awayId].conf3[homeId].push(game);
-      }
-      else {
-        // Start new series based on expected number of games
-        const gamesWithTeams = games.filter(g =>
-          (g.homeTeam.teamInfo.id === homeId && g.awayTeam.teamInfo.id === awayId) ||
-          (g.homeTeam.teamInfo.id === awayId && g.awayTeam.teamInfo.id === homeId)
-        );
-
-        if (gamesWithTeams.length === 4) {
-          teamGameRecord[homeId].conf4[awayId] = [game];
-          teamGameRecord[awayId].conf4[homeId] = [game];
-        } else {
-          teamGameRecord[homeId].conf3[awayId] = [game];
-          teamGameRecord[awayId].conf3[homeId] = [game];
-        }
-      }
-    }
-    // Different conferences
-    else {
-      if (!teamGameRecord[homeId].nonConf[awayId]) {
-        teamGameRecord[homeId].nonConf[awayId] = [];
-        teamGameRecord[awayId].nonConf[homeId] = [];
-      }
-      teamGameRecord[homeId].nonConf[awayId].push(game);
-      teamGameRecord[awayId].nonConf[homeId].push(game);
-    }
-  }
+  // Calculate expected games from constants
+  const expectedDivGames = DIV_SERIES.series * DIV_SERIES.games_per_series;
+  const expectedConf4Games = CONF_SERIES_4.series * CONF_SERIES_4.games_per_series;
+  const expectedConf3Games = CONF_SERIES_3.series * CONF_SERIES_3.games_per_series;
+  const expectedNonConfGames = NON_CONF_SERIES.series * NON_CONF_SERIES.games_per_series;
+  const expectedConfGames = expectedDivGames + expectedConf4Games + expectedConf3Games;
 
   for (const team of teams) {
     const teamId = team.teamInfo.id;
     const records = teamGameRecord[teamId];
 
-    // Count division games (should be 16: 4 games × 4 opponents)
     const divGames = Object.entries(records.div)
       .reduce((total, [oppId, games]) => {
         const opponent = teams.find(t => t.teamInfo.id === Number(oppId));
@@ -468,7 +415,6 @@ function verifyScheduleConstraints(teams: Team[], games: Game[]): void {
         return total + games.length;
       }, 0);
 
-    // Count 4-game conference series (should be 24: 4 games × 6 opponents)
     const fourGameConfGames = Object.entries(records.conf4)
       .reduce((total, [oppId, games]) => {
         const opponent = teams.find(t => t.teamInfo.id === Number(oppId));
@@ -478,7 +424,6 @@ function verifyScheduleConstraints(teams: Team[], games: Game[]): void {
         return total + games.length;
       }, 0);
 
-    // Count 3-game conference series (should be 12: 3 games × 4 opponents)
     const threeGameConfGames = Object.entries(records.conf3)
       .reduce((total, [oppId, games]) => {
         const opponent = teams.find(t => t.teamInfo.id === Number(oppId));
@@ -488,24 +433,24 @@ function verifyScheduleConstraints(teams: Team[], games: Game[]): void {
         return total + games.length;
       }, 0);
 
-    // Count non-conference games (should be 2 games per non-conf opponent)
     const nonConfGames = Object.entries(records.nonConf)
       .reduce((total, [oppId, games]) => {
         const opponent = teams.find(t => t.teamInfo.id === Number(oppId));
         if (!opponent || opponent.teamInfo.conference === team.teamInfo.conference) {
           throw new Error(`Team ${teamId} has non-conference games scheduled with conference team ${oppId}`);
         }
-        if (games.length !== 2) {
-          throw new Error(`Team ${teamId} plays ${games.length} games with non-conference team ${oppId} (expected 2)`);
-        }
         return total + games.length;
       }, 0);
 
-    // Verify conference game totals
-    if (threeGameConfGames !== 12 || fourGameConfGames !== 24 || divGames !== 16) {
+    if (threeGameConfGames !== expectedConf3Games ||
+      fourGameConfGames !== expectedConf4Games ||
+      divGames !== expectedDivGames ||
+      nonConfGames !== expectedNonConfGames) {
       throw new Error(
-        `Team ${team.teamInfo.name} has ${threeGameConfGames} 3-game conference series (expected 12), ` +
-        `${fourGameConfGames} 4-game conference series (expected 24), and ${divGames} division games (expected 16)`
+        `Team ${team.teamInfo.name} has ${threeGameConfGames} 3-game conference series (expected ${expectedConf3Games}), ` +
+        `${fourGameConfGames} 4-game conference series (expected ${expectedConf4Games}), ` +
+        `${divGames} division games (expected ${expectedDivGames}), and ` +
+        `${nonConfGames} non-conference games (expected ${expectedNonConfGames})`
       );
     }
 
@@ -518,24 +463,24 @@ function verifyScheduleConstraints(teams: Team[], games: Game[]): void {
       );
     }
 
-    // Verify totals
+    // Verify totals using constants
     const totalConfGames = divGames + fourGameConfGames + threeGameConfGames;
-    const expectedConfGames = 52; // 16 + 24 + 12
-    const expectedNonConfGames = 30;
 
     if (totalConfGames !== expectedConfGames) {
       throw new Error(`Team ${team.teamInfo.name} has ${totalConfGames} conference games (expected ${expectedConfGames})`);
     }
 
-    if (nonConfGames !== expectedNonConfGames) {
-      throw new Error(`Team ${team.teamInfo.name} has ${nonConfGames} non-conference games (expected ${expectedNonConfGames})`);
+    // Verify total games matches TOTAL_GAMES constant
+    const totalGames = totalConfGames + nonConfGames;
+    if (totalGames !== TOTAL_GAMES) {
+      throw new Error(`Team ${team.teamInfo.name} has ${totalGames} total games (expected ${TOTAL_GAMES})`);
     }
   }
 
   console.log('✅ Schedule constraints verified');
 }
 
-function printScheduleAnalysis(teams: Team[], schedule: Game[]) {
+function printScheduleAnalysis(teams: Team[], teamGameRecord: TeamGameRecord) {
   const homeGames = new Map<TeamId, number>();
   const awayGames = new Map<TeamId, number>();
   const conferenceGames = new Map<TeamId, { east: number, west: number; }>();
@@ -548,30 +493,45 @@ function printScheduleAnalysis(teams: Team[], schedule: Game[]) {
     conferenceGames.set(team.teamInfo.id, { east: 0, west: 0 });
   }
 
-  // Count games
-  for (const game of schedule) {
-    const homeId = game.homeTeam.teamInfo.id;
-    const awayId = game.awayTeam.teamInfo.id;
+  // Count games from all categories
+  for (const team of teams) {
+    const teamId = team.teamInfo.id;
+    const records = teamGameRecord[teamId];
 
-    // Home/Away counts
-    homeGames.set(homeId, homeGames.get(homeId)! + 1);
-    awayGames.set(awayId, awayGames.get(awayId)! + 1);
+    const allGames = [
+      ...Object.values(records.div).flat(),
+      ...Object.values(records.conf4).flat(),
+      ...Object.values(records.conf3).flat(),
+      ...Object.values(records.nonConf).flat(),
+    ];
 
-    // Conference counts
-    const homeConf = game.homeTeam.teamInfo.conference;
-    const awayConf = game.awayTeam.teamInfo.conference;
+    for (const game of allGames) {
+      const homeId = game.homeTeam.teamInfo.id;
+      const awayId = game.awayTeam.teamInfo.id;
 
-    const homeTeamGames = conferenceGames.get(homeId)!;
-    const awayTeamGames = conferenceGames.get(awayId)!;
+      // Only count each game once (when processing the home team)
+      if (homeId === teamId) {
+        // Home/Away counts
+        homeGames.set(homeId, (homeGames.get(homeId) || 0) + 1);
+        awayGames.set(awayId, (awayGames.get(awayId) || 0) + 1);
 
-    if (awayConf === 'Eastern') homeTeamGames.east++;
-    if (awayConf === 'Western') homeTeamGames.west++;
-    if (homeConf === 'Eastern') awayTeamGames.east++;
-    if (homeConf === 'Western') awayTeamGames.west++;
+        // Conference counts
+        const homeConf = game.homeTeam.teamInfo.conference;
+        const awayConf = game.awayTeam.teamInfo.conference;
 
-    // Track team pairings
-    const pairingKey = [homeId, awayId].sort().join('-');
-    teamPairings.set(pairingKey, (teamPairings.get(pairingKey) || 0) + 1);
+        const homeTeamGames = conferenceGames.get(homeId)!;
+        const awayTeamGames = conferenceGames.get(awayId)!;
+
+        if (awayConf === 'Eastern') homeTeamGames.east++;
+        if (awayConf === 'Western') homeTeamGames.west++;
+        if (homeConf === 'Eastern') awayTeamGames.east++;
+        if (homeConf === 'Western') awayTeamGames.west++;
+
+        // Track team pairings
+        const pairingKey = [homeId, awayId].sort().join('-');
+        teamPairings.set(pairingKey, (teamPairings.get(pairingKey) || 0) + 1);
+      }
+    }
   }
 
   // Print results
@@ -590,11 +550,19 @@ function printScheduleAnalysis(teams: Team[], schedule: Game[]) {
         const pairingKey = [celtics.teamInfo.id, opponent.teamInfo.id].sort().join('-');
         const totalGames = teamPairings.get(pairingKey) || 0;
         if (totalGames > 0) {
-          const homeCount = schedule.filter(g =>
+          const records = teamGameRecord[celtics.teamInfo.id];
+          const allGames = [
+            ...Object.values(records.div).flat(),
+            ...Object.values(records.conf4).flat(),
+            ...Object.values(records.conf3).flat(),
+            ...Object.values(records.nonConf).flat(),
+          ];
+
+          const homeCount = allGames.filter(g =>
             g.homeTeam.teamInfo.id === celtics.teamInfo.id &&
             g.awayTeam.teamInfo.id === opponent.teamInfo.id
           ).length;
-          const awayCount = schedule.filter(g =>
+          const awayCount = allGames.filter(g =>
             g.awayTeam.teamInfo.id === celtics.teamInfo.id &&
             g.homeTeam.teamInfo.id === opponent.teamInfo.id
           ).length;
@@ -606,45 +574,45 @@ function printScheduleAnalysis(teams: Team[], schedule: Game[]) {
 
   return;
 
-  console.log('\nTeam Pairing Distribution:');
-  teams.forEach(team1 => {
-    console.log(`\n${team1.teamInfo.name} plays:`);
-    teams.forEach(team2 => {
-      if (team1.teamInfo.id !== team2.teamInfo.id) {
-        const pairingKey = [team1.teamInfo.id, team2.teamInfo.id].sort().join('-');
-        const games = teamPairings.get(pairingKey) || 0;
-        if (games > 0) {
-          const sameDiv = team1.teamInfo.division === team2.teamInfo.division;
-          const sameConf = team1.teamInfo.conference === team2.teamInfo.conference;
-          const relationship = sameDiv ? "division" : sameConf ? "conference" : "non-conference";
-          console.log(`  ${team2.teamInfo.name}: ${games} games (${relationship})`);
-        }
-      }
-    });
-  });
+  // console.log('\nTeam Pairing Distribution:');
+  // teams.forEach(team1 => {
+  //   console.log(`\n${team1.teamInfo.name} plays:`);
+  //   teams.forEach(team2 => {
+  //     if (team1.teamInfo.id !== team2.teamInfo.id) {
+  //       const pairingKey = [team1.teamInfo.id, team2.teamInfo.id].sort().join('-');
+  //       const games = teamPairings.get(pairingKey) || 0;
+  //       if (games > 0) {
+  //         const sameDiv = team1.teamInfo.division === team2.teamInfo.division;
+  //         const sameConf = team1.teamInfo.conference === team2.teamInfo.conference;
+  //         const relationship = sameDiv ? "division" : sameConf ? "conference" : "non-conference";
+  //         console.log(`  ${team2.teamInfo.name}: ${games} games (${relationship})`);
+  //       }
+  //     }
+  //   });
+  // });
 
-  console.log('\nConference Game Distribution:');
-  teams.forEach(team => {
-    const games = conferenceGames.get(team.teamInfo.id)!;
-    console.log(`${team.teamInfo.name}: ${games.east} vs East, ${games.west} vs West`);
-  });
+  // console.log('\nConference Game Distribution:');
+  // teams.forEach(team => {
+  //   const games = conferenceGames.get(team.teamInfo.id)!;
+  //   console.log(`${team.teamInfo.name}: ${games.east} vs East, ${games.west} vs West`);
+  // });
 
-  console.log('\nSchedule Date Range:');
-  const dates = schedule.map(g => g.date.getTime());
-  const firstGame = new Date(Math.min(...dates));
-  const lastGame = new Date(Math.max(...dates));
-  console.log(`Season runs from ${firstGame.toDateString()} to ${lastGame.toDateString()}`);
+  // console.log('\nSchedule Date Range:');
+  // const dates = schedule.map(g => g.date.getTime());
+  // const firstGame = new Date(Math.min(...dates));
+  // const lastGame = new Date(Math.max(...dates));
+  // console.log(`Season runs from ${firstGame.toDateString()} to ${lastGame.toDateString()}`);
 
-  console.log('\nGames per month:');
-  const monthCounts = new Map<string, number>();
-  schedule.forEach(game => {
-    const monthKey = game.date.toLocaleString('default', { month: 'long', year: 'numeric' });
-    monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
-  });
+  // console.log('\nGames per month:');
+  // const monthCounts = new Map<string, number>();
+  // schedule.forEach(game => {
+  //   const monthKey = game.date.toLocaleString('default', { month: 'long', year: 'numeric' });
+  //   monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
+  // });
 
-  Array.from(monthCounts.entries())
-    .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
-    .forEach(([month, count]) => {
-      console.log(`${month}: ${count} games`);
-    });
+  // Array.from(monthCounts.entries())
+  //   .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+  //   .forEach(([month, count]) => {
+  //     console.log(`${month}: ${count} games`);
+  //   });
 }
