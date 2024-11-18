@@ -39,14 +39,11 @@ const NON_CONF_SERIES = {
   series: 15,
   games_per_series: 2,
 };
-
 const DIV_NAMES = {
   Eastern: ['Atlantic', 'Central', 'Southeast'],
   Western: ['Northwest', 'Pacific', 'Southwest'],
 } as const;
-
 const TEAMS_PER_DIV = 5;
-
 const TOTAL_GAMES = 82;
 
 export function generateSchedule(
@@ -146,7 +143,6 @@ const createSchedule = (teams: Team[], year: number): TeamGameRecord => {
   const allGames: Game[] = [];
   const teamGameRecord: TeamGameRecord = {};
 
-  // initialize counters
   for (const team of teams) {
     teamGameRecord[team.teamInfo.id] = {
       div: {},
@@ -167,6 +163,7 @@ const createSchedule = (teams: Team[], year: number): TeamGameRecord => {
       const teamId = team.teamInfo.id;
       const oppId = opp.teamInfo.id;
       const counter = teamGameRecord[teamId];
+
       // check if we've already added div opp
       if (counter.div[oppId]) continue;
       const games: Game[] = [
@@ -177,6 +174,8 @@ const createSchedule = (teams: Team[], year: number): TeamGameRecord => {
       ];
 
       allGames.push(...games);
+
+      // Adding to both teams
       teamGameRecord[teamId].div[oppId] = games;
       teamGameRecord[oppId].div[teamId] = games;
     }
@@ -192,14 +191,14 @@ const createSchedule = (teams: Team[], year: number): TeamGameRecord => {
     conferenceTeams.get(conf)!.push(team);
   }
 
-  // For each conference, create a balanced schedule
+  // Add conf games
   for (const [_, teams] of conferenceTeams.entries()) {
     const { games, locUnknowns } = createConferenceSchedule(teams, teamGameRecord, year);
     allGames.push(...games);
     balanceHomeAwayGames(teams, teamGameRecord, locUnknowns);
   }
 
-  // Add non-conference games
+  // Add non-conf games
   const nonConferenceGames = createNonConferenceSchedule(teams, teamGameRecord);
   allGames.push(...nonConferenceGames);
 
@@ -483,10 +482,10 @@ function verifyScheduleConstraints(teams: Team[], allGames: Game[], year: number
 
     // Count conference games by series length
     const confOpponentGames = new Map<number, number>();
-    confGames.forEach(g => {
+    for (const g of confGames) {
       const oppId = g.homeTeam.teamInfo.id === teamId ? g.awayTeam.teamInfo.id : g.homeTeam.teamInfo.id;
       confOpponentGames.set(oppId, (confOpponentGames.get(oppId) || 0) + 1);
-    });
+    }
 
     const threeGameConfGames = Array.from(confOpponentGames.values()).filter(count => count === 3).length * 3;
     const fourGameConfGames = Array.from(confOpponentGames.values()).filter(count => count === 4).length * 4;
@@ -651,7 +650,7 @@ function printScheduleAnalysis(teams: Team[], allGames: Game[]) {
 
   if (celticsGames.length > 0) {
     let currentMonth = '';
-    celticsGames.forEach(game => {
+    for (const game of celticsGames) {
       const monthYear = game.date.toLocaleString('default', { month: 'long', year: 'numeric' });
       if (monthYear !== currentMonth) {
         console.log(`\n${monthYear}`);
@@ -662,7 +661,7 @@ function printScheduleAnalysis(teams: Team[], allGames: Game[]) {
         ? `vs ${game.awayTeam.teamInfo.name}`
         : `@ ${game.homeTeam.teamInfo.name}`;
       console.log(`  ${dateStr.padEnd(16)} ${opponent}`);
-    });
+    }
   }
 
   console.log('\nSchedule Date Range:');
@@ -673,16 +672,15 @@ function printScheduleAnalysis(teams: Team[], allGames: Game[]) {
 
   console.log('\nGames per month:');
   const monthCounts = new Map<string, number>();
-  allGames.forEach((game: Game) => {
+  for (const game of allGames) {
     const monthKey = game.date.toLocaleString('default', { month: 'long', year: 'numeric' });
     monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
-  });
+  }
 
-  Array.from(monthCounts.entries())
-    .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
-    .forEach(([month, count]) => {
-      console.log(`${month}: ${count} games`);
-    });
+  for (const [month, count] of Array.from(monthCounts.entries())
+    .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())) {
+    console.log(`${month}: ${count} games`);
+  }
 
   return;
 }
@@ -703,18 +701,18 @@ function getAllGamesFromRecord(teamGameRecord: TeamGameRecord): Game[] {
   const seenGames = new Set<Game>();
   const allGames: Game[] = [];
 
-  Object.values(teamGameRecord).forEach(records => {
-    [records.div, records.conf4, records.conf3, records.nonConf].forEach(category => {
-      Object.values(category).forEach(games => {
-        games.forEach(game => {
+  for (const records of Object.values(teamGameRecord)) {
+    for (const category of [records.div, records.conf4, records.conf3, records.nonConf]) {
+      for (const games of Object.values(category)) {
+        for (const game of games) {
           if (!seenGames.has(game)) {
             seenGames.add(game);
             allGames.push(game);
           }
-        });
-      });
-    });
-  });
+        }
+      }
+    }
+  }
 
   return allGames;
 }
