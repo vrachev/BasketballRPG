@@ -49,14 +49,6 @@ const TEAMS_PER_DIV = 5;
 
 const TOTAL_GAMES = 82;
 
-// Modify the season date constants to be a function
-function getSeasonDates(year: number) {
-  return {
-    start: new Date(year, 9, 22),    // October 22nd of input year
-    end: new Date(year + 1, 3, 15)   // April 15th of next year
-  };
-}
-
 export function generateSchedule(
   teams: Team[],
   seasonStage: 'regular_season' | 'playoffs',
@@ -84,11 +76,24 @@ export function generateSchedule(
   throw new Error(`Unsupported season stage: ${seasonStage}`);
 }
 
+function createGameDate(year: number, month: number, day: number): Date {
+  // Always use noon UTC to avoid timezone issues
+  return new Date(Date.UTC(year, month, day, 12, 0, 0));
+}
+
+function getDaysBetween(date1: Date, date2: Date): number {
+  // Get days between dates, ignoring time of day
+  const MS_PER_DAY = 1000 * 60 * 60 * 24;
+  const utc1 = Date.UTC(date1.getFullYear(), date1.getMonth(), date1.getDate());
+  const utc2 = Date.UTC(date2.getFullYear(), date2.getMonth(), date2.getDate());
+  return Math.floor((utc2 - utc1) / MS_PER_DAY);
+}
+
 function createGame(homeTeam: Team, awayTeam: Team): Game {
   return {
     homeTeam,
     awayTeam,
-    date: new Date(), // temp, will be replaced later
+    date: createGameDate(2000, 0, 1), // temp date, will be replaced later
   };
 }
 
@@ -96,7 +101,7 @@ function createGameLocUnknown(team1: Team, team2: Team): GameLocUnknown {
   return {
     team1,
     team2,
-    date: new Date(), // temp, will be replaced later
+    date: createGameDate(2000, 0, 1), // temp date, will be replaced later
   };
 }
 
@@ -546,14 +551,23 @@ function verifyScheduleConstraints(teams: Team[], allGames: Game[], year: number
 
     // Check for back-to-back-to-back games
     for (let i = 2; i < teamGames.length; i++) {
-      const daysBetween = Math.floor(
-        (teamGames[i].date.getTime() - teamGames[i - 2].date.getTime()) / (1000 * 60 * 60 * 24)
-      );
-      if (daysBetween <= 2) {
-        throw new Error(
-          `Team ${team.teamInfo.name} has back-to-back-to-back games: ` +
-          `${teamGames[i - 2].date.toDateString()}, ${teamGames[i - 1].date.toDateString()}, ${teamGames[i].date.toDateString()}`
-        );
+      const game1Date = teamGames[i - 2].date;
+      const game2Date = teamGames[i - 1].date;
+      const game3Date = teamGames[i].date;
+
+      // A back-to-back-to-back means games on three consecutive days
+      // e.g., if first game is on day 1, second must be on day 2, and third on day 3
+      const daysBetween1and3 = getDaysBetween(game1Date, game3Date);
+
+      if (daysBetween1and3 === 2) {
+        // Double check that there's actually a game on the middle day
+        const hasMiddleGame = isSameDay(game2Date, addDays(game1Date, 1));
+        if (hasMiddleGame) {
+          throw new Error(
+            `Team ${team.teamInfo.name} has back-to-back-to-back games: ` +
+            `${game1Date.toDateString()}, ${game2Date.toDateString()}, ${game3Date.toDateString()}`
+          );
+        }
       }
     }
   }
@@ -630,6 +644,27 @@ function printScheduleAnalysis(teams: Team[], allGames: Game[]) {
     }
   }
 
+  console.log('\nCeltics Full Schedule:');
+  const celticsGames = allGames
+    .filter(g => g.homeTeam.teamInfo.name === 'Celtics' || g.awayTeam.teamInfo.name === 'Celtics')
+    .sort((a, b) => a.date.getTime() - b.date.getTime());
+
+  if (celticsGames.length > 0) {
+    let currentMonth = '';
+    celticsGames.forEach(game => {
+      const monthYear = game.date.toLocaleString('default', { month: 'long', year: 'numeric' });
+      if (monthYear !== currentMonth) {
+        console.log(`\n${monthYear}`);
+        currentMonth = monthYear;
+      }
+      const dateStr = game.date.toLocaleString('default', { weekday: 'short', month: 'short', day: 'numeric' });
+      const opponent = game.homeTeam.teamInfo.name === 'Celtics'
+        ? `vs ${game.awayTeam.teamInfo.name}`
+        : `@ ${game.homeTeam.teamInfo.name}`;
+      console.log(`  ${dateStr.padEnd(16)} ${opponent}`);
+    });
+  }
+
   console.log('\nSchedule Date Range:');
   const dates = allGames.map(g => g.date.getTime());
   const firstGame = new Date(Math.min(...dates));
@@ -653,9 +688,9 @@ function printScheduleAnalysis(teams: Team[], allGames: Game[]) {
 }
 
 function addDays(date: Date, days: number): Date {
-  const result = new Date(date);
-  result.setDate(result.getDate() + days);
-  return result;
+  const newDate = new Date(date);
+  newDate.setUTCDate(date.getUTCDate() + days);
+  return newDate;
 }
 
 function isSameDay(date1: Date, date2: Date): boolean {
@@ -711,9 +746,13 @@ function canPlayOnDate(teamId: number, date: Date, teamGames: Map<number, Date[]
 function assignGameDates(games: Game[], teams: Team[], year: number): void {
   console.log('\n=== Assigning Game Dates ===\n');
   const { start: SEASON_START, end: SEASON_END } = getSeasonDates(year);
+  const totalDays = Math.floor((SEASON_END.getTime() - SEASON_START.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+
+  const targetGamesPerDay = Math.ceil(games.length / totalDays);
   console.log(`Season start: ${SEASON_START.toDateString()}`);
   console.log(`Season end: ${SEASON_END.toDateString()}`);
   console.log(`Total games to schedule: ${games.length}`);
+  console.log(`Target games per day: ${targetGamesPerDay}`);
 
   // Create a map to track games by team
   const teamGames = new Map<number, Date[]>();
@@ -721,50 +760,63 @@ function assignGameDates(games: Game[], teams: Team[], year: number): void {
     teamGames.set(team.teamInfo.id, []);
   }
 
-  // Create a pool of unscheduled games
   const unscheduledGames = [...games];
   let gamesScheduled = 0;
-
-  // Track teams scheduled for each day
   const teamsScheduledForDay = new Set<number>();
+  const monthlyGames = new Map<string, number>();
 
-  // Schedule games day by day
   let currentDate = new Date(SEASON_START);
+  let consecutiveFailedDays = 0;
+  const MAX_FAILED_DAYS = 5;
+
   while (currentDate <= SEASON_END && unscheduledGames.length > 0) {
-    // Clear the set of teams scheduled for this day
     teamsScheduledForDay.clear();
 
-    // Find all games that could be played on this date
     let possibleGames = unscheduledGames.filter(game => {
       const homeTeamId = game.homeTeam.teamInfo.id;
       const awayTeamId = game.awayTeam.teamInfo.id;
 
-      // Check if either team is already scheduled for this day
       if (teamsScheduledForDay.has(homeTeamId) || teamsScheduledForDay.has(awayTeamId)) {
         return false;
+      }
+
+      // Relax constraints if we're struggling to schedule games
+      if (consecutiveFailedDays >= MAX_FAILED_DAYS) {
+        return true;
       }
 
       return canPlayOnDate(homeTeamId, currentDate, teamGames) &&
         canPlayOnDate(awayTeamId, currentDate, teamGames);
     });
 
-    // Randomly select and schedule games for this date
-    while (possibleGames.length > 0) {
+    const remainingDays = Math.floor((SEASON_END.getTime() - currentDate.getTime()) / (1000 * 60 * 60 * 24)) + 1;
+    const remainingGames = unscheduledGames.length;
+    const minGamesToSchedule = Math.max(1, Math.floor(remainingGames / remainingDays));
+    const maxGamesToSchedule = Math.min(possibleGames.length, targetGamesPerDay);
+
+    // Adjust target games based on how close we are to the end
+    const daysLeft = Math.max(1, remainingDays);
+    const avgGamesNeeded = Math.ceil(remainingGames / daysLeft);
+    const gamesToScheduleToday = Math.min(maxGamesToSchedule, Math.max(minGamesToSchedule, avgGamesNeeded));
+
+    let gamesScheduledToday = 0;
+    while (possibleGames.length > 0 && gamesScheduledToday < gamesToScheduleToday) {
       const randomIndex = Math.floor(Math.random() * possibleGames.length);
       const gameToSchedule = possibleGames[randomIndex];
 
-      // Schedule the game
       gameToSchedule.date = new Date(currentDate);
       teamGames.get(gameToSchedule.homeTeam.teamInfo.id)!.push(new Date(currentDate));
       teamGames.get(gameToSchedule.awayTeam.teamInfo.id)!.push(new Date(currentDate));
 
-      // Mark these teams as scheduled for today
       teamsScheduledForDay.add(gameToSchedule.homeTeam.teamInfo.id);
       teamsScheduledForDay.add(gameToSchedule.awayTeam.teamInfo.id);
 
       gamesScheduled++;
+      gamesScheduledToday++;
 
-      // Remove the scheduled game from the unscheduled pool
+      const monthKey = currentDate.toLocaleString('default', { month: 'long', year: 'numeric' });
+      monthlyGames.set(monthKey, (monthlyGames.get(monthKey) || 0) + 1);
+
       const unscheduledIndex = unscheduledGames.indexOf(gameToSchedule);
       unscheduledGames.splice(unscheduledIndex, 1);
 
@@ -772,21 +824,68 @@ function assignGameDates(games: Game[], teams: Team[], year: number): void {
         console.log(`Scheduled ${gamesScheduled} games (${Math.round(gamesScheduled / games.length * 100)}%)`);
       }
 
-      // Update possible games list to exclude games involving teams that just got scheduled
       possibleGames = possibleGames.filter(game =>
         !teamsScheduledForDay.has(game.homeTeam.teamInfo.id) &&
         !teamsScheduledForDay.has(game.awayTeam.teamInfo.id)
       );
     }
 
+    // Track consecutive days where we couldn't schedule any games
+    if (gamesScheduledToday === 0) {
+      consecutiveFailedDays++;
+    } else {
+      consecutiveFailedDays = 0;
+    }
+
+    // If we're really struggling, try to backtrack a bit
+    if (consecutiveFailedDays >= MAX_FAILED_DAYS && remainingGames > 0) {
+      // Move back a few days to try a different scheduling pattern
+      currentDate = addDays(currentDate, -3);
+      consecutiveFailedDays = 0;
+      continue;
+    }
+
     currentDate = addDays(currentDate, 1);
   }
 
   if (unscheduledGames.length > 0) {
-    throw new Error(`Unable to schedule ${unscheduledGames.length} games within season dates`);
+    // One final attempt: try to schedule remaining games anywhere possible
+    for (const game of unscheduledGames) {
+      let scheduled = false;
+      currentDate = new Date(SEASON_START);
+
+      while (currentDate <= SEASON_END && !scheduled) {
+        if (canPlayOnDate(game.homeTeam.teamInfo.id, currentDate, teamGames) &&
+          canPlayOnDate(game.awayTeam.teamInfo.id, currentDate, teamGames)) {
+          game.date = new Date(currentDate);
+          teamGames.get(game.homeTeam.teamInfo.id)!.push(new Date(currentDate));
+          teamGames.get(game.awayTeam.teamInfo.id)!.push(new Date(currentDate));
+          scheduled = true;
+          gamesScheduled++;
+        }
+        currentDate = addDays(currentDate, 1);
+      }
+
+      if (!scheduled) {
+        throw new Error(`Unable to schedule game between ${game.homeTeam.teamInfo.name} and ${game.awayTeam.teamInfo.name}`);
+      }
+    }
   }
 
   console.log(`\nScheduling complete:`);
   console.log(`- ${gamesScheduled} games scheduled`);
-  console.log(`- Season spans from ${SEASON_START.toLocaleDateString()} to ${SEASON_END.toLocaleDateString()}\n`);
+  console.log(`- Season spans ${totalDays} days`);
+  console.log('\nGames per month:');
+  Array.from(monthlyGames.entries())
+    .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+    .forEach(([month, count]) => {
+      console.log(`${month}: ${count} games`);
+    });
+}
+
+function getSeasonDates(year: number) {
+  return {
+    start: createGameDate(year, 9, 22),    // October 22nd of input year
+    end: createGameDate(year + 1, 3, 15)   // April 15th of next year
+  };
 }
