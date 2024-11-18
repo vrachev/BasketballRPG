@@ -49,21 +49,36 @@ const TEAMS_PER_DIV = 5;
 
 const TOTAL_GAMES = 82;
 
+// Modify the season date constants to be a function
+function getSeasonDates(year: number) {
+  return {
+    start: new Date(year, 9, 22),    // October 22nd of input year
+    end: new Date(year + 1, 3, 15)   // April 15th of next year
+  };
+}
+
 export function generateSchedule(
   teams: Team[],
   seasonStage: 'regular_season' | 'playoffs',
   year: number
 ): MatchInput[] {
   if (seasonStage === 'regular_season') {
-    const schedule = createSchedule(teams, year);
-    verifyScheduleConstraints(teams, schedule);
-    printScheduleAnalysis(teams, schedule);
+    const teamGameRecord = createSchedule(teams, year);
 
-    // return schedule.map(game => ({
-    //   ...game,
-    //   seasonStage,
-    // }));
-    return [];
+    // Get all games before verification and analysis
+    const allGames = getAllGamesFromRecord(teamGameRecord);
+
+    assignGameDates(allGames, teams, year);
+    verifyScheduleConstraints(teams, allGames, year);
+    printScheduleAnalysis(teams, allGames);
+
+    // Convert games to MatchInput format
+    return allGames.map(game => ({
+      homeTeam: game.homeTeam,
+      awayTeam: game.awayTeam,
+      date: game.date,
+      seasonStage,
+    }));
   }
 
   throw new Error(`Unsupported season stage: ${seasonStage}`);
@@ -85,7 +100,17 @@ function createGameLocUnknown(team1: Team, team2: Team): GameLocUnknown {
   };
 }
 
-function generatePatternWithOffset(year: number): Array<{ team: number, opponents: { four: number[], three: number[]; }; }> {
+// Hacky but works. Creates pattern to rotate which teams play 3 games vs 4 games in a season,
+// so it's not always the same teams.
+function generatePatternWithOffset(
+  year: number
+): Array<{
+  team: number;
+  opponents: {
+    four: number[];
+    three: number[];
+  };
+}> {
   const n = TEAMS_PER_DIV;
   const offset = year % n; // Creates a rotation based on division size
   const pattern: Array<{ team: number, opponents: { four: number[], three: number[]; }; }> = [];
@@ -392,7 +417,7 @@ function balanceHomeAwayGames(teams: Team[], teamGameRecord: TeamGameRecord, loc
   }
 }
 
-function verifyScheduleConstraints(teams: Team[], teamGameRecord: TeamGameRecord): void {
+function verifyScheduleConstraints(teams: Team[], allGames: Game[], year: number): void {
   console.log('\n=== Schedule Constraint Verification ===\n');
 
   // Calculate expected games from constants
@@ -404,44 +429,64 @@ function verifyScheduleConstraints(teams: Team[], teamGameRecord: TeamGameRecord
 
   for (const team of teams) {
     const teamId = team.teamInfo.id;
-    const records = teamGameRecord[teamId];
 
-    const divGames = Object.entries(records.div)
-      .reduce((total, [oppId, games]) => {
-        const opponent = teams.find(t => t.teamInfo.id === Number(oppId));
-        if (!opponent || opponent.teamInfo.division !== team.teamInfo.division) {
-          throw new Error(`Team ${teamId} has division games scheduled with non-division team ${oppId}`);
-        }
-        return total + games.length;
-      }, 0);
+    // Get all games involving this team
+    const teamGames = allGames.filter(g =>
+      g.homeTeam.teamInfo.id === teamId ||
+      g.awayTeam.teamInfo.id === teamId
+    );
 
-    const fourGameConfGames = Object.entries(records.conf4)
-      .reduce((total, [oppId, games]) => {
-        const opponent = teams.find(t => t.teamInfo.id === Number(oppId));
-        if (!opponent || opponent.teamInfo.conference !== team.teamInfo.conference) {
-          throw new Error(`Team ${teamId} has conference games scheduled with non-conference team ${oppId}`);
-        }
-        return total + games.length;
-      }, 0);
+    // Count division games
+    const divGames = teamGames.filter(g => {
+      const opponent = g.homeTeam.teamInfo.id === teamId ? g.awayTeam : g.homeTeam;
+      return opponent.teamInfo.division === team.teamInfo.division;
+    }).length;
 
-    const threeGameConfGames = Object.entries(records.conf3)
-      .reduce((total, [oppId, games]) => {
-        const opponent = teams.find(t => t.teamInfo.id === Number(oppId));
-        if (!opponent || opponent.teamInfo.conference !== team.teamInfo.conference) {
-          throw new Error(`Team ${teamId} has conference games scheduled with non-conference team ${oppId}`);
-        }
-        return total + games.length;
-      }, 0);
+    // Count conference games (excluding division games)
+    const confGames = teamGames.filter(g => {
+      const opponent = g.homeTeam.teamInfo.id === teamId ? g.awayTeam : g.homeTeam;
+      return opponent.teamInfo.conference === team.teamInfo.conference &&
+        opponent.teamInfo.division !== team.teamInfo.division;
+    });
 
-    const nonConfGames = Object.entries(records.nonConf)
-      .reduce((total, [oppId, games]) => {
-        const opponent = teams.find(t => t.teamInfo.id === Number(oppId));
-        if (!opponent || opponent.teamInfo.conference === team.teamInfo.conference) {
-          throw new Error(`Team ${teamId} has non-conference games scheduled with conference team ${oppId}`);
-        }
-        return total + games.length;
-      }, 0);
+    // Count non-conference games
+    const nonConfGames = teamGames.filter(g => {
+      const opponent = g.homeTeam.teamInfo.id === teamId ? g.awayTeam : g.homeTeam;
+      return opponent.teamInfo.conference !== team.teamInfo.conference;
+    }).length;
 
+    // Count unique non-conference opponents
+    const nonConfOpponents = new Set(
+      teamGames
+        .filter(g => {
+          const opponent = g.homeTeam.teamInfo.id === teamId ? g.awayTeam : g.homeTeam;
+          return opponent.teamInfo.conference !== team.teamInfo.conference;
+        })
+        .map(g => g.homeTeam.teamInfo.id === teamId ? g.awayTeam.teamInfo.id : g.homeTeam.teamInfo.id)
+    );
+
+    const expectedNonConfOpponents = teams.filter(t =>
+      t.teamInfo.conference !== team.teamInfo.conference
+    ).length;
+
+    // Verify non-conference opponent count
+    if (nonConfOpponents.size !== expectedNonConfOpponents) {
+      throw new Error(
+        `Team ${team.teamInfo.name} plays ${nonConfOpponents.size} non-conference opponents (expected ${expectedNonConfOpponents})`
+      );
+    }
+
+    // Count conference games by series length
+    const confOpponentGames = new Map<number, number>();
+    confGames.forEach(g => {
+      const oppId = g.homeTeam.teamInfo.id === teamId ? g.awayTeam.teamInfo.id : g.homeTeam.teamInfo.id;
+      confOpponentGames.set(oppId, (confOpponentGames.get(oppId) || 0) + 1);
+    });
+
+    const threeGameConfGames = Array.from(confOpponentGames.values()).filter(count => count === 3).length * 3;
+    const fourGameConfGames = Array.from(confOpponentGames.values()).filter(count => count === 4).length * 4;
+
+    // Verify game counts
     if (threeGameConfGames !== expectedConf3Games ||
       fourGameConfGames !== expectedConf4Games ||
       divGames !== expectedDivGames ||
@@ -454,23 +499,13 @@ function verifyScheduleConstraints(teams: Team[], teamGameRecord: TeamGameRecord
       );
     }
 
-    // Count number of non-conf opponents
-    const nonConfOpponentCount = Object.keys(records.nonConf).length;
-    const expectedNonConfOpponents = teams.filter(t => t.teamInfo.conference !== team.teamInfo.conference).length;
-    if (nonConfOpponentCount !== expectedNonConfOpponents) {
-      throw new Error(
-        `Team ${team.teamInfo.name} plays ${nonConfOpponentCount} non-conference opponents (expected ${expectedNonConfOpponents})`
-      );
-    }
-
-    // Verify totals using constants
+    // Verify total conference games
     const totalConfGames = divGames + fourGameConfGames + threeGameConfGames;
-
     if (totalConfGames !== expectedConfGames) {
       throw new Error(`Team ${team.teamInfo.name} has ${totalConfGames} conference games (expected ${expectedConfGames})`);
     }
 
-    // Verify total games matches TOTAL_GAMES constant
+    // Verify total games
     const totalGames = totalConfGames + nonConfGames;
     if (totalGames !== TOTAL_GAMES) {
       throw new Error(`Team ${team.teamInfo.name} has ${totalGames} total games (expected ${TOTAL_GAMES})`);
@@ -478,9 +513,55 @@ function verifyScheduleConstraints(teams: Team[], teamGameRecord: TeamGameRecord
   }
 
   console.log('✅ Schedule constraints verified');
+
+  // Verify date constraints
+  console.log('\nVerifying date constraints...');
+  const { start: SEASON_START, end: SEASON_END } = getSeasonDates(year);
+
+  // Check season start/end dates
+  const gameDates = allGames.map(g => g.date);
+  const earliestGame = new Date(Math.min(...gameDates.map(d => d.getTime())));
+  const latestGame = new Date(Math.max(...gameDates.map(d => d.getTime())));
+
+  if (earliestGame < SEASON_START || latestGame > SEASON_END) {
+    throw new Error(
+      `Games scheduled outside season range: ${earliestGame.toDateString()} to ${latestGame.toDateString()}\n` +
+      `Season start: ${SEASON_START.toDateString()}\n` +
+      `Season end: ${SEASON_END.toDateString()}`
+    );
+  }
+
+  // Verify no team plays multiple games on the same day
+  for (const team of teams) {
+    const teamGames = allGames.filter(g =>
+      g.homeTeam.teamInfo.id === team.teamInfo.id ||
+      g.awayTeam.teamInfo.id === team.teamInfo.id
+    ).sort((a, b) => a.date.getTime() - b.date.getTime());
+
+    for (let i = 1; i < teamGames.length; i++) {
+      if (isSameDay(teamGames[i - 1].date, teamGames[i].date)) {
+        throw new Error(`Team ${team.teamInfo.name} has multiple games on ${teamGames[i].date.toDateString()}`);
+      }
+    }
+
+    // Check for back-to-back-to-back games
+    for (let i = 2; i < teamGames.length; i++) {
+      const daysBetween = Math.floor(
+        (teamGames[i].date.getTime() - teamGames[i - 2].date.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      if (daysBetween <= 2) {
+        throw new Error(
+          `Team ${team.teamInfo.name} has back-to-back-to-back games: ` +
+          `${teamGames[i - 2].date.toDateString()}, ${teamGames[i - 1].date.toDateString()}, ${teamGames[i].date.toDateString()}`
+        );
+      }
+    }
+  }
+
+  console.log('✅ Schedule constraints verified');
 }
 
-function printScheduleAnalysis(teams: Team[], teamGameRecord: TeamGameRecord) {
+function printScheduleAnalysis(teams: Team[], allGames: Game[]) {
   const homeGames = new Map<TeamId, number>();
   const awayGames = new Map<TeamId, number>();
   const conferenceGames = new Map<TeamId, { east: number, west: number; }>();
@@ -493,45 +574,30 @@ function printScheduleAnalysis(teams: Team[], teamGameRecord: TeamGameRecord) {
     conferenceGames.set(team.teamInfo.id, { east: 0, west: 0 });
   }
 
-  // Count games from all categories
-  for (const team of teams) {
-    const teamId = team.teamInfo.id;
-    const records = teamGameRecord[teamId];
+  // Count all games
+  for (const game of allGames) {
+    const homeId = game.homeTeam.teamInfo.id;
+    const awayId = game.awayTeam.teamInfo.id;
 
-    const allGames = [
-      ...Object.values(records.div).flat(),
-      ...Object.values(records.conf4).flat(),
-      ...Object.values(records.conf3).flat(),
-      ...Object.values(records.nonConf).flat(),
-    ];
+    // Home/Away counts
+    homeGames.set(homeId, (homeGames.get(homeId) || 0) + 1);
+    awayGames.set(awayId, (awayGames.get(awayId) || 0) + 1);
 
-    for (const game of allGames) {
-      const homeId = game.homeTeam.teamInfo.id;
-      const awayId = game.awayTeam.teamInfo.id;
+    // Conference counts
+    const homeConf = game.homeTeam.teamInfo.conference;
+    const awayConf = game.awayTeam.teamInfo.conference;
 
-      // Only count each game once (when processing the home team)
-      if (homeId === teamId) {
-        // Home/Away counts
-        homeGames.set(homeId, (homeGames.get(homeId) || 0) + 1);
-        awayGames.set(awayId, (awayGames.get(awayId) || 0) + 1);
+    const homeTeamGames = conferenceGames.get(homeId)!;
+    const awayTeamGames = conferenceGames.get(awayId)!;
 
-        // Conference counts
-        const homeConf = game.homeTeam.teamInfo.conference;
-        const awayConf = game.awayTeam.teamInfo.conference;
+    if (awayConf === 'Eastern') homeTeamGames.east++;
+    if (awayConf === 'Western') homeTeamGames.west++;
+    if (homeConf === 'Eastern') awayTeamGames.east++;
+    if (homeConf === 'Western') awayTeamGames.west++;
 
-        const homeTeamGames = conferenceGames.get(homeId)!;
-        const awayTeamGames = conferenceGames.get(awayId)!;
-
-        if (awayConf === 'Eastern') homeTeamGames.east++;
-        if (awayConf === 'Western') homeTeamGames.west++;
-        if (homeConf === 'Eastern') awayTeamGames.east++;
-        if (homeConf === 'Western') awayTeamGames.west++;
-
-        // Track team pairings
-        const pairingKey = [homeId, awayId].sort().join('-');
-        teamPairings.set(pairingKey, (teamPairings.get(pairingKey) || 0) + 1);
-      }
-    }
+    // Track team pairings
+    const pairingKey = [homeId, awayId].sort().join('-');
+    teamPairings.set(pairingKey, (teamPairings.get(pairingKey) || 0) + 1);
   }
 
   // Print results
@@ -550,14 +616,6 @@ function printScheduleAnalysis(teams: Team[], teamGameRecord: TeamGameRecord) {
         const pairingKey = [celtics.teamInfo.id, opponent.teamInfo.id].sort().join('-');
         const totalGames = teamPairings.get(pairingKey) || 0;
         if (totalGames > 0) {
-          const records = teamGameRecord[celtics.teamInfo.id];
-          const allGames = [
-            ...Object.values(records.div).flat(),
-            ...Object.values(records.conf4).flat(),
-            ...Object.values(records.conf3).flat(),
-            ...Object.values(records.nonConf).flat(),
-          ];
-
           const homeCount = allGames.filter(g =>
             g.homeTeam.teamInfo.id === celtics.teamInfo.id &&
             g.awayTeam.teamInfo.id === opponent.teamInfo.id
@@ -572,47 +630,163 @@ function printScheduleAnalysis(teams: Team[], teamGameRecord: TeamGameRecord) {
     }
   }
 
+  console.log('\nSchedule Date Range:');
+  const dates = allGames.map(g => g.date.getTime());
+  const firstGame = new Date(Math.min(...dates));
+  const lastGame = new Date(Math.max(...dates));
+  console.log(`Season runs from ${firstGame.toDateString()} to ${lastGame.toDateString()}`);
+
+  console.log('\nGames per month:');
+  const monthCounts = new Map<string, number>();
+  allGames.forEach((game: Game) => {
+    const monthKey = game.date.toLocaleString('default', { month: 'long', year: 'numeric' });
+    monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
+  });
+
+  Array.from(monthCounts.entries())
+    .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
+    .forEach(([month, count]) => {
+      console.log(`${month}: ${count} games`);
+    });
+
   return;
+}
 
-  // console.log('\nTeam Pairing Distribution:');
-  // teams.forEach(team1 => {
-  //   console.log(`\n${team1.teamInfo.name} plays:`);
-  //   teams.forEach(team2 => {
-  //     if (team1.teamInfo.id !== team2.teamInfo.id) {
-  //       const pairingKey = [team1.teamInfo.id, team2.teamInfo.id].sort().join('-');
-  //       const games = teamPairings.get(pairingKey) || 0;
-  //       if (games > 0) {
-  //         const sameDiv = team1.teamInfo.division === team2.teamInfo.division;
-  //         const sameConf = team1.teamInfo.conference === team2.teamInfo.conference;
-  //         const relationship = sameDiv ? "division" : sameConf ? "conference" : "non-conference";
-  //         console.log(`  ${team2.teamInfo.name}: ${games} games (${relationship})`);
-  //       }
-  //     }
-  //   });
-  // });
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
+}
 
-  // console.log('\nConference Game Distribution:');
-  // teams.forEach(team => {
-  //   const games = conferenceGames.get(team.teamInfo.id)!;
-  //   console.log(`${team.teamInfo.name}: ${games.east} vs East, ${games.west} vs West`);
-  // });
+function isSameDay(date1: Date, date2: Date): boolean {
+  return date1.getFullYear() === date2.getFullYear() &&
+    date1.getMonth() === date2.getMonth() &&
+    date1.getDate() === date2.getDate();
+}
 
-  // console.log('\nSchedule Date Range:');
-  // const dates = schedule.map(g => g.date.getTime());
-  // const firstGame = new Date(Math.min(...dates));
-  // const lastGame = new Date(Math.max(...dates));
-  // console.log(`Season runs from ${firstGame.toDateString()} to ${lastGame.toDateString()}`);
+function getAllGamesFromRecord(teamGameRecord: TeamGameRecord): Game[] {
+  const seenGames = new Set<Game>();
+  const allGames: Game[] = [];
 
-  // console.log('\nGames per month:');
-  // const monthCounts = new Map<string, number>();
-  // schedule.forEach(game => {
-  //   const monthKey = game.date.toLocaleString('default', { month: 'long', year: 'numeric' });
-  //   monthCounts.set(monthKey, (monthCounts.get(monthKey) || 0) + 1);
-  // });
+  Object.values(teamGameRecord).forEach(records => {
+    [records.div, records.conf4, records.conf3, records.nonConf].forEach(category => {
+      Object.values(category).forEach(games => {
+        games.forEach(game => {
+          if (!seenGames.has(game)) {
+            seenGames.add(game);
+            allGames.push(game);
+          }
+        });
+      });
+    });
+  });
 
-  // Array.from(monthCounts.entries())
-  //   .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())
-  //   .forEach(([month, count]) => {
-  //     console.log(`${month}: ${count} games`);
-  //   });
+  return allGames;
+}
+
+function canPlayOnDate(teamId: number, date: Date, teamGames: Map<number, Date[]>): boolean {
+  const teamDates = teamGames.get(teamId)!;
+
+  // Check if team has any games on this date
+  if (teamDates.some(gameDate => isSameDay(gameDate, date))) {
+    return false;
+  }
+
+  // Check for back-to-back-to-back games
+  const yesterday = addDays(date, -1);
+  const twoDaysAgo = addDays(date, -2);
+  const tomorrow = addDays(date, 1);
+  const twoDaysAhead = addDays(date, 2);
+
+  // Count games in any 3-day window
+  const hasGameOnDate = (d: Date) => teamDates.some(gameDate => isSameDay(gameDate, d));
+
+  if (hasGameOnDate(twoDaysAgo) && hasGameOnDate(yesterday)) return false;
+  if (hasGameOnDate(yesterday) && hasGameOnDate(tomorrow)) return false;
+  if (hasGameOnDate(tomorrow) && hasGameOnDate(twoDaysAhead)) return false;
+
+  return true;
+}
+
+function assignGameDates(games: Game[], teams: Team[], year: number): void {
+  console.log('\n=== Assigning Game Dates ===\n');
+  const { start: SEASON_START, end: SEASON_END } = getSeasonDates(year);
+  console.log(`Season start: ${SEASON_START.toDateString()}`);
+  console.log(`Season end: ${SEASON_END.toDateString()}`);
+  console.log(`Total games to schedule: ${games.length}`);
+
+  // Create a map to track games by team
+  const teamGames = new Map<number, Date[]>();
+  for (const team of teams) {
+    teamGames.set(team.teamInfo.id, []);
+  }
+
+  // Create a pool of unscheduled games
+  const unscheduledGames = [...games];
+  let gamesScheduled = 0;
+
+  // Track teams scheduled for each day
+  const teamsScheduledForDay = new Set<number>();
+
+  // Schedule games day by day
+  let currentDate = new Date(SEASON_START);
+  while (currentDate <= SEASON_END && unscheduledGames.length > 0) {
+    // Clear the set of teams scheduled for this day
+    teamsScheduledForDay.clear();
+
+    // Find all games that could be played on this date
+    let possibleGames = unscheduledGames.filter(game => {
+      const homeTeamId = game.homeTeam.teamInfo.id;
+      const awayTeamId = game.awayTeam.teamInfo.id;
+
+      // Check if either team is already scheduled for this day
+      if (teamsScheduledForDay.has(homeTeamId) || teamsScheduledForDay.has(awayTeamId)) {
+        return false;
+      }
+
+      return canPlayOnDate(homeTeamId, currentDate, teamGames) &&
+        canPlayOnDate(awayTeamId, currentDate, teamGames);
+    });
+
+    // Randomly select and schedule games for this date
+    while (possibleGames.length > 0) {
+      const randomIndex = Math.floor(Math.random() * possibleGames.length);
+      const gameToSchedule = possibleGames[randomIndex];
+
+      // Schedule the game
+      gameToSchedule.date = new Date(currentDate);
+      teamGames.get(gameToSchedule.homeTeam.teamInfo.id)!.push(new Date(currentDate));
+      teamGames.get(gameToSchedule.awayTeam.teamInfo.id)!.push(new Date(currentDate));
+
+      // Mark these teams as scheduled for today
+      teamsScheduledForDay.add(gameToSchedule.homeTeam.teamInfo.id);
+      teamsScheduledForDay.add(gameToSchedule.awayTeam.teamInfo.id);
+
+      gamesScheduled++;
+
+      // Remove the scheduled game from the unscheduled pool
+      const unscheduledIndex = unscheduledGames.indexOf(gameToSchedule);
+      unscheduledGames.splice(unscheduledIndex, 1);
+
+      if (gamesScheduled % 100 === 0) {
+        console.log(`Scheduled ${gamesScheduled} games (${Math.round(gamesScheduled / games.length * 100)}%)`);
+      }
+
+      // Update possible games list to exclude games involving teams that just got scheduled
+      possibleGames = possibleGames.filter(game =>
+        !teamsScheduledForDay.has(game.homeTeam.teamInfo.id) &&
+        !teamsScheduledForDay.has(game.awayTeam.teamInfo.id)
+      );
+    }
+
+    currentDate = addDays(currentDate, 1);
+  }
+
+  if (unscheduledGames.length > 0) {
+    throw new Error(`Unable to schedule ${unscheduledGames.length} games within season dates`);
+  }
+
+  console.log(`\nScheduling complete:`);
+  console.log(`- ${gamesScheduled} games scheduled`);
+  console.log(`- Season spans from ${SEASON_START.toLocaleDateString()} to ${SEASON_END.toLocaleDateString()}\n`);
 }
