@@ -11,7 +11,7 @@ import {
 } from '../../data';
 import { Insertable } from 'kysely';
 import { getSeason } from './season';
-import { faker } from '@faker-js/faker';
+import { Chance } from 'chance';
 
 type Position = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
 type SeasonType = 'regular_season' | 'playoffs';
@@ -26,9 +26,12 @@ type PlayerInfoInput = {
   isStarting?: boolean;
 };
 
+// Initialize chance
+const chance = new Chance();
+
 const generatePlayerInfo = (input: PlayerInfoInput): Insertable<PlayerInfoTable> => {
-  const firstName = input.firstName || faker.person.firstName('male');
-  const lastName = input.lastName || faker.person.lastName('male');
+  const firstName = input.firstName || chance.first({ gender: 'male' });
+  const lastName = input.lastName || chance.last();
   const fullName = `${firstName} ${lastName}`;
 
   const player: Insertable<PlayerInfoTable> = {
