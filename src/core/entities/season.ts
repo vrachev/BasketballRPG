@@ -1,19 +1,24 @@
-import { SEASON_TABLE } from '../../data/constants';
-import { Season } from '../../data/schemas/season';
-import { InsertableRecord } from '../../data/sqlTypes';
-import { insert, openDb } from '../../db';
+import { Insertable } from 'kysely';
+import { db, SEASON_TABLE, SeasonTable, Season } from '../../data';
 
 export const createSeason = async (startYear: number, endYear: number): Promise<number> => {
-  const seasonRecord: InsertableRecord<Season> = {
+  const seasonRecord: Insertable<SeasonTable> = {
     start_year: startYear,
     end_year: endYear
   };
-  return await insert(seasonRecord, SEASON_TABLE);
+  return (await db
+    .insertInto(SEASON_TABLE)
+    .values(seasonRecord)
+    .returning('id')
+    .executeTakeFirstOrThrow()).id;
 };
 
 export const getSeason = async (startingYear: number): Promise<Season> => {
-  const db = await openDb();
-  const seasonRecord = await db.get<Season>(`SELECT * FROM ${SEASON_TABLE} WHERE start_year = ?`, [startingYear]);
+  const seasonRecord = await db
+    .selectFrom(SEASON_TABLE)
+    .selectAll()
+    .where('start_year', '=', startingYear)
+    .executeTakeFirstOrThrow();
   if (!seasonRecord) {
     throw new Error(`Season with starting year ${startingYear} not found`);
   }

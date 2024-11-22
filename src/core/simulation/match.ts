@@ -2,8 +2,8 @@
 
 import { Team } from "../../data";
 import { possessionConstants } from "./constants";
-import { PossessionResult, simulatePossession } from "./possession";
-import { Lineup } from "../../data";
+import { simulatePossession } from "./possession";
+import { Lineup, PossessionResult } from "../../data";
 
 export type MatchInput = {
   homeTeam: Team,

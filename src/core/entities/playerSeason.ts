@@ -1,7 +1,5 @@
-import { PLAYER_SEASON_TABLE, PlayerSeason } from '../../data';
-import { update, openDb } from '../../db';
-import { PlayerEvent } from '../simulation/possession';
-import type { StatlineRaw } from '../../data';
+import { db, PLAYER_SEASON_TABLE, PlayerEvent, StatlineRaw, PlayerSeasonTable } from '../../data';
+import { Updateable } from 'kysely';
 
 export const updatePlayerSeason = async (
   playerSeasonId: number,
@@ -9,11 +7,11 @@ export const updatePlayerSeason = async (
   win: boolean,
   started: boolean
 ) => {
-  const db = await openDb();
-  const playerSeason = await db.get<PlayerSeason>(`
-    SELECT * FROM ${PLAYER_SEASON_TABLE} 
-    WHERE id = ?
-  `, playerSeasonId);
+  const playerSeason = await db
+    .selectFrom(PLAYER_SEASON_TABLE)
+    .selectAll()
+    .where('id', '=', playerSeasonId)
+    .executeTakeFirstOrThrow();
 
   if (!playerSeason) {
     throw new Error(`Player season not found with ID: ${playerSeasonId}`);
@@ -24,7 +22,7 @@ export const updatePlayerSeason = async (
   const { pid, ...playerStats }: { pid: number; } & StatlineRaw = playerEvent;
 
   // Calculate new stats
-  const updates: Partial<PlayerSeason> = {
+  const updates: Updateable<PlayerSeasonTable> = {
     ...playerStats,
     games_played: gamesPlayed + 1,
     games_started: started ? playerSeason.games_started + 1 : playerSeason.games_started,
@@ -37,5 +35,9 @@ export const updatePlayerSeason = async (
     updates[key as keyof StatlineRaw] = playerSeason[key as keyof StatlineRaw] + value;
   });
 
-  await update(playerSeasonId, updates, PLAYER_SEASON_TABLE);
+  await db
+    .updateTable(PLAYER_SEASON_TABLE)
+    .set(updates)
+    .where('id', '=', playerSeasonId)
+    .execute();
 };

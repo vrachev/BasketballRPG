@@ -3,8 +3,8 @@ import { insertPlayerGameResults } from '../entities/playerGameResult';
 import { updatePlayerSeason } from '../entities/playerSeason';
 import { updateTeamSeason } from '../entities/teamSeason';
 import { MatchInput, simulateMatch } from '../simulation/match';
-import { PlayerEvent } from '../simulation/possession';
-import { calculateGameStats, GameStats } from './calculateGameStats';
+import { calculateGameStats } from './calculateGameStats';
+import { GameStats, PlayerEvent } from '../../data';
 
 export const processMatch = async (
   matchInput: MatchInput,

@@ -1,18 +1,10 @@
 import { MatchInput } from '../simulation/match';
-import { PlayerEvent, PossessionResult } from '../simulation/possession';
-import { Team, StatlineTeam, StatlineRaw } from "../../data";
+import { GameStats, PlayerEvent, PossessionResult, StatlineTeam } from '../../data';
 
-export type GameStats = {
-  homeTeam: Team;
-  awayTeam: Team;
-  homeTeamStatline: StatlineTeam;
-  awayTeamStatline: StatlineTeam;
-  homePlayerStats: PlayerEvent[];
-  awayPlayerStats: PlayerEvent[];
-  winner: 'home' | 'away';
-};
-
-export const calculateGameStats = (possessionResults: PossessionResult[], { homeTeam, awayTeam }: MatchInput): GameStats => {
+export const calculateGameStats = (
+  possessionResults: PossessionResult[],
+  { homeTeam, awayTeam }: MatchInput
+): GameStats => {
   // Initialize player stats arrays
   let homePlayerStats: PlayerEvent[] = [];
   let awayPlayerStats: PlayerEvent[] = [];

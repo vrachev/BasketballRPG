@@ -2,32 +2,15 @@
 * Simulate a basketball possession
 */
 
-import { Player, PlayerSkills, StatlineRaw } from '../../data';
+import { Player, PlayerSkill, PlayerEvent, PossessionResult, PossessionInput } from '../../data';
 import { averageStatRates, playerConstants, possessionConstants } from '../';
 import { Lineup } from '../../data';
-
-export type PossessionInput = {
-  offensiveLineup: Lineup;
-  defensiveLineup: Lineup;
-  period: number;
-  gameClock: number;
-};
-
-export type PossessionResult = {
-  playerEvents: PlayerEvent[];
-  possessionChange: boolean;
-  timeLength: number;
-};
-
-export type PlayerEvent = StatlineRaw & {
-  pid: number;
-};
 
 type ShotTypeData = {
   [key: string]: {
     basePercentage: number;
-    skillKey: keyof PlayerSkills;
-    tendencyKey: keyof PlayerSkills;
+    skillKey: keyof PlayerSkill;
+    tendencyKey: keyof PlayerSkill;
     baseRate: number;
     points: number;
   };

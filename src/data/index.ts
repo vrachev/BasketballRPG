@@ -1,17 +1,52 @@
-import { playerSchemaSql, PlayerInfo, Player } from './schemas/player';
-import { playerSeasonSchemaSql, PlayerSeason } from './schemas/playerSeason';
-import { playerSkillsSchemaSql, PlayerSkills } from './schemas/playerSkills';
-import { teamSchemaSql, Lineup, TeamInfo, Team } from './schemas/team';
-import { teamSeasonSchemaSql, TeamSeason } from './schemas/teamSeason';
-import { seasonSchemaSql, Season } from './schemas/season';
-import { PlayerGameResult, playerGameResultSchemaSql } from './schemas/playerGameResult';
+// import { playerSchemaSql, PlayerInfo, Player, PlayerHistory } from './schemas/player';
+// import { playerSeasonSchemaSql, PlayerSeason } from './schemas/playerSeason';
+// import { playerSkillsSchemaSql, PlayerSkills } from './schemas/playerSkills';
+// import { teamSchemaSql, Lineup, TeamInfo, Team } from './schemas/team';
+// import { teamSeasonSchemaSql, TeamSeason } from './schemas/teamSeason';
+// import { seasonSchemaSql, Season } from './schemas/season';
+// import { PlayerGameResult, playerGameResultSchemaSql } from './schemas/playerGameResult';
+// import {
+//   GameResult,
+//   StatlineTeam,
+//   StatlineRaw,
+//   gameResultSchemaSql,
+//   prefixKeys,
+// } from './schemas/gameResult';
+import db from './db';
 import {
+  PlayerInfo as PlayerInfoTable,
+  PlayerSeason as PlayerSeasonTable,
+  PlayerSkill as PlayerSkillTable,
+  Season as SeasonTable,
+  TeamSeason as TeamSeasonTable,
+  TeamInfo as TeamInfoTable,
+  GameResult as GameResultTable,
+  PlayerGameResult as PlayerGameResultTable,
+} from './schema';
+import {
+  // Remapped to Selectable<myTable>
+  PlayerInfo,
+  PlayerSeason,
+  PlayerSkill,
+  Season,
+  TeamSeason,
+  TeamInfo,
   GameResult,
-  StatlineTeam,
-  StatlineRaw,
-  gameResultSchemaSql,
+  PlayerGameResult,
+
+  // Composed types
+  PlayerHistory,
+  Player,
+  Lineup,
+  Team,
   prefixKeys,
-} from './schemas/gameResult';
+  StatlineRaw,
+  StatlineTeam,
+  PlayerEvent,
+  GameStats,
+  PossessionInput,
+  PossessionResult,
+} from './types';
 import {
   PLAYER_TABLE,
   TEAM_TABLE,
@@ -22,41 +57,46 @@ import {
   GAME_RESULT_TABLE,
   PLAYER_GAME_RESULT_TABLE,
 } from './constants';
-import { InsertableRecord, SchemaTs, TableSchemaSql, isForeignKeyType } from './sqlTypes';
+
+// import { InsertableRecord, SchemaTs, TableSchemaSql, isForeignKeyType } from './sqlTypes';
 
 export type {
-  // Schema helpers
-  SchemaTs,
-  TableSchemaSql,
-  InsertableRecord,
+  // Base Table Types
+  PlayerInfoTable,
+  PlayerSeasonTable,
+  PlayerSkillTable,
+  SeasonTable,
+  TeamSeasonTable,
+  TeamInfoTable,
+  GameResultTable,
+  PlayerGameResultTable,
 
-  // Typescript types
+  // Selectable Types
   PlayerInfo,
-  Player,
   PlayerSeason,
-  Lineup,
   TeamInfo,
-  Team,
   TeamSeason,
-  PlayerSkills,
+  PlayerSkill,
   Season,
+  GameResult,
+  PlayerGameResult,
+
+  // App Layer Types
+  PlayerHistory,
+  Player,
+  Lineup,
+  Team,
   StatlineRaw,
   StatlineTeam,
-  PlayerGameResult,
-  GameResult,
+  PlayerEvent,
+  GameStats,
+  PossessionInput,
+  PossessionResult,
 };
 
 export {
-  // SQL
-  playerSchemaSql,
-  teamSchemaSql,
-  teamSeasonSchemaSql,
-  playerSeasonSchemaSql,
-  playerSkillsSchemaSql,
-  playerGameResultSchemaSql,
-  seasonSchemaSql,
-  gameResultSchemaSql,
-  isForeignKeyType,
+  // DB singleton
+  db,
 
   // Helper functions
   prefixKeys,

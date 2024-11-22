@@ -1,8 +1,18 @@
-import { PLAYER_SEASON_TABLE, TeamInfo, TEAM_TABLE, Team, TeamSeason, TEAM_SEASON_TABLE, Season, Lineup } from '../../data';
-import { InsertableRecord } from '../../data/sqlTypes';
-import { insert, openDb } from '../../db';
+import { Insertable } from 'kysely';
+import {
+  db,
+  PLAYER_SEASON_TABLE,
+  TeamInfo,
+  TEAM_TABLE,
+  Team,
+  TeamSeason,
+  TEAM_SEASON_TABLE,
+  Season,
+  Lineup,
+  TeamInfoTable,
+  Player
+} from '../../data';
 import { getPlayerFromHistory, getPlayerHistory } from './player';
-import { Player } from '@src/data/schemas/player';
 import { getSeason } from './season';
 
 const cities = {
@@ -58,22 +68,29 @@ export const createTeams = async (): Promise<void> => {
   for (const [conference, divisions] of Object.entries(cities)) {
     for (const [division, teams] of Object.entries(divisions)) {
       for (const team of teams) {
-        const teamRecord: InsertableRecord<TeamInfo> = {
+        const teamRecord: Insertable<TeamInfoTable> = {
           name: team.name,
           city: team.city,
           abbreviation: team.abbreviation,
           conference: conference,
           division: division
         };
-        await insert(teamRecord, TEAM_TABLE);
+        await db
+          .insertInto(TEAM_TABLE)
+          .values(teamRecord)
+          .returning('id')
+          .executeTakeFirstOrThrow();
       }
     }
   }
 };
 
 export const getTeamId = async (city: string): Promise<number> => {
-  const db = await openDb();
-  const team = await db.get<TeamInfo>(`SELECT id FROM ${TEAM_TABLE} WHERE city = ?`, [city]);
+  const team = await db
+    .selectFrom(TEAM_TABLE)
+    .select('id')
+    .where('city', '=', city)
+    .executeTakeFirstOrThrow();
   if (!team) {
     throw new Error(`Team with city ${city} not found`);
   }
@@ -81,8 +98,10 @@ export const getTeamId = async (city: string): Promise<number> => {
 };
 
 export const getTeamIds = async (): Promise<number[]> => {
-  const db = await openDb();
-  const teams = await db.all<TeamInfo[]>(`SELECT id FROM ${TEAM_TABLE}`);
+  const teams = await db
+    .selectFrom(TEAM_TABLE)
+    .select('id')
+    .execute();
   if (teams.length === 0) {
     throw new Error(`No teams found`);
   }
@@ -93,17 +112,21 @@ export const getTeams = async (
   seasonStartingYear: number,
   teamId?: number
 ): Promise<Team[]> => {
-  const db = await openDb();
   const season = await getSeason(seasonStartingYear);
   if (!season) {
     throw new Error(`Season with year ${seasonStartingYear} not found`);
   }
 
-  // Get all teams or specific team
-  const teams = await db.all<TeamInfo[]>(
-    `SELECT * FROM ${TEAM_TABLE} ${teamId ? 'WHERE id = ?' : ''}`,
-    teamId ? [teamId] : []
-  );
+  // Build query based on whether we want all teams or a specific team
+  let query = db
+    .selectFrom(TEAM_TABLE)
+    .selectAll();
+
+  if (teamId) {
+    query = query.where('id', '=', teamId);
+  }
+
+  const teams = await query.execute();
 
   if (teams.length === 0) {
     throw new Error(`No teams found${teamId ? ` with id ${teamId}` : ''}`);
@@ -112,10 +135,12 @@ export const getTeams = async (
   // Get team seasons and players for each team
   const teamsWithData = await Promise.all(
     teams.map(async (team) => {
-      const teamSeason = await db.get<TeamSeason>(
-        `SELECT * FROM ${TEAM_SEASON_TABLE} WHERE team_id = ? AND season_id = ?`,
-        [team.id, season.id]
-      );
+      const teamSeason = await db
+        .selectFrom(TEAM_SEASON_TABLE)
+        .selectAll()
+        .where('team_id', '=', team.id)
+        .where('season_id', '=', season.id)
+        .executeTakeFirstOrThrow();
 
       if (!teamSeason) {
         throw new Error(`Team season not found for team ${team.id} in year ${seasonStartingYear}`);
@@ -154,13 +179,13 @@ const getTeamPlayersBySeason = async (
   teamId: number,
   season: Season
 ): Promise<Player[]> => {
-  const db = await openDb();
   // Need unique player ids, because we create 2 rows for each player, one for regular season and one for playoffs
-  const playerIds = await db.all<{ player_id: number; }[]>(`
-    SELECT DISTINCT player_id 
-    FROM ${PLAYER_SEASON_TABLE} 
-    WHERE team_id = ? AND season_id = ?
-  `, [teamId, season.id]);
+  const playerIds = await db
+    .selectFrom(PLAYER_SEASON_TABLE)
+    .select('player_id')
+    .where('team_id', '=', teamId)
+    .distinct()
+    .execute();
 
   if (playerIds.length === 0) {
     console.warn(`No players found for team ${teamId} in ${season.start_year}`);

@@ -1,13 +1,20 @@
-import { createTables, openDb } from './db';
-import { createTeams, getTeamId } from './core/entities/team';
+import { createTeams } from './core/entities/team';
 import * as core from './core';
-import { formatTeamBoxScore } from './display/boxscore';
 import { createSeason } from './core/entities/season';
 import { generateSchedule } from './core/season/createSchedule';
+import { db, TEAM_TABLE } from './data';
 
 async function seedDb() {
-  await createTables();
-  const db = await openDb();
+  // Check if teams already exist
+  const existingTeams = await db
+    .selectFrom(TEAM_TABLE)
+    .select(db.fn.countAll().as('count'))
+    .executeTakeFirst();
+
+  if (Number(existingTeams?.count) > 0) {
+    console.log('Database already seeded, skipping...');
+    return;
+  }
 
   await createSeason(2024, 2025);
   await createTeams();
@@ -56,13 +63,24 @@ async function seedDb() {
 }
 
 async function main() {
-  // const teamIds = await seedDb();
+  const teamIds = await seedDb();
   const team1 = await core.getTeam(1, 2024);
   const team2 = await core.getTeam(2, 2024);
 
   const teams = await core.getTeams(2024);
 
   const schedule = generateSchedule(teams, 'regular_season', 2024);
+
+  for (const matchInput of schedule) {
+    const res = await core.processMatch(matchInput);
+    console.log(
+      `Game ${schedule.indexOf(matchInput) + 1}: ` +
+      `${matchInput.homeTeam.teamInfo.name} vs ${matchInput.awayTeam.teamInfo.name} - ` +
+      `Winner: ${res.winner === 'home' ?
+        matchInput.homeTeam.teamInfo.name :
+        matchInput.awayTeam.teamInfo.name}`
+    );
+  }
 
   // const matches = [];
   // for (let i = 0; i < 100; i++) {

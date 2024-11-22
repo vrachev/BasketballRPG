@@ -1,7 +1,6 @@
-import { PLAYER_GAME_RESULT_TABLE, PlayerGameResult, InsertableRecord } from '../../data';
-import { insert } from '../../db';
-
-import { GameStats } from '../process/calculateGameStats';
+import { db } from '../../data';
+import { Insertable } from 'kysely';
+import { PLAYER_GAME_RESULT_TABLE, PlayerGameResultTable, GameStats } from '../../data';
 
 export const insertPlayerGameResults = async (
   gameStats: GameStats,
@@ -9,7 +8,7 @@ export const insertPlayerGameResults = async (
   seasonStage: 'regular_season' | 'playoffs',
   date: Date,
 ): Promise<number[]> => {
-  const homePlayerGameResults: InsertableRecord<PlayerGameResult>[] = gameStats.homePlayerStats.map((player) => {
+  const homePlayerGameResults: Insertable<PlayerGameResultTable>[] = gameStats.homePlayerStats.map((player) => {
     const { pid, ...playerStats } = player;
     return {
       player_id: pid,
@@ -23,7 +22,7 @@ export const insertPlayerGameResults = async (
     };
   });
 
-  const awayPlayerGameResults: InsertableRecord<PlayerGameResult>[] = gameStats.awayPlayerStats.map((player) => {
+  const awayPlayerGameResults: Insertable<PlayerGameResultTable>[] = gameStats.awayPlayerStats.map((player) => {
     const { pid, ...playerStats } = player;
     return {
       player_id: pid,
@@ -40,8 +39,12 @@ export const insertPlayerGameResults = async (
   const playerGameResults = [...homePlayerGameResults, ...awayPlayerGameResults];
   const ids: number[] = [];
   for (const playerGameResult of playerGameResults) {
-    const id = await insert(playerGameResult, PLAYER_GAME_RESULT_TABLE);
-    ids.push(id);
+    const res = await db
+      .insertInto(PLAYER_GAME_RESULT_TABLE)
+      .values(playerGameResult)
+      .returning('id')
+      .executeTakeFirstOrThrow();
+    ids.push(res.id);
   }
 
   return ids;

@@ -1,9 +1,11 @@
-import { TEAM_SEASON_TABLE, StatlineTeam, TeamSeason } from '../../data';
-import { InsertableRecord } from '../../data/sqlTypes';
-import { insert, update, openDb } from '../../db';
+import { Insertable, Updateable } from 'kysely';
+import { TEAM_SEASON_TABLE, StatlineTeam, TeamSeasonTable, db } from '../../data';
 
-export const createTeamSeason = async (teamIds: number[], seasonId: number) => {
-  const teamSeasons = teamIds.map(teamId => ({
+export const createTeamSeason = async (
+  teamIds: number[],
+  seasonId: number
+): Promise<void> => {
+  const teamSeasons = teamIds.map((teamId) => ({
     team_id: teamId,
     season_id: seasonId,
     games_played: 0,
@@ -31,26 +33,31 @@ export const createTeamSeason = async (teamIds: number[], seasonId: number) => {
     tov: 0,
     fouls: 0,
     pts: 0,
-  } as InsertableRecord<TeamSeason>));
+  } as Insertable<TeamSeasonTable>));
 
+  // TODO: Batch this
   await Promise.all(teamSeasons.map(teamSeason =>
-    insert(teamSeason, TEAM_SEASON_TABLE)
+    db.insertInto(TEAM_SEASON_TABLE).values(teamSeason).execute()
   ));
 };
 
-export const updateTeamSeason = async (teamSeasonId: number, teamStats: StatlineTeam, win: boolean) => {
-  const db = await openDb();
-  const teamSeason = await db.get<TeamSeason>(`
-    SELECT * FROM ${TEAM_SEASON_TABLE} 
-    WHERE id = ?
-  `, teamSeasonId);
+export const updateTeamSeason = async (
+  teamSeasonId: number,
+  teamStats: StatlineTeam,
+  win: boolean
+): Promise<void> => {
+  const teamSeason = await db
+    .selectFrom(TEAM_SEASON_TABLE)
+    .selectAll()
+    .where('id', '=', teamSeasonId)
+    .executeTakeFirstOrThrow();
   if (!teamSeason) {
     throw new Error(`Team season not found with ID: ${teamSeasonId}`);
   }
   const gamesPlayed = teamSeason.games_played;
 
   // Calculate new stats
-  const updates: Partial<TeamSeason> = {
+  const updates: Updateable<TeamSeasonTable> = {
     ...teamStats,
     games_played: gamesPlayed + 1,
     wins: win ? teamSeason.wins + 1 : teamSeason.wins,
@@ -62,5 +69,9 @@ export const updateTeamSeason = async (teamSeasonId: number, teamStats: Statline
     updates[key as keyof StatlineTeam] = teamSeason[key as keyof StatlineTeam] + value;
   });
 
-  await update(teamSeasonId, updates, TEAM_SEASON_TABLE);
+  await db
+    .updateTable(TEAM_SEASON_TABLE)
+    .set(updates)
+    .where('id', '=', teamSeasonId)
+    .execute();
 };

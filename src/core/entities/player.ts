@@ -1,14 +1,15 @@
 import {
-  PlayerInfo,
-  PlayerSeason,
-  PlayerSkills,
   PLAYER_SEASON_TABLE,
   PLAYER_SKILLS_TABLE,
   PLAYER_TABLE,
+  PlayerSeasonTable,
+  PlayerSkillTable,
+  PlayerInfoTable,
+  PlayerHistory,
+  Player,
+  db
 } from '../../data';
-import { InsertableRecord } from '../../data/sqlTypes';
-import { insert, openDb } from '../../db';
-import { Player, PlayerHistory } from '@src/data/schemas/player';
+import { Insertable } from 'kysely';
 import { getSeason } from './season';
 import { faker } from '@faker-js/faker';
 
@@ -25,12 +26,12 @@ type PlayerInfoInput = {
   isStarting?: boolean;
 };
 
-const generatePlayerInfo = (input: PlayerInfoInput): InsertableRecord<PlayerInfo> => {
+const generatePlayerInfo = (input: PlayerInfoInput): Insertable<PlayerInfoTable> => {
   const firstName = input.firstName || faker.person.firstName('male');
   const lastName = input.lastName || faker.person.lastName('male');
   const fullName = `${firstName} ${lastName}`;
 
-  const player: InsertableRecord<PlayerInfo> = {
+  const player: Insertable<PlayerInfoTable> = {
     // Personal Info
     first_name: firstName,
     last_name: lastName,
@@ -57,8 +58,8 @@ const generatePlayerSkills = (
   teamId: number,
   defaultSkillLevel: number,
   defaultTendencyLevel: number,
-  insertableFields: Partial<PlayerSkills> = {}
-): InsertableRecord<PlayerSkills> => {
+  insertableFields: Partial<Insertable<PlayerSkillTable>> = {}
+): Insertable<PlayerSkillTable> => {
   const skillDefaults = {
     player_id: pid,
     team_id: teamId,
@@ -131,7 +132,8 @@ const generatePlayerSkills = (
     tendency_defensive_rebounding: defaultTendencyLevel
   };
 
-  return { ...skillDefaults, ...insertableFields };
+  const playerSkills: Insertable<PlayerSkillTable> = { ...skillDefaults, ...insertableFields };
+  return playerSkills;
 };
 
 const generatePlayerSeason = (
@@ -140,8 +142,8 @@ const generatePlayerSeason = (
   seasonId: number,
   position: Position,
   seasonType: SeasonType
-): InsertableRecord<PlayerSeason> => {
-  const playerSeason: InsertableRecord<PlayerSeason> = {
+): Insertable<PlayerSeasonTable> => {
+  const playerSeason: Insertable<PlayerSeasonTable> = {
     // Keys
     player_id: playerId,
     team_id: teamId,
@@ -185,13 +187,19 @@ export type CreatePlayerInput = {
   position: Position;
   defaultSkillLevel: number;
   defaultTendencyLevel: number;
-  overrideSkills?: Partial<PlayerSkills>;
+  overrideSkills?: Partial<Insertable<PlayerSkillTable>>;
 };
 
 export const createPlayer = async (input: CreatePlayerInput): Promise<number> => {
   const { playerInfoInput, teamId, seasonStartingYear, position, defaultSkillLevel, defaultTendencyLevel, overrideSkills } = input;
   const playerInfo = generatePlayerInfo(playerInfoInput);
-  const playerId = await insert(playerInfo, PLAYER_TABLE);
+  const player = await db
+    .insertInto(PLAYER_TABLE)
+    .values(playerInfo)
+    .returning('id')
+    .executeTakeFirstOrThrow();
+
+  const playerId = player.id;
   let seasonId;
   try {
     seasonId = (await getSeason(seasonStartingYear))?.id;
@@ -201,21 +209,47 @@ export const createPlayer = async (input: CreatePlayerInput): Promise<number> =>
   const playerSkills = generatePlayerSkills(playerId, seasonId, teamId, defaultSkillLevel, defaultTendencyLevel, overrideSkills);
   const playerSeasonRegular = generatePlayerSeason(playerId, teamId, seasonId, position, 'regular_season');
   const playerSeasonPlayoffs = generatePlayerSeason(playerId, teamId, seasonId, position, 'playoffs');
-  await insert(playerSkills, PLAYER_SKILLS_TABLE);
-  await insert(playerSeasonRegular, PLAYER_SEASON_TABLE);
-  await insert(playerSeasonPlayoffs, PLAYER_SEASON_TABLE);
+  await db
+    .insertInto(PLAYER_SKILLS_TABLE)
+    .values(playerSkills)
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto(PLAYER_SEASON_TABLE)
+    .values(playerSeasonRegular)
+    .executeTakeFirstOrThrow();
+  await db
+    .insertInto(PLAYER_SEASON_TABLE)
+    .values(playerSeasonPlayoffs)
+    .executeTakeFirstOrThrow();
   return playerId;
 };
 
 export const getPlayerHistory = async (playerId: number): Promise<PlayerHistory> => {
-  const db = await openDb();
-  const playerData = await db.get<PlayerInfo>(`SELECT * FROM ${PLAYER_TABLE} WHERE id = ?`, [playerId]);
+  const playerData = await db
+    .selectFrom(PLAYER_TABLE)
+    .selectAll()
+    .where('id', '=', playerId)
+    .executeTakeFirstOrThrow();
   if (!playerData) {
     throw new Error(`Player with id ${playerId} not found`);
   }
-  const regularSeasons = await db.all<PlayerSeason[]>(`SELECT * FROM ${PLAYER_SEASON_TABLE} WHERE player_id = ? AND season_type = 'regular_season'`, [playerId]);
-  const playoffSeasons = await db.all<PlayerSeason[]>(`SELECT * FROM ${PLAYER_SEASON_TABLE} WHERE player_id = ? AND season_type = 'playoffs'`, [playerId]);
-  const skills = await db.all<PlayerSkills[]>(`SELECT * FROM ${PLAYER_SKILLS_TABLE} WHERE player_id = ?`, [playerId]);
+  const regularSeasons = await db
+    .selectFrom(PLAYER_SEASON_TABLE)
+    .selectAll()
+    .where('player_id', '=', playerId)
+    .where('season_type', '=', 'regular_season')
+    .execute();
+  const playoffSeasons = await db
+    .selectFrom(PLAYER_SEASON_TABLE)
+    .selectAll()
+    .where('player_id', '=', playerId)
+    .where('season_type', '=', 'playoffs')
+    .execute();
+  const skills = await db
+    .selectFrom(PLAYER_SKILLS_TABLE)
+    .selectAll()
+    .where('player_id', '=', playerId)
+    .execute();
   const playerHistory: PlayerHistory = {
     playerInfo: playerData,
     regularSeasons: regularSeasons,
