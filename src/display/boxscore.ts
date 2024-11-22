@@ -1,5 +1,4 @@
-import { GameStats } from "@src/core/process/calculateGameStats";
-import { PlayerEvent } from "@src/core/simulation/possession";
+import { GameStats, PlayerEvent } from '../data';
 
 type BoxScoreRow = {
   name: string;
