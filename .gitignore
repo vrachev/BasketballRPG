@@ -136,3 +136,5 @@ sqlite/
 
 # Environment variables
 .env*
+
+.cursorrules

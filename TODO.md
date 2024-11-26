@@ -29,11 +29,9 @@ High Level:
 - GUI
 
 Now:
-- use relative imports everywhere, per guidelines (tsconfig paths = bad)
-- create standings table
-- update standings table after game
-- create a view for sortable season averages (both players/teams)
-- testing in general
+- Very basic UI
+  - Just make it work for team_standing for now. Enough to show something - doesn't have to be pretty
+- Try to get sqlite working in browser
 
 later:
 - Balancing probabilities and outcomes
@@ -41,6 +39,11 @@ later:
 - Function to calculate an overall ranking
 - Function to create a team of players, given a target overall ranking (maybe a few other params)
 - Function to calculate a team ranking
+- create a view for sortable season averages (both players/teams)
 - finish possession simulation
   - add logic for end of quarter / end of game possessions (how players decide to play it) 
   - add special logic for shotClock violations (optional)
+
+QOL
+- use relative imports everywhere, per guidelines (tsconfig paths = bad)
+- testing in general
