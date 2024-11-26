@@ -27,12 +27,8 @@ export const processMatch = async (
 };
 
 const updateTeamSeasonStats = async (gameStats: GameStats) => {
-  const { homeTeamStatline, awayTeamStatline } = gameStats;
-  const homeStats = homeTeamStatline;
-  const awayStats = awayTeamStatline;
-
-  await updateTeamSeason(gameStats.homeTeam.teamSeason.id, homeStats, gameStats.winner === 'home');
-  await updateTeamSeason(gameStats.awayTeam.teamSeason.id, awayStats, gameStats.winner === 'away');
+  await updateTeamSeason(gameStats, "home");
+  await updateTeamSeason(gameStats, "away");
 };
 
 const updatePlayerSeasonStats = async (

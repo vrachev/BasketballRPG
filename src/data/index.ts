@@ -22,6 +22,7 @@ import {
   TeamInfo as TeamInfoTable,
   GameResult as GameResultTable,
   PlayerGameResult as PlayerGameResultTable,
+  DB as DBSchema,
 } from './schema';
 import {
   // Remapped to Selectable<myTable>
@@ -62,6 +63,7 @@ import {
 
 export type {
   // Base Table Types
+  DBSchema,
   PlayerInfoTable,
   PlayerSeasonTable,
   PlayerSkillTable,

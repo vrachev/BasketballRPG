@@ -210,15 +210,23 @@ export interface TeamInfo {
 
 export interface TeamSeason {
   ast: number;
+  away_losses: Generated<number>;
+  away_wins: Generated<number>;
   blk: number;
+  conference_losses: Generated<number>;
   conference_rank: number;
+  conference_wins: Generated<number>;
   def_reb: number;
+  division_losses: Generated<number>;
+  division_wins: Generated<number>;
   fga: number;
   fgm: number;
   fouls: number;
   fta: number;
   ftm: number;
   games_played: number;
+  home_losses: Generated<number>;
+  home_wins: Generated<number>;
   id: Generated<number>;
   losses: number;
   off_reb: number;

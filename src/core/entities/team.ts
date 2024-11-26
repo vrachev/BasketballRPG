@@ -2,10 +2,8 @@ import { Insertable } from 'kysely';
 import {
   db,
   PLAYER_SEASON_TABLE,
-  TeamInfo,
   TEAM_TABLE,
   Team,
-  TeamSeason,
   TEAM_SEASON_TABLE,
   Season,
   Lineup,
