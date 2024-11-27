@@ -1,5 +1,5 @@
-import { db, PLAYER_SEASON_TABLE, PlayerEvent, StatlineRaw, PlayerSeasonTable } from '../../data/index.js';
-import { Updateable } from 'kysely';
+import { db, PLAYER_SEASON_TABLE, type PlayerEvent, type StatlineRaw, type PlayerSeasonTable } from '../../data/index.js';
+import type { Updateable } from 'kysely';
 
 export const updatePlayerSeason = async (
   playerSeasonId: number,

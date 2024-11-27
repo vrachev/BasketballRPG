@@ -8,7 +8,7 @@ import {
   FileMigrationProvider,
   SqliteDialect,
 } from 'kysely';
-import { DB } from './schema.js';
+import type { DB } from './schema.js';
 import SQLite from 'better-sqlite3';
 
 const DB_PATH = path.join(process.cwd(), 'sqlite', 'database.db');

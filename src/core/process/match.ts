@@ -2,9 +2,10 @@ import { insertGameResult } from '../entities/gameResult.js';
 import { insertPlayerGameResults } from '../entities/playerGameResult.js';
 import { updatePlayerSeason } from '../entities/playerSeason.js';
 import { updateTeamSeason } from '../entities/teamSeason.js';
-import { MatchInput, simulateMatch } from '../simulation/match.js';
+import { simulateMatch } from '../simulation/match.js';
 import { calculateGameStats } from './calculateGameStats.js';
-import { GameStats, PlayerEvent } from '../../data.js';
+import type { MatchInput } from '../simulation/match.js';
+import type { GameStats, PlayerEvent } from '../../data/index.js';
 
 export const processMatch = async (
   matchInput: MatchInput,

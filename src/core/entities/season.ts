@@ -1,5 +1,5 @@
-import { Insertable } from 'kysely';
-import { db, SEASON_TABLE, SeasonTable, Season } from '../../data/index.js';
+import type { Insertable } from 'kysely';
+import { db, SEASON_TABLE, type SeasonTable, type Season } from '../../data/index.js';
 
 export const createSeason = async (startYear: number, endYear: number): Promise<number> => {
   const seasonRecord: Insertable<SeasonTable> = {

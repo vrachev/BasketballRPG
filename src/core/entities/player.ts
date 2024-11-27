@@ -2,14 +2,14 @@ import {
   PLAYER_SEASON_TABLE,
   PLAYER_SKILLS_TABLE,
   PLAYER_TABLE,
-  PlayerSeasonTable,
-  PlayerSkillTable,
-  PlayerInfoTable,
-  PlayerHistory,
-  Player,
+  type PlayerSeasonTable,
+  type PlayerSkillTable,
+  type PlayerInfoTable,
+  type PlayerHistory,
+  type Player,
   db
 } from '../../data/index.js';
-import { Insertable } from 'kysely';
+import type { Insertable } from 'kysely';
 import { getSeason } from './season.js';
 import { Chance } from 'chance';
 

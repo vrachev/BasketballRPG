@@ -1,5 +1,5 @@
 import type { Selectable } from 'kysely';
-import {
+import type {
   PlayerInfo as PlayerInfoTable,
   PlayerSeason as PlayerSeasonTable,
   PlayerSkill as PlayerSkillTable,

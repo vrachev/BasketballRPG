@@ -1,6 +1,6 @@
 import { db } from '../../data/index.js';
-import { Insertable } from 'kysely';
-import { PLAYER_GAME_RESULT_TABLE, PlayerGameResultTable, GameStats } from '../../data/index.js';
+import type { Insertable } from 'kysely';
+import { PLAYER_GAME_RESULT_TABLE, type PlayerGameResultTable, type GameStats } from '../../data/index.js';
 
 export const insertPlayerGameResults = async (
   gameStats: GameStats,

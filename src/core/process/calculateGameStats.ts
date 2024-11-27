@@ -1,5 +1,5 @@
-import { MatchInput } from '../simulation/match.js';
-import { GameStats, PlayerEvent, PossessionResult, StatlineTeam } from '../../data.js';
+import type { MatchInput } from '../simulation/match.js';
+import type { GameStats, PlayerEvent, PossessionResult, StatlineTeam } from '../../data/index.js';
 
 export const calculateGameStats = (
   possessionResults: PossessionResult[],

@@ -1,4 +1,4 @@
-import { DB as DBSchema } from './schema.js';
+import type { DB as DBSchema } from './schema.js';
 import SQLite from 'better-sqlite3';
 import { Kysely, SqliteDialect } from 'kysely';
 

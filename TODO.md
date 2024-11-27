@@ -45,5 +45,4 @@ later:
   - add special logic for shotClock violations (optional)
 
 QOL
-- use relative imports everywhere, per guidelines (tsconfig paths = bad)
 - testing in general

@@ -1,19 +1,5 @@
-// import { playerSchemaSql, PlayerInfo, Player, PlayerHistory } from './schemas/player.js';
-// import { playerSeasonSchemaSql, PlayerSeason } from './schemas/playerSeason.js';
-// import { playerSkillsSchemaSql, PlayerSkills } from './schemas/playerSkills.js';
-// import { teamSchemaSql, Lineup, TeamInfo, Team } from './schemas/team.js';
-// import { teamSeasonSchemaSql, TeamSeason } from './schemas/teamSeason.js';
-// import { seasonSchemaSql, Season } from './schemas/season.js';
-// import { PlayerGameResult, playerGameResultSchemaSql } from './schemas/playerGameResult.js';
-// import {
-//   GameResult,
-//   StatlineTeam,
-//   StatlineRaw,
-//   gameResultSchemaSql,
-//   prefixKeys,
-// } from './schemas/gameResult.js';
 import db from './db.js';
-import {
+import type {
   PlayerInfo as PlayerInfoTable,
   PlayerSeason as PlayerSeasonTable,
   PlayerSkill as PlayerSkillTable,
@@ -24,7 +10,7 @@ import {
   PlayerGameResult as PlayerGameResultTable,
   DB as DBSchema,
 } from './schema.js';
-import {
+import type {
   // Remapped to Selectable<myTable>
   PlayerInfo,
   PlayerSeason,
@@ -40,7 +26,6 @@ import {
   Player,
   Lineup,
   Team,
-  prefixKeys,
   StatlineRaw,
   StatlineTeam,
   PlayerEvent,
@@ -59,7 +44,7 @@ import {
   PLAYER_GAME_RESULT_TABLE,
 } from './constants.js';
 
-// import { InsertableRecord, SchemaTs, TableSchemaSql, isForeignKeyType } from './sqlTypes.js';
+import { prefixKeys } from './types.js';
 
 export type {
   // Base Table Types

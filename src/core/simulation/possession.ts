@@ -2,9 +2,9 @@
 * Simulate a basketball possession
 */
 
-import { Player, PlayerSkill, PlayerEvent, PossessionResult, PossessionInput } from '../../data/index.js';
+import type { Player, PlayerSkill, PlayerEvent, PossessionResult, PossessionInput } from '../../data/index.js';
 import { averageStatRates, playerConstants, possessionConstants } from '../index.js';
-import { Lineup } from '../../data/index.js';
+import type { Lineup } from '../../data/index.js';
 
 type ShotTypeData = {
   [key: string]: {

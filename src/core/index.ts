@@ -1,4 +1,5 @@
-import { createPlayer, getPlayerHistory, CreatePlayerInput } from './entities/player.js';
+import { createPlayer } from './entities/player.js';
+import { getPlayerHistory, type CreatePlayerInput } from './entities/player.js';
 import { createTeams, getTeamId, getTeamIds, getTeams, getTeam } from './entities/team.js';
 import { getTeamStandings } from './entities/views/teamStandings.js';
 import { createTeamSeason } from './entities/teamSeason.js';

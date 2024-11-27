@@ -1,8 +1,8 @@
 {
+  "extends": "./.svelte-kit/tsconfig.json",
   "compilerOptions": {
     "esModuleInterop": true,
     "skipLibCheck": true,
-    "target": "es2022",
     "allowJs": true,
     "resolveJsonModule": true,
     "moduleDetection": "force",
@@ -11,7 +11,7 @@
     "strict": true,
     "noImplicitOverride": true,
     "noImplicitReturns": true,
-    "module": "NodeNext",
+    "moduleResolution": "bundler",
     "outDir": "dist",
     "sourceMap": true,
     "noEmit": true,
@@ -21,29 +21,6 @@
     ],
     "types": [
       "@babel/core"
-    ],
-    "baseUrl": ".",
-    "paths": {
-      "@src/*": [
-        "src/*"
-      ],
-      "@tests/*": [
-        "tests/*"
-      ],
-      "@core/*": [
-        "src/core/*"
-      ],
-      "@data/*": [
-        "src/data/*",
-        "src/data/constants/*"
-      ],
-      "@entities/*": [
-        "src/core/entities/*"
-      ],
-      "@simulation/*": [
-        "src/core/simulation/possesion/*",
-        "src/core/simulation/*"
-      ]
-    }
+    ]
   }
 }

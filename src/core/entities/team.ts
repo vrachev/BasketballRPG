@@ -1,14 +1,14 @@
-import { Insertable } from 'kysely';
+import type { Insertable } from 'kysely';
 import {
   db,
   PLAYER_SEASON_TABLE,
   TEAM_TABLE,
-  Team,
+  type Team,
   TEAM_SEASON_TABLE,
-  Season,
-  Lineup,
-  TeamInfoTable,
-  Player
+  type Season,
+  type Lineup,
+  type TeamInfoTable,
+  type Player
 } from '../../data/index.js';
 import { getPlayerFromHistory, getPlayerHistory } from './player.js';
 import { getSeason } from './season.js';
