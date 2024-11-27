@@ -8,9 +8,9 @@ import {
   PlayerHistory,
   Player,
   db
-} from '../../data';
+} from '../../data/index.js';
 import { Insertable } from 'kysely';
-import { getSeason } from './season';
+import { getSeason } from './season.js';
 import { Chance } from 'chance';
 
 type Position = 'PG' | 'SG' | 'SF' | 'PF' | 'C';

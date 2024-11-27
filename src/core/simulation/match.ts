@@ -1,9 +1,9 @@
 // Simulate a basketball match
 
-import { Team } from "../../data";
-import { possessionConstants } from "./constants";
-import { simulatePossession } from "./possession";
-import { Lineup, PossessionResult } from "../../data";
+import { Team } from '../../data/index.js';
+import { possessionConstants } from './constants.js';
+import { simulatePossession } from './possession.js';
+import { Lineup, PossessionResult } from '../../data/index.js';
 
 export type MatchInput = {
   homeTeam: Team,

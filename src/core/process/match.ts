@@ -1,10 +1,10 @@
-import { insertGameResult } from '../entities/gameResult';
-import { insertPlayerGameResults } from '../entities/playerGameResult';
-import { updatePlayerSeason } from '../entities/playerSeason';
-import { updateTeamSeason } from '../entities/teamSeason';
-import { MatchInput, simulateMatch } from '../simulation/match';
-import { calculateGameStats } from './calculateGameStats';
-import { GameStats, PlayerEvent } from '../../data';
+import { insertGameResult } from '../entities/gameResult.js';
+import { insertPlayerGameResults } from '../entities/playerGameResult.js';
+import { updatePlayerSeason } from '../entities/playerSeason.js';
+import { updateTeamSeason } from '../entities/teamSeason.js';
+import { MatchInput, simulateMatch } from '../simulation/match.js';
+import { calculateGameStats } from './calculateGameStats.js';
+import { GameStats, PlayerEvent } from '../../data.js';
 
 export const processMatch = async (
   matchInput: MatchInput,

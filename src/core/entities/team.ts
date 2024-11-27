@@ -9,9 +9,9 @@ import {
   Lineup,
   TeamInfoTable,
   Player
-} from '../../data';
-import { getPlayerFromHistory, getPlayerHistory } from './player';
-import { getSeason } from './season';
+} from '../../data/index.js';
+import { getPlayerFromHistory, getPlayerHistory } from './player.js';
+import { getSeason } from './season.js';
 
 const cities = {
   Eastern: {

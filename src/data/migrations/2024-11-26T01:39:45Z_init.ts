@@ -1,5 +1,5 @@
 import { Kysely } from 'kysely';
-import { TEAM_SEASON_TABLE } from '../constants';
+import { TEAM_SEASON_TABLE } from '../constants.js';
 
 export async function up(db: Kysely<any>) {
   await db.schema

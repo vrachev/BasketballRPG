@@ -1,5 +1,5 @@
 import { Insertable, Updateable } from 'kysely';
-import { TEAM_SEASON_TABLE, StatlineTeam, TeamSeasonTable, db, GameStats } from '../../data';
+import { TEAM_SEASON_TABLE, StatlineTeam, TeamSeasonTable, db, GameStats } from '../../data/index.js';
 
 export const createTeamSeason = async (
   teamIds: number[],

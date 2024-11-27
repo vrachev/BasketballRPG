@@ -1,8 +1,8 @@
-import { createTeams } from './core/entities/team';
-import * as core from './core';
-import { createSeason } from './core/entities/season';
-import { generateSchedule } from './core/season/createSchedule';
-import { db, TEAM_TABLE } from './data';
+import { createTeams } from './core/entities/team.js';
+import * as core from './core/index.js';
+import { createSeason } from './core/entities/season.js';
+import { generateSchedule } from './core/season/createSchedule.js';
+import { db, TEAM_TABLE } from './data/index.js';
 
 async function seedDb() {
   // Check if teams already exist

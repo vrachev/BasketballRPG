@@ -1,4 +1,6 @@
 import * as path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname } from 'path';
 import { promises as fs } from 'fs';
 import {
   Kysely,
@@ -6,10 +8,13 @@ import {
   FileMigrationProvider,
   SqliteDialect,
 } from 'kysely';
-import { DB } from './schema';
+import { DB } from './schema.js';
 import SQLite from 'better-sqlite3';
 
 const DB_PATH = path.join(process.cwd(), 'sqlite', 'database.db');
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 async function migrateToLatest() {
   const db = new Kysely<DB>({
@@ -23,7 +28,6 @@ async function migrateToLatest() {
     provider: new FileMigrationProvider({
       fs,
       path,
-      // This needs to be an absolute path.
       migrationFolder: path.join(__dirname, 'migrations'),
     }),
   });

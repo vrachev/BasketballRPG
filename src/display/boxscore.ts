@@ -1,4 +1,4 @@
-import { GameStats, PlayerEvent } from '../data';
+import { GameStats, PlayerEvent } from '../data/index.js';
 
 type BoxScoreRow = {
   name: string;

@@ -1,14 +1,14 @@
-import { createPlayer, getPlayerHistory, CreatePlayerInput } from "./entities/player";
-import { createTeams, getTeamId, getTeamIds, getTeams, getTeam } from "./entities/team";
-import { getTeamStandings } from "./entities/views/teamStandings";
-import { createTeamSeason } from "./entities/teamSeason";
+import { createPlayer, getPlayerHistory, CreatePlayerInput } from './entities/player.js';
+import { createTeams, getTeamId, getTeamIds, getTeams, getTeam } from './entities/team.js';
+import { getTeamStandings } from './entities/views/teamStandings.js';
+import { createTeamSeason } from './entities/teamSeason.js';
 import {
   averageGameStatsPerTeam,
   averageStatRates,
   playerConstants,
   possessionConstants
-} from "./simulation/constants";
-import { processMatch } from "./process/match";
+} from './simulation/constants.js';
+import { processMatch } from './process/match.js';
 
 export {
   getPlayerHistory,

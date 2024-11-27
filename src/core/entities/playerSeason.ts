@@ -1,4 +1,4 @@
-import { db, PLAYER_SEASON_TABLE, PlayerEvent, StatlineRaw, PlayerSeasonTable } from '../../data';
+import { db, PLAYER_SEASON_TABLE, PlayerEvent, StatlineRaw, PlayerSeasonTable } from '../../data/index.js';
 import { Updateable } from 'kysely';
 
 export const updatePlayerSeason = async (

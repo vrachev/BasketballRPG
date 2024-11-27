@@ -1,18 +1,18 @@
-// import { playerSchemaSql, PlayerInfo, Player, PlayerHistory } from './schemas/player';
-// import { playerSeasonSchemaSql, PlayerSeason } from './schemas/playerSeason';
-// import { playerSkillsSchemaSql, PlayerSkills } from './schemas/playerSkills';
-// import { teamSchemaSql, Lineup, TeamInfo, Team } from './schemas/team';
-// import { teamSeasonSchemaSql, TeamSeason } from './schemas/teamSeason';
-// import { seasonSchemaSql, Season } from './schemas/season';
-// import { PlayerGameResult, playerGameResultSchemaSql } from './schemas/playerGameResult';
+// import { playerSchemaSql, PlayerInfo, Player, PlayerHistory } from './schemas/player.js';
+// import { playerSeasonSchemaSql, PlayerSeason } from './schemas/playerSeason.js';
+// import { playerSkillsSchemaSql, PlayerSkills } from './schemas/playerSkills.js';
+// import { teamSchemaSql, Lineup, TeamInfo, Team } from './schemas/team.js';
+// import { teamSeasonSchemaSql, TeamSeason } from './schemas/teamSeason.js';
+// import { seasonSchemaSql, Season } from './schemas/season.js';
+// import { PlayerGameResult, playerGameResultSchemaSql } from './schemas/playerGameResult.js';
 // import {
 //   GameResult,
 //   StatlineTeam,
 //   StatlineRaw,
 //   gameResultSchemaSql,
 //   prefixKeys,
-// } from './schemas/gameResult';
-import db from './db';
+// } from './schemas/gameResult.js';
+import db from './db.js';
 import {
   PlayerInfo as PlayerInfoTable,
   PlayerSeason as PlayerSeasonTable,
@@ -23,7 +23,7 @@ import {
   GameResult as GameResultTable,
   PlayerGameResult as PlayerGameResultTable,
   DB as DBSchema,
-} from './schema';
+} from './schema.js';
 import {
   // Remapped to Selectable<myTable>
   PlayerInfo,
@@ -47,7 +47,7 @@ import {
   GameStats,
   PossessionInput,
   PossessionResult,
-} from './types';
+} from './types.js';
 import {
   PLAYER_TABLE,
   TEAM_TABLE,
@@ -57,9 +57,9 @@ import {
   SEASON_TABLE,
   GAME_RESULT_TABLE,
   PLAYER_GAME_RESULT_TABLE,
-} from './constants';
+} from './constants.js';
 
-// import { InsertableRecord, SchemaTs, TableSchemaSql, isForeignKeyType } from './sqlTypes';
+// import { InsertableRecord, SchemaTs, TableSchemaSql, isForeignKeyType } from './sqlTypes.js';
 
 export type {
   // Base Table Types

@@ -1,5 +1,5 @@
 import { Insertable } from 'kysely';
-import { db, GAME_RESULT_TABLE, prefixKeys, GameResultTable, GameStats } from '../../data';
+import { db, GAME_RESULT_TABLE, prefixKeys, GameResultTable, GameStats } from '../../data/index.js';
 
 export const insertGameResult = async (
   {

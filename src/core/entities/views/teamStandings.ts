@@ -1,4 +1,4 @@
-import { db, DBSchema, TEAM_TABLE, TEAM_SEASON_TABLE, Lineup, Team, TeamInfo } from '../../../data';
+import { db, DBSchema, TEAM_TABLE, TEAM_SEASON_TABLE, Lineup, Team, TeamInfo } from '../../../data/index.js';
 
 export type WinLossRecord = {
   wins: number;

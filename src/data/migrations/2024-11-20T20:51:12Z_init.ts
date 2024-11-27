@@ -8,7 +8,7 @@ import {
   SEASON_TABLE,
   TEAM_SEASON_TABLE,
   TEAM_TABLE
-} from '../constants';
+} from '../constants.js';
 
 // TODO:
 // 1) Use table constants for foreign keys (eg: `${TEAM_TABLE}.id`)

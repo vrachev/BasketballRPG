@@ -1,5 +1,5 @@
-import type { Team } from "../../data/";
-import type { MatchInput } from "../simulation/match";
+import type { Team } from '../../data/index.js';
+import type { MatchInput } from '../simulation/match.js';
 
 type TeamId = number;
 
