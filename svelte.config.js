@@ -5,15 +5,6 @@ import { vitePreprocess } from '@sveltejs/vite-plugin-svelte';
 const config = {
   kit: {
     adapter: adapter(),
-    files: {
-      routes: 'src/ui/routes',
-      lib: 'src/ui/lib',
-      appTemplate: 'src/ui/app.html',
-      assets: 'src/ui/static'
-    },
-    paths: {
-      base: '/basketball-legends'
-    }
   },
   preprocess: vitePreprocess()
 };
