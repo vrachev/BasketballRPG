@@ -1,35 +1,37 @@
-import * as path from 'path';
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import { promises as fs } from 'fs';
-import {
-  Kysely,
-  Migrator,
-  FileMigrationProvider,
-  SqliteDialect,
-} from 'kysely';
+import type { Dialect } from 'kysely';
+import { Kysely } from 'kysely';
 import type { DB } from './schema.js';
-import SQLite from 'better-sqlite3';
+import { Migrator } from 'kysely';
+import { StaticMigrationProvider } from './migrationProvider.js';
+import { loadConfig } from '../config.js';
 
-const DB_PATH = path.join(process.cwd(), 'sqlite', 'database.db');
+async function createDialect(): Promise<Dialect> {
+  const config = await loadConfig();
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+  if (config.MODE === 'browser') {
+    // Browser environment
+    const { SQLocalKysely } = await import('sqlocal/kysely');
+    const { dialect } = new SQLocalKysely(config.DB_PATH);
+    return dialect;
+  } else {
+    // Server environment (default)
+    const { default: SQLite } = await import('better-sqlite3');
+    const { SqliteDialect } = await import('kysely');
+    return new SqliteDialect({
+      database: new SQLite(config.DB_PATH),
+    });
+  }
+}
 
 async function migrateToLatest() {
+  const dialect = await createDialect();
   const db = new Kysely<DB>({
-    dialect: new SqliteDialect({
-      database: new SQLite(DB_PATH),
-    }),
+    dialect,
   });
 
   const migrator = new Migrator({
     db,
-    provider: new FileMigrationProvider({
-      fs,
-      path,
-      migrationFolder: path.join(__dirname, 'migrations'),
-    }),
+    provider: new StaticMigrationProvider(),
   });
 
   const { error, results } = await migrator.migrateToLatest();
