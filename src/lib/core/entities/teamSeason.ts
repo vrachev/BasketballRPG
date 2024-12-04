@@ -17,6 +17,14 @@ export const createTeamSeason = async (
     games_played: 0,
     wins: 0,
     losses: 0,
+    conference_wins: 0,
+    conference_losses: 0,
+    division_wins: 0,
+    division_losses: 0,
+    home_wins: 0,
+    home_losses: 0,
+    away_wins: 0,
+    away_losses: 0,
     conference_rank: 0,
     playoff_seed: 0,
 
@@ -93,7 +101,11 @@ export const updateTeamSeason = async (
     home_wins: isWin && isHome ? teamSeason.home_wins + 1 : teamSeason.home_wins,
     home_losses: !isWin && isHome ? teamSeason.home_losses + 1 : teamSeason.home_losses,
     away_wins: isWin && !isHome ? teamSeason.away_wins + 1 : teamSeason.away_wins,
-    away_losses: !isWin && !isHome ? teamSeason.away_losses + 1 : teamSeason.away_losses
+    away_losses: !isWin && !isHome ? teamSeason.away_losses + 1 : teamSeason.away_losses,
+
+    // TODO: Calculate conference rank and playoff seed
+    conference_rank: 0,
+    playoff_seed: 0
   };
 
   // Add new stats to existing totals
