@@ -11,8 +11,7 @@ import {
 } from '../constants.js';
 
 // TODO:
-// 1) Use table constants for foreign keys (eg: `${TEAM_TABLE}.id`)
-// 2) Use StatlineRaw type instead of hardcoding statline columns
+// Use StatlineRaw type instead of hardcoding statline columns
 
 export async function up(db: Kysely<any>) {
   // Create seasons table
@@ -63,6 +62,14 @@ export async function up(db: Kysely<any>) {
     .addColumn('games_played', 'integer', (col) => col.notNull())
     .addColumn('wins', 'integer', (col) => col.notNull())
     .addColumn('losses', 'integer', (col) => col.notNull())
+    .addColumn('conference_wins', 'integer', (col) => col.notNull())
+    .addColumn('conference_losses', 'integer', (col) => col.notNull())
+    .addColumn('division_wins', 'integer', (col) => col.notNull())
+    .addColumn('division_losses', 'integer', (col) => col.notNull())
+    .addColumn('home_wins', 'integer', (col) => col.notNull())
+    .addColumn('home_losses', 'integer', (col) => col.notNull())
+    .addColumn('away_wins', 'integer', (col) => col.notNull())
+    .addColumn('away_losses', 'integer', (col) => col.notNull())
     .addColumn('conference_rank', 'integer', (col) => col.notNull())
     .addColumn('playoff_seed', 'integer', (col) => col.notNull())
     .addColumn('secs_played', 'integer', (col) => col.notNull())
