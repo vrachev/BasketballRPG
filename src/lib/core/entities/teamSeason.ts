@@ -1,7 +1,7 @@
 import type { Insertable, Updateable } from 'kysely';
 import {
   TEAM_SEASON_TABLE,
-  db,
+  getDb,
   type GameStats,
   type StatlineTeam,
   type TeamSeasonTable,
@@ -11,6 +11,7 @@ export const createTeamSeason = async (
   teamIds: number[],
   seasonId: number
 ): Promise<void> => {
+  const db = await getDb();
   const teamSeasons = teamIds.map((teamId) => ({
     team_id: teamId,
     season_id: seasonId,
@@ -59,6 +60,7 @@ export const updateTeamSeason = async (
   gameStats: GameStats,
   location: 'home' | 'away'
 ): Promise<void> => {
+  const db = await getDb();
   const isHome = location === 'home';
   const teamStats = isHome ? gameStats.homeTeamStatline : gameStats.awayTeamStatline;
   const isWin = gameStats.winner === location;

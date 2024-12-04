@@ -1,5 +1,5 @@
 import type { Insertable } from 'kysely';
-import { db, GAME_RESULT_TABLE, prefixKeys } from '../../data/index.js';
+import { getDb, GAME_RESULT_TABLE, prefixKeys } from '../../data/index.js';
 import type { GameResultTable, GameStats } from '../../data/index.js';
 
 export const insertGameResult = async (
@@ -13,6 +13,7 @@ export const insertGameResult = async (
     date: Date;
   }
 ): Promise<number> => {
+  const db = await getDb();
   const homeStats = prefixKeys(gameStats.homeTeamStatline, 'h_') as {
     [K in keyof typeof gameStats.homeTeamStatline as `h_${string & K}`]: number
   };

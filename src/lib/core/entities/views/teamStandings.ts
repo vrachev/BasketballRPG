@@ -1,4 +1,4 @@
-import { db } from '../../../data/index.js';
+import { getDb } from '../../../data/index.js';
 import type { DBSchema, Lineup, Team, TeamInfo } from '../../../data/index.js';
 import { TEAM_TABLE, TEAM_SEASON_TABLE } from '../../../data/index.js';
 
@@ -32,6 +32,7 @@ export const getTeamStandings = async (
   seasonId: number,
   conference?: 'Eastern' | 'Western'
 ): Promise<TeamStanding[]> => {
+  const db = await getDb();
   let query = db
     .selectFrom('team_info as t')
     .innerJoin('team_season as ts', 'ts.team_id', 't.id')

@@ -1,7 +1,8 @@
 import type { Insertable } from 'kysely';
-import { db, SEASON_TABLE, type SeasonTable, type Season } from '../../data/index.js';
+import { getDb, SEASON_TABLE, type SeasonTable, type Season } from '../../data/index.js';
 
 export const createSeason = async (startYear: number, endYear: number): Promise<number> => {
+  const db = await getDb();
   const seasonRecord: Insertable<SeasonTable> = {
     start_year: startYear,
     end_year: endYear
@@ -14,6 +15,7 @@ export const createSeason = async (startYear: number, endYear: number): Promise<
 };
 
 export const getSeason = async (startingYear: number): Promise<Season> => {
+  const db = await getDb();
   const seasonRecord = await db
     .selectFrom(SEASON_TABLE)
     .selectAll()

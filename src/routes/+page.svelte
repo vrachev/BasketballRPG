@@ -2,7 +2,9 @@
   import { onMount } from "svelte";
 
   onMount(async () => {
-    // const mainModule = await import("$lib/main.js");
+    const mainModule = await import("$lib/main.ts");
+    console.log("VLADA 2");
+    mainModule.main();
   });
 </script>
 

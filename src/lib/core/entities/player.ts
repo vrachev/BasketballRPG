@@ -7,7 +7,7 @@ import {
   type PlayerInfoTable,
   type PlayerHistory,
   type Player,
-  db
+  getDb
 } from '../../data/index.js';
 import type { Insertable } from 'kysely';
 import { getSeason } from './season.js';
@@ -194,6 +194,7 @@ export type CreatePlayerInput = {
 };
 
 export const createPlayer = async (input: CreatePlayerInput): Promise<number> => {
+  const db = await getDb();
   const { playerInfoInput, teamId, seasonStartingYear, position, defaultSkillLevel, defaultTendencyLevel, overrideSkills } = input;
   const playerInfo = generatePlayerInfo(playerInfoInput);
   const player = await db
@@ -228,6 +229,7 @@ export const createPlayer = async (input: CreatePlayerInput): Promise<number> =>
 };
 
 export const getPlayerHistory = async (playerId: number): Promise<PlayerHistory> => {
+  const db = await getDb();
   const playerData = await db
     .selectFrom(PLAYER_TABLE)
     .selectAll()

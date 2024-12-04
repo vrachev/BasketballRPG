@@ -5,7 +5,16 @@ export interface Config {
 
 const browserConfig = {
   MODE: 'browser' as const,
-  DB_PATH: 'sqlite/database.db'
+  DB_PATH: '/sqlite/database.db'
+};
+
+const serverConfig = async () => {
+  // Dynamically import path module only in server environment
+  const path = await import('path');
+  return {
+    MODE: 'server' as const,
+    DB_PATH: path.join(process.cwd(), 'sqlite/database.db')
+  };
 };
 
 let config: Config;
@@ -13,18 +22,11 @@ let config: Config;
 export async function loadConfig(): Promise<Config> {
   if (config) return config;
 
-  const mode = globalThis.window ? 'browser' : 'server';
+  // Default to server unless explicitly in browser
+  const mode = typeof window !== 'undefined' ? 'browser' : 'server';
 
-  if (mode === 'browser') {
-    config = browserConfig;
-  } else {
-    // Dynamically import path module only in server environment
-    const path = await import('path');
-    config = {
-      MODE: 'server',
-      DB_PATH: path.default.join(process.cwd(), 'sqlite', 'database.db')
-    };
-  }
+  console.log("MODE", mode);
 
+  config = mode === 'browser' ? browserConfig : await serverConfig();
   return config;
 }

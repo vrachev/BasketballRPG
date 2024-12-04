@@ -1,6 +1,6 @@
 import type { Insertable } from 'kysely';
 import {
-  db,
+  getDb,
   PLAYER_SEASON_TABLE,
   TEAM_TABLE,
   type Team,
@@ -63,6 +63,7 @@ const cities = {
 };
 
 export const createTeams = async (): Promise<void> => {
+  const db = await getDb();
   for (const [conference, divisions] of Object.entries(cities)) {
     for (const [division, teams] of Object.entries(divisions)) {
       for (const team of teams) {
@@ -84,6 +85,7 @@ export const createTeams = async (): Promise<void> => {
 };
 
 export const getTeamId = async (city: string): Promise<number> => {
+  const db = await getDb();
   const team = await db
     .selectFrom(TEAM_TABLE)
     .select('id')
@@ -96,6 +98,7 @@ export const getTeamId = async (city: string): Promise<number> => {
 };
 
 export const getTeamIds = async (): Promise<number[]> => {
+  const db = await getDb();
   const teams = await db
     .selectFrom(TEAM_TABLE)
     .select('id')
@@ -110,6 +113,7 @@ export const getTeams = async (
   seasonStartingYear: number,
   teamId?: number
 ): Promise<Team[]> => {
+  const db = await getDb();
   const season = await getSeason(seasonStartingYear);
   if (!season) {
     throw new Error(`Season with year ${seasonStartingYear} not found`);
@@ -177,6 +181,7 @@ const getTeamPlayersBySeason = async (
   teamId: number,
   season: Season
 ): Promise<Player[]> => {
+  const db = await getDb();
   // Need unique player ids, because we create 2 rows for each player, one for regular season and one for playoffs
   const playerIds = await db
     .selectFrom(PLAYER_SEASON_TABLE)

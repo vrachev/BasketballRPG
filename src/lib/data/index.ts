@@ -1,4 +1,4 @@
-import db from './db.js';
+import getDb from './db.js';
 import type {
   PlayerInfo as PlayerInfoTable,
   PlayerSeason as PlayerSeasonTable,
@@ -83,7 +83,7 @@ export type {
 
 export {
   // DB singleton
-  db,
+  getDb,
 
   // Helper functions
   prefixKeys,

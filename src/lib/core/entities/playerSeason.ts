@@ -1,4 +1,4 @@
-import { db, PLAYER_SEASON_TABLE, type PlayerEvent, type StatlineRaw, type PlayerSeasonTable } from '../../data/index.js';
+import { getDb, PLAYER_SEASON_TABLE, type PlayerEvent, type StatlineRaw, type PlayerSeasonTable } from '../../data/index.js';
 import type { Updateable } from 'kysely';
 
 export const updatePlayerSeason = async (
@@ -7,6 +7,7 @@ export const updatePlayerSeason = async (
   win: boolean,
   started: boolean
 ) => {
+  const db = await getDb();
   const playerSeason = await db
     .selectFrom(PLAYER_SEASON_TABLE)
     .selectAll()

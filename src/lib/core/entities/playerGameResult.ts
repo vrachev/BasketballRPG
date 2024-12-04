@@ -1,4 +1,4 @@
-import { db } from '../../data/index.js';
+import { getDb } from '../../data/index.js';
 import type { Insertable } from 'kysely';
 import { PLAYER_GAME_RESULT_TABLE, type PlayerGameResultTable, type GameStats } from '../../data/index.js';
 
@@ -38,6 +38,7 @@ export const insertPlayerGameResults = async (
 
   const playerGameResults = [...homePlayerGameResults, ...awayPlayerGameResults];
   const ids: number[] = [];
+  const db = await getDb();
   for (const playerGameResult of playerGameResults) {
     const res = await db
       .insertInto(PLAYER_GAME_RESULT_TABLE)

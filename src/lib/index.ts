@@ -2,9 +2,12 @@ import { createTeams } from './core/entities/team.js';
 import * as core from './core/index.js';
 import { createSeason } from './core/entities/season.js';
 import { generateSchedule } from './core/season/createSchedule.js';
-import { db, TEAM_TABLE } from './data/index.js';
+import { getDb, TEAM_TABLE } from './data/index.js';
+import { printStandings } from './display/standings.js';
 
 async function seedDb() {
+  const db = await getDb();
+
   // Check if teams already exist
   const existingTeams = await db
     .selectFrom(TEAM_TABLE)
@@ -21,8 +24,6 @@ async function seedDb() {
 
   const teamIds = await core.getTeamIds();
 
-  // await core.createTeamSeason(teamIds[0], 1);
-  // await core.createTeamSeason(teamIds[1], 1);
   await core.createTeamSeason(teamIds, 1);
 
   // Create 5 players for each team
@@ -64,8 +65,6 @@ async function seedDb() {
 
 async function main() {
   const teamIds = await seedDb();
-  const team1 = await core.getTeam(1, 2024);
-  const team2 = await core.getTeam(2, 2024);
 
   const teams = await core.getTeams(2024);
 
@@ -82,34 +81,8 @@ async function main() {
     );
   }
 
-  // const matches = [];
-  // for (let i = 0; i < 100; i++) {
-  //   const match = await core.processMatch(
-  //     { homeTeam: team1, awayTeam: team2, date: new Date(), seasonStage: 'regular_season' },
-  //   );
-  //   matches.push(match);
-  // }
-
-  // const match = await core.processMatch(
-  //   { homeTeam: team1, awayTeam: team2, date: new Date(), seasonStage: 'regular_season' },
-  // );
-
-  // console.log(formatTeamBoxScore(match));
-
-  // // const match = simulateMatch({ homeTeam: team1, awayTeam: team2 });
-  // console.log('\nBOSTON CELTICS');
-  // console.log(formatTeamBoxScore(match.homeTeamStatline.map(stats => ({
-  //   name: stats.name,
-  //   minutes: Math.round(stats.secs_played / 60),
-  //   stats
-  // }))));
-
-  // console.log('\nPHILADELPHIA 76ERS');
-  // console.log(formatTeamBoxScore(match.awayTeamStatline.map(stats => ({
-  //   name: stats.name,
-  //   minutes: Math.round(stats.secs_played / 60),
-  //   stats
-  // }))));
+  const standings = await core.getTeamStandings(1, 'Eastern');
+  printStandings(standings);
 }
 
 main().catch((err) => {
