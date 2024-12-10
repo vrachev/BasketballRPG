@@ -1,3 +1,5 @@
+import { logger } from './logger';
+
 export interface Config {
   MODE: 'browser' | 'server';
   DB_PATH: string;
@@ -25,7 +27,7 @@ export async function loadConfig(): Promise<Config> {
   // Default to server unless explicitly in browser
   const mode = typeof window !== 'undefined' ? 'browser' : 'server';
 
-  console.log("MODE", mode);
+  logger.debug({ mode }, "Loading configuration");
 
   config = mode === 'browser' ? browserConfig : await serverConfig();
   return config;

@@ -1,30 +1,11 @@
-import type { Dialect } from 'kysely';
-import { Kysely } from 'kysely';
 import type { DB } from './schema.js';
-import { Migrator } from 'kysely';
+import { Kysely, Migrator } from 'kysely';
 import { StaticMigrationProvider } from './migrationProvider.js';
-import { loadConfig } from '../config.js';
+import { logger } from '../logger.js';
+import { createDialect } from './db.js';
 
-async function createDialect(): Promise<Dialect> {
-  const config = await loadConfig();
-
-  if (config.MODE === 'browser') {
-    // Browser environment
-    const { SQLocalKysely } = await import('sqlocal/kysely');
-    const { dialect } = new SQLocalKysely(config.DB_PATH);
-    return dialect;
-  } else {
-    // Server environment (default)
-    const { default: SQLite } = await import('better-sqlite3');
-    const { SqliteDialect } = await import('kysely');
-    return new SqliteDialect({
-      database: new SQLite(config.DB_PATH),
-    });
-  }
-}
-
-async function migrateToLatest() {
-  const dialect = await createDialect();
+export async function migrateDb(dbPath: string) {
+  const dialect = await createDialect(dbPath);
   const db = new Kysely<DB>({
     dialect,
   });
@@ -38,19 +19,16 @@ async function migrateToLatest() {
 
   results?.forEach((it) => {
     if (it.status === 'Success') {
-      console.log(`migration "${it.migrationName}" was executed successfully`);
+      logger.info({ migrationName: it.migrationName }, "Migration successful");
     } else if (it.status === 'Error') {
-      console.error(`failed to execute migration "${it.migrationName}"`);
+      logger.error({ migrationName: it.migrationName }, "Migration failed");
     }
   });
 
   if (error) {
-    console.error('failed to migrate');
-    console.error(error);
+    logger.error({ error }, "Database migration failed");
     process.exit(1);
   }
 
   await db.destroy();
 }
-
-migrateToLatest();
