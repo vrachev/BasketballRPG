@@ -29,11 +29,17 @@ High Level:
 - GUI
 
 Now:
-- Very basic UI
-  - Just make it work for team_standing for now. Enough to show something - doesn't have to be pretty
-- Try to get sqlite working in browser
+- Support multiple leagues instead of hardcoding league id
+- Look into importing more (use sveltekit alias for all imports?)
+- seasonId is brittle. In some places we expect season start year, other places season ID.
+  - idea: change id to be `${start_year}-${season_type}` eg: `2024-regular_season`.
+- Performance
+  - dogshit browser perf. Idk if I've done something wrong, but sqlite-wasm is ~1000x slower than sqlite in node.
+  - good news is the code is dogshit perf wise anyways, so lots of room for improvement.
 
 later:
+- We will probably have consistency issues with our DB the way things run right now.
+  - Easiest option is to restrict to one active tab
 - Balancing probabilities and outcomes
 - Determine ranking distribution (eg: 60 is all-star, 70 is all-nba, 80 is MVP, 90 is goat, 100 is goat++)
 - Function to calculate an overall ranking

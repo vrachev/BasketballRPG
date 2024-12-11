@@ -1,5 +1,6 @@
 import type { Team } from '../../data/index.js';
 import type { MatchInput } from '../simulation/match.js';
+import { logger } from '../../logger.js';
 
 type TeamId = number;
 
@@ -420,7 +421,7 @@ function balanceHomeAwayGames(teams: Team[], teamGameRecord: TeamGameRecord, loc
 }
 
 function verifyScheduleConstraints(teams: Team[], allGames: Game[], year: number): void {
-  console.log('Verifying schedule constraints');
+  logger.info('Verifying schedule constraints');
 
   // Calculate expected games from constants
   const expectedDivGames = DIV_SERIES.series * DIV_SERIES.games_per_series;
@@ -603,58 +604,32 @@ function verifyScheduleConstraints(teams: Team[], allGames: Game[], year: number
     }
   }
 
-  console.log('✅ Schedule constraints verified');
+  logger.info('✅ Schedule constraints verified');
 }
 
 export function toStringScheduleInfo(teams: Team[], allGames: Game[]): string {
-  let message = '';
-
+  // Initialize tracking maps
   const homeGames = new Map<TeamId, number>();
   const awayGames = new Map<TeamId, number>();
-  const conferenceGames = new Map<TeamId, { east: number, west: number; }>();
   const teamPairings = new Map<string, number>();
 
-  // Initialize counters
-  for (const team of teams) {
-    homeGames.set(team.teamInfo.id, 0);
-    awayGames.set(team.teamInfo.id, 0);
-    conferenceGames.set(team.teamInfo.id, { east: 0, west: 0 });
-  }
-
-  // Count all games
+  // Count games
   for (const game of allGames) {
     const homeId = game.homeTeam.teamInfo.id;
     const awayId = game.awayTeam.teamInfo.id;
-
-    // Home/Away counts
     homeGames.set(homeId, (homeGames.get(homeId) || 0) + 1);
     awayGames.set(awayId, (awayGames.get(awayId) || 0) + 1);
-
-    // Conference counts
-    const homeConf = game.homeTeam.teamInfo.conference;
-    const awayConf = game.awayTeam.teamInfo.conference;
-
-    const homeTeamGames = conferenceGames.get(homeId)!;
-    const awayTeamGames = conferenceGames.get(awayId)!;
-
-    if (awayConf === 'Eastern') homeTeamGames.east++;
-    if (awayConf === 'Western') homeTeamGames.west++;
-    if (homeConf === 'Eastern') awayTeamGames.east++;
-    if (homeConf === 'Western') awayTeamGames.west++;
-
-    // Track team pairings
     const pairingKey = [homeId, awayId].sort().join('-');
     teamPairings.set(pairingKey, (teamPairings.get(pairingKey) || 0) + 1);
   }
 
-  // Build home/away distribution message
-  message += 'Home/Away Game Distribution:\n';
+  // Log distributions
+  logger.info('Home/Away Game Distribution:');
   for (const team of teams) {
-    message += `${team.teamInfo.name}: ${homeGames.get(team.teamInfo.id)} home, ${awayGames.get(team.teamInfo.id)} away\n`;
+    logger.info(`${team.teamInfo.name}: ${homeGames.get(team.teamInfo.id)} home, ${awayGames.get(team.teamInfo.id)} away`);
   }
 
-  // Build Celtics distribution message
-  message += '\nCeltics Home/Away Distribution:\n';
+  logger.info('Celtics Home/Away Distribution:');
   const celtics = teams.find(t => t.teamInfo.name === 'Celtics');
   if (celtics) {
     for (const opponent of teams) {
@@ -670,14 +645,13 @@ export function toStringScheduleInfo(teams: Team[], allGames: Game[]): string {
             g.awayTeam.teamInfo.id === celtics.teamInfo.id &&
             g.homeTeam.teamInfo.id === opponent.teamInfo.id
           ).length;
-          message += `  vs ${opponent.teamInfo.name}: ${homeCount} home, ${awayCount} away\n`;
+          logger.info(`  vs ${opponent.teamInfo.name}: ${homeCount} home, ${awayCount} away`);
         }
       }
     }
   }
 
-  // Build games per month message
-  message += '\nGames per month:\n';
+  logger.info('Games per month:');
   const monthCounts = new Map<string, number>();
   for (const game of allGames) {
     const monthKey = game.date.toLocaleString('default', { month: 'long', year: 'numeric' });
@@ -686,10 +660,10 @@ export function toStringScheduleInfo(teams: Team[], allGames: Game[]): string {
 
   for (const [month, count] of Array.from(monthCounts.entries())
     .sort((a, b) => new Date(a[0]).getTime() - new Date(b[0]).getTime())) {
-    message += `${month}: ${count} games\n`;
+    logger.info(`${month}: ${count} games`);
   }
 
-  return message;
+  return '';
 }
 
 function addDays(date: Date, days: number): Date {

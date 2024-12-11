@@ -3,7 +3,7 @@
 */
 
 import type { Player, PlayerSkill, PlayerEvent, PossessionResult, PossessionInput } from '../../data/index.js';
-import { averageStatRates, playerConstants, possessionConstants } from '../index.js';
+import { averageStatRates, playerConstants, possessionConstants } from './constants.js';
 import type { Lineup } from '../../data/index.js';
 
 type ShotTypeData = {

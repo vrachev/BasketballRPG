@@ -4,6 +4,12 @@ import { createSeason } from './core/entities/season.js';
 import { generateSchedule } from './core/season/createSchedule.js';
 import { getDb, TEAM_TABLE } from './data/index.js';
 import { printStandings } from './display/standings.js';
+import { getQueryStats } from './data/db.js';
+import { logger } from './logger.js';
+import { migrateDb } from './data/migrate.js';
+
+// Log any initialization
+logger.info("Initializing BBallRPG core module");
 
 async function seedDb() {
   const db = await getDb();
@@ -14,6 +20,11 @@ async function seedDb() {
     .select(db.fn.countAll().as('count'))
     .executeTakeFirst();
 
+  const existingTeams1 = await db
+    .selectFrom(TEAM_TABLE)
+    .selectAll()
+    .execute();
+  console.log("VLADA 3", existingTeams1);
   if (Number(existingTeams?.count) > 0) {
     console.log('Database already seeded, skipping...');
     return;
@@ -64,16 +75,17 @@ async function seedDb() {
 }
 
 async function main() {
-  const teamIds = await seedDb();
+  await migrateDb('sqlite/bball-league-dev.db');
+  await seedDb();
 
   const teams = await core.getTeams(2024);
 
   const schedule = generateSchedule(teams, 'regular_season', 2024);
-
-  for (const matchInput of schedule) {
+  for (let i = 0; i < 40; i++) {
+    const matchInput = schedule[i];
     const res = await core.processMatch(matchInput);
     console.log(
-      `Game ${schedule.indexOf(matchInput) + 1}: ` +
+      `Game ${i + 1}: ` +
       `${matchInput.homeTeam.teamInfo.name} vs ${matchInput.awayTeam.teamInfo.name} - ` +
       `Winner: ${res.winner === 'home' ?
         matchInput.homeTeam.teamInfo.name :
@@ -83,6 +95,9 @@ async function main() {
 
   const standings = await core.getTeamStandings(1, 'Eastern');
   printStandings(standings);
+
+  const stats = getQueryStats();
+  console.log(`Average query duration: ${stats.averageDurationMs.toFixed(2)}ms`);
 }
 
 main().catch((err) => {

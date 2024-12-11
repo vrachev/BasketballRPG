@@ -1,5 +1,6 @@
 import { getDb, PLAYER_SEASON_TABLE, type PlayerEvent, type StatlineRaw, type PlayerSeasonTable } from '../../data/index.js';
 import type { Updateable } from 'kysely';
+import { logger } from '../../logger.js';
 
 export const updatePlayerSeason = async (
   playerSeasonId: number,
@@ -36,9 +37,14 @@ export const updatePlayerSeason = async (
     updates[key as keyof StatlineRaw] = playerSeason[key as keyof StatlineRaw] + value;
   });
 
-  await db
-    .updateTable(PLAYER_SEASON_TABLE)
-    .set(updates)
-    .where('id', '=', playerSeasonId)
-    .execute();
+  try {
+    await db
+      .updateTable(PLAYER_SEASON_TABLE)
+      .set(updates)
+      .where('id', '=', playerSeasonId)
+      .execute();
+  } catch (e) {
+    logger.error({ error: e }, "Failed to update player season stats");
+    throw e;
+  }
 };

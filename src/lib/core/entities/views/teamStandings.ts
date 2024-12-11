@@ -1,6 +1,6 @@
 import { getDb } from '../../../data/index.js';
-import type { DBSchema, Lineup, Team, TeamInfo } from '../../../data/index.js';
-import { TEAM_TABLE, TEAM_SEASON_TABLE } from '../../../data/index.js';
+import type { TeamInfo } from '../../../data/index.js';
+import { logger } from '../../../logger.js';
 
 export type WinLossRecord = {
   wins: number;
@@ -32,7 +32,9 @@ export const getTeamStandings = async (
   seasonId: number,
   conference?: 'Eastern' | 'Western'
 ): Promise<TeamStanding[]> => {
+  logger.debug({ seasonId, conference }, "Getting team standings");
   const db = await getDb();
+
   let query = db
     .selectFrom('team_info as t')
     .innerJoin('team_season as ts', 'ts.team_id', 't.id')
@@ -53,38 +55,39 @@ export const getTeamStandings = async (
     ])
     .where('ts.season_id', '=', seasonId);
 
-  console.log("console", conference);
   if (conference) {
     query = query.where('t.conference', '=', conference);
   }
 
-  const results = (await query
-    .execute()).map(res => ({
-      ...res,
-      totalRecord: {
-        wins: res.wins,
-        losses: res.losses,
-      },
-      gamesBack: -1,
-      winPct: res.wins / res.games_played,
-      ppg: res.pts / res.games_played,
-      conferenceRecord: {
-        wins: res.conference_wins,
-        losses: res.conference_losses,
-      },
-      divisionRecord: {
-        wins: res.division_wins,
-        losses: res.division_losses,
-      },
-      homeRecord: {
-        wins: res.home_wins,
-        losses: res.home_losses
-      },
-      awayRecord: {
-        wins: res.away_wins,
-        losses: res.away_losses
-      }
-    }));
+  const rawResults = await query.execute();
+  logger.trace({ standings: rawResults }, "Raw standings data retrieved");
+
+  const results = rawResults.map(res => ({
+    ...res,
+    totalRecord: {
+      wins: res.wins,
+      losses: res.losses,
+    },
+    gamesBack: -1,
+    winPct: res.wins / res.games_played,
+    ppg: res.pts / res.games_played,
+    conferenceRecord: {
+      wins: res.conference_wins,
+      losses: res.conference_losses,
+    },
+    divisionRecord: {
+      wins: res.division_wins,
+      losses: res.division_losses,
+    },
+    homeRecord: {
+      wins: res.home_wins,
+      losses: res.home_losses
+    },
+    awayRecord: {
+      wins: res.away_wins,
+      losses: res.away_losses
+    }
+  }));
 
   results.sort((a, b) => {
     return b.winPct - a.winPct;
@@ -98,7 +101,6 @@ export const getTeamStandings = async (
   ): number => {
     return (firstPlaceWins - teamWins) / 2 + (teamLosses - firstPlaceLosses) / 2;
   };
-
 
   const mappedResults = results.map((team, i) => ({
     id: team.id,

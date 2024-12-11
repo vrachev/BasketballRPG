@@ -6,6 +6,7 @@ import {
   type StatlineTeam,
   type TeamSeasonTable,
 } from '../../data/index.js';
+import { logger } from '../../logger.js';
 
 export const createTeamSeason = async (
   teamIds: number[],
@@ -115,9 +116,14 @@ export const updateTeamSeason = async (
     updates[key as keyof StatlineTeam] = teamSeason[key as keyof StatlineTeam] + value;
   });
 
-  await db
-    .updateTable(TEAM_SEASON_TABLE)
-    .set(updates)
-    .where('id', '=', teamSeasonId)
-    .execute();
+  try {
+    await db
+      .updateTable(TEAM_SEASON_TABLE)
+      .set(updates)
+      .where('id', '=', teamSeasonId)
+      .execute();
+  } catch (e) {
+    logger.error({ error: e }, "Failed to update team season stats");
+    throw e;
+  }
 };

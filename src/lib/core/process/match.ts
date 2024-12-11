@@ -6,6 +6,7 @@ import { simulateMatch } from '../simulation/match.js';
 import { calculateGameStats } from './calculateGameStats.js';
 import type { MatchInput } from '../simulation/match.js';
 import type { GameStats, PlayerEvent } from '../../data/index.js';
+import { logger } from '../../logger.js';
 
 export const processMatch = async (
   matchInput: MatchInput,
@@ -23,6 +24,12 @@ export const processMatch = async (
 
   // Update player seasons
   await updatePlayerSeasonStats(gameStats, matchInput.seasonStage);
+
+  logger.debug({
+    homeTeam: matchInput.homeTeam.teamInfo.name,
+    awayTeam: matchInput.awayTeam.teamInfo.name,
+    date: matchInput.date
+  }, "Processing match");
 
   return gameStats;
 };

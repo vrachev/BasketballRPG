@@ -1,4 +1,5 @@
 import type { TeamStanding } from '../core/entities/views/teamStandings.js';
+import { logger } from '../logger.js';
 
 export function formatStandings(standings: TeamStanding[]): string {
   if (!standings || standings.length === 0) {
@@ -34,5 +35,5 @@ export function formatStandings(standings: TeamStanding[]): string {
 
 export function printStandings(standings: TeamStanding[]): void {
   const formattedStandings = formatStandings(standings);
-  console.log(formattedStandings);
-} 
+  logger.info(formattedStandings);
+}

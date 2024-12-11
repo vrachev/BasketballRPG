@@ -191,7 +191,6 @@ const getTeamPlayersBySeason = async (
     .execute();
 
   if (playerIds.length === 0) {
-    console.warn(`No players found for team ${teamId} in ${season.start_year}`);
     return [];
   }
 

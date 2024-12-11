@@ -1,6 +1,7 @@
 import { getDb } from '../../data/index.js';
 import type { Insertable } from 'kysely';
 import { PLAYER_GAME_RESULT_TABLE, type PlayerGameResultTable, type GameStats } from '../../data/index.js';
+import { logger } from '../../logger.js';
 
 export const insertPlayerGameResults = async (
   gameStats: GameStats,
@@ -40,12 +41,17 @@ export const insertPlayerGameResults = async (
   const ids: number[] = [];
   const db = await getDb();
   for (const playerGameResult of playerGameResults) {
-    const res = await db
-      .insertInto(PLAYER_GAME_RESULT_TABLE)
-      .values(playerGameResult)
-      .returning('id')
-      .executeTakeFirstOrThrow();
-    ids.push(res.id);
+    try {
+      const res = await db
+        .insertInto(PLAYER_GAME_RESULT_TABLE)
+        .values(playerGameResult)
+        .returning('id')
+        .executeTakeFirstOrThrow();
+      ids.push(res.id);
+    } catch (e) {
+      logger.error({ error: e }, "Failed to insert player game results");
+      throw e;
+    }
   }
 
   return ids;
