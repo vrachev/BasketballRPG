@@ -6,7 +6,7 @@
   import { logger } from "$lib/logger.js";
   import "$lib/data/migrate";
 
-  let leagues: { id: number; name: string }[] = [];
+  let leagues: { id: string; name: string }[] = [];
   let creating = false;
 
   onMount(async () => {
@@ -27,7 +27,7 @@
     }
   }
 
-  function selectLeague(leagueId: number) {
+  function selectLeague(leagueId: string) {
     currentLeague.set({
       id: leagueId,
       name: "",

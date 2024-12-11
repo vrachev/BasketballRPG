@@ -104,7 +104,7 @@ async function createPlayers(teamIds: number[]) {
   }
 }
 
-export async function simulateDay(leagueId: number, seasonId: number): Promise<Array<{
+export async function simulateDay(leagueId: string, seasonId: number): Promise<Array<{
   homeTeam: string;
   awayTeam: string;
   winner: string;
@@ -143,7 +143,7 @@ export async function simulateDay(leagueId: number, seasonId: number): Promise<A
   return results;
 }
 
-export async function simulateWeek(leagueId: number, seasonId: number): Promise<Array<{
+export async function simulateWeek(leagueId: string, seasonId: number): Promise<Array<{
   homeTeam: string;
   awayTeam: string;
   winner: string;
@@ -156,7 +156,7 @@ export async function simulateWeek(leagueId: number, seasonId: number): Promise<
   return results;
 }
 
-export async function simulateSeason(leagueId: number, seasonId: number): Promise<void> {
+export async function simulateSeason(leagueId: string, seasonId: number): Promise<void> {
   const schedule = seasonSchedules.get(seasonId);
   if (!schedule) {
     throw new Error(`No schedule found for season ${seasonId}`);
