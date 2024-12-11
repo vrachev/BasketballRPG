@@ -5,6 +5,7 @@ import type { MatchInput } from '$lib/core/simulation/match';
 import { logger } from '$lib/logger.js';
 import type { LeagueInfo } from '$lib/stores/league.js';
 import { migrateDb } from '$lib/data/migrate.js';
+import { v4 as uuid } from 'uuid';
 
 const LEAGUES_STORAGE_KEY = 'bball-leagues';
 
@@ -23,16 +24,19 @@ const seasonSchedules = new Map<number, MatchInput[]>();
 
 export async function createNewLeague(): Promise<LeagueInfo> {
   const leagues = getStoredLeagues();
+  const now = new Date();
   const newLeague: LeagueInfo = {
-    id: Date.now(),
+    id: `league_${now.toISOString().split('T')[0]}_${uuid().substring(0, 3)}.db`,
     name: `League ${leagues.length + 1}`,
-    createdAt: new Date().toISOString(),
+    createdAt: now.toISOString(),
     currentSeasonId: 0,
   };
 
   // Migrate the new league's database using the dedicated migration function
-  await migrateDb('bball-league-' + 'dev' + '.db');
-  const db = await getDb(newLeague.id);
+  await migrateDb(newLeague.id);
+
+  // create db singleton
+  await getDb(newLeague.id);
 
   // Create initial league data
   const seasonId = await core.createSeason(2024, 2025);
@@ -172,7 +176,7 @@ export async function simulateSeason(leagueId: number, seasonId: number): Promis
   }
 }
 
-export async function getStandings(leagueId: number, seasonId: number): Promise<core.TeamStanding[]> {
+export async function getStandings(leagueId: string, seasonId: number): Promise<core.TeamStanding[]> {
   const db = await getDb(leagueId);
   return await core.getTeamStandings(seasonId, 'Eastern');
 }

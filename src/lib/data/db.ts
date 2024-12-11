@@ -43,19 +43,31 @@ function appendQueryEvent(event: LogEvent) {
   queryStats.averageDurationMs = queryStats.totalDurationMs / queryStats.totalQueries;
 }
 
-type LeagueId = number | string;
+type LeagueId = string;
+
 // DB singleton instances for each league
 const dbInstances = new Map<LeagueId, Kysely<DBSchema>>();
+let currentLeagueId: LeagueId | null = null;
 
 export async function getDb(leagueId?: LeagueId): Promise<Kysely<DBSchema>> {
-  // hardcode for now
   if (!leagueId) {
-    leagueId = 'dev';
+    if (currentLeagueId) {
+      if (!dbInstances.has(currentLeagueId)) {
+        throw new Error("No db instance for current league");
+      }
+      return dbInstances.get(currentLeagueId)!;
+    }
+
+    throw new Error("No league id provided, no existing leagueId");
   }
+
+
   if (!dbInstances.has(leagueId)) {
-    const dialect = await createDialect(`bball-league-${leagueId}.db`);
+    const dialect = await createDialect(leagueId);
     dbInstances.set(leagueId, new Kysely<DBSchema>({ dialect, log: appendQueryEvent }));
   }
+
+  currentLeagueId = leagueId;
   return dbInstances.get(leagueId)!;
 }
 
