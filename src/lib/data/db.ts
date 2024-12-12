@@ -16,22 +16,22 @@ const queryStats: QueryStats = {
   averageDurationMs: 0,
 };
 
-export async function createDialect(dbPath: string): Promise<Dialect> {
+export async function createDialect(dbRelPath: string): Promise<Dialect> {
   const config = await loadConfig();
 
   if (config.MODE === 'browser') {
     const { SQLocalKysely } = await import('sqlocal/kysely');
-    const { dialect } = new SQLocalKysely(dbPath);
-    logger.debug({ dialect: 'SQLocalKysely', dbPath }, "SQLite dialect initialized");
+    const { dialect } = new SQLocalKysely(dbRelPath);
+    logger.debug({ dialect: 'SQLocalKysely', dbRelPath }, "SQLite dialect initialized");
     return dialect;
   } else {
     const { default: SQLite } = await import('better-sqlite3');
     const { SqliteDialect } = await import('kysely');
     const path = await import('path');
-    dbPath = path.join(process.cwd(), 'sqlite', dbPath);
-    logger.debug({ dialect: 'better-sqlite3', dbPath }, "SQLite dialect initialized");
+    dbRelPath = path.join(process.cwd(), dbRelPath);
+    logger.debug({ dialect: 'better-sqlite3', dbRelPath }, "SQLite dialect initialized");
     return new SqliteDialect({
-      database: new SQLite(dbPath),
+      database: new SQLite(dbRelPath),
     });
   }
 }

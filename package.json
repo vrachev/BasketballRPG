@@ -6,7 +6,7 @@
   "type": "module",
   "scripts": {
     "migrate": "tsx src/lib/data/migrate.ts",
-    "generate-types": "kysely-codegen --out-file ./src/lib/data/schema.d.ts --dialect sqlite --url sqlite/database.db",
+    "generate-types": "tsx scripts/gentypes.ts",
     "start": "npm run migrate && tsx src/lib/index.ts",
     "build": "npm run migrate && tsc",
     "serve": "node dist/index.js",
