@@ -7,6 +7,7 @@
     simulateSeason,
   } from "$lib/core/season/seasonSim";
 
+  export let data;
   let simulating = false;
   let gameResults: Array<{
     homeTeam: string;
@@ -50,12 +51,13 @@
   }
 
   function viewStandings() {
-    goto("/standings/");
+    if (!$currentLeague) return;
+    goto(`/standings/${$currentLeague.id}`);
   }
 </script>
 
 <div class="container mx-auto px-4 py-8">
-  <h1 class="text-3xl font-bold mb-6">League Management</h1>
+  <h1 class="text-3xl font-bold mb-6">{data.league.name}</h1>
 
   <div class="space-y-4">
     <div class="flex space-x-4">

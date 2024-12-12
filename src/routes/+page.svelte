@@ -1,19 +1,19 @@
 <script lang="ts">
   import { onMount } from "svelte";
   import { goto } from "$app/navigation";
+  import { getStoredLeagues } from "$lib/core/league/leagueManager";
+  import type { LeagueInfo } from "$lib/stores/league";
   import { currentLeague } from "$lib/stores/league";
-  import { createNewLeague } from "$lib/core/season/seasonSim";
+  import { createNewLeague } from "$lib/core/league/leagueManager";
   import { logger } from "$lib/logger.js";
   import "$lib/data/migrate";
 
-  let leagues: { id: string; name: string }[] = [];
+  let leagues: LeagueInfo[] = [];
   let creating = false;
 
   onMount(async () => {
-    // TODO: In the future, we might want to store multiple leagues
-    leagues = [];
-
-    logger.debug("Checking for existing leagues");
+    logger.debug("Fetching existing leagues");
+    leagues = await getStoredLeagues();
   });
 
   async function handleCreateNewLeague() {
@@ -21,20 +21,10 @@
     try {
       const league = await createNewLeague();
       currentLeague.set(league);
-      await goto("/league/");
+      await goto(`/league/${league.id}`);
     } finally {
       creating = false;
     }
-  }
-
-  function selectLeague(leagueId: string) {
-    currentLeague.set({
-      id: leagueId,
-      name: "",
-      createdAt: "",
-      currentSeasonId: 0,
-    });
-    goto("/league/");
   }
 </script>
 
@@ -55,16 +45,46 @@
 
     {#if leagues.length > 0}
       <div class="mt-8">
-        <h2 class="text-2xl font-bold mb-4">Existing Leagues</h2>
-        <div class="space-y-2">
-          {#each leagues as league}
-            <button
-              on:click={() => selectLeague(league.id)}
-              class="w-full text-left px-4 py-2 border rounded hover:bg-gray-100"
-            >
-              {league.name}
-            </button>
-          {/each}
+        <h2 class="text-2xl font-bold mb-4">Your Leagues</h2>
+        <div class="overflow-x-auto">
+          <table class="min-w-full divide-y divide-gray-200">
+            <thead class="bg-gray-50">
+              <tr>
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >League Name</th
+                >
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >Created</th
+                >
+                <th
+                  class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                  >Season</th
+                >
+              </tr>
+            </thead>
+            <tbody class="bg-white divide-y divide-gray-200">
+              {#each leagues as league}
+                <tr class="hover:bg-gray-50">
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    <a
+                      href="/league/{league.id}"
+                      class="text-blue-600 hover:text-blue-800 hover:underline"
+                    >
+                      {league.name}
+                    </a>
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    {new Date(league.createdAt).toLocaleDateString()}
+                  </td>
+                  <td class="px-6 py-4 whitespace-nowrap">
+                    Season {league.currentSeasonId}
+                  </td>
+                </tr>
+              {/each}
+            </tbody>
+          </table>
         </div>
       </div>
     {/if}
