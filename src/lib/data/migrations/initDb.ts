@@ -7,7 +7,8 @@ import {
   PLAYER_TABLE,
   SEASON_TABLE,
   TEAM_SEASON_TABLE,
-  TEAM_TABLE
+  TEAM_TABLE,
+  SCHEDULE_TABLE
 } from '../constants.js';
 
 // TODO:
@@ -250,6 +251,18 @@ export async function up(db: Kysely<any>) {
     .addColumn('a_pts', 'integer', (col) => col.notNull())
     .execute();
 
+  // Create schedule table
+  await db.schema
+    .createTable(SCHEDULE_TABLE)
+    .ifNotExists()
+    .addColumn('id', 'integer', (col) => col.autoIncrement().primaryKey().notNull())
+    .addColumn('season_id', 'integer', (col) => col.references(`${SEASON_TABLE}.id`).notNull())
+    .addColumn('home_team_id', 'integer', (col) => col.references(`${TEAM_TABLE}.id`).notNull())
+    .addColumn('away_team_id', 'integer', (col) => col.references(`${TEAM_TABLE}.id`).notNull())
+    .addColumn('date', 'text', (col) => col.notNull())
+    .addColumn('season_type', 'text', (col) => col.notNull())
+    .execute();
+
   // Create player_game_results table
   await db.schema
     .createTable(PLAYER_GAME_RESULT_TABLE)
@@ -292,4 +305,5 @@ export async function down(db: Kysely<any>) {
   await db.schema.dropTable(PLAYER_TABLE).execute();
   await db.schema.dropTable(TEAM_TABLE).execute();
   await db.schema.dropTable(SEASON_TABLE).execute();
+  await db.schema.dropTable(SCHEDULE_TABLE).execute();
 }

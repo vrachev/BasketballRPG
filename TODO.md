@@ -29,8 +29,7 @@ High Level:
 - GUI
 
 Now:
-- Save leagues to main page to be able to select later
-- Look into importing more (use sveltekit alias for all imports?)
+- Look into standardizing imports (use sveltekit alias for all imports?)
 - seasonId is brittle. In some places we expect season start year, other places season ID.
   - idea: change id to be `${start_year}-${season_type}` eg: `2024-regular_season`.
 - Performance

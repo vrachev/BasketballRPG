@@ -193,6 +193,15 @@ export interface PlayerSkill {
   vertical_jump: number;
 }
 
+export interface Schedules {
+  away_team_id: number;
+  date: string;
+  home_team_id: number;
+  id: Generated<number>;
+  season_id: number;
+  season_type: string;
+}
+
 export interface Season {
   end_year: number;
   id: Generated<number>;
@@ -251,6 +260,7 @@ export interface DB {
   player_info: PlayerInfo;
   player_season: PlayerSeason;
   player_skill: PlayerSkill;
+  schedules: Schedules;
   season: Season;
   team_info: TeamInfo;
   team_season: TeamSeason;
