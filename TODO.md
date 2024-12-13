@@ -29,12 +29,16 @@ High Level:
 - GUI
 
 Now:
-- Look into standardizing imports (use sveltekit alias for all imports?)
-- seasonId is brittle. In some places we expect season start year, other places season ID.
+- [bug] Getting 404 when loading a subpage directly - only works when using links.
+- [improvement] seasonId is brittle. In some places we expect season start year, other places season ID.
   - idea: change id to be `${start_year}-${season_type}` eg: `2024-regular_season`.
-- Performance
+- [improvement] Performance
   - dogshit browser perf. Idk if I've done something wrong, but sqlite-wasm is ~1000x slower than sqlite in node.
   - good news is the code is dogshit perf wise anyways, so lots of room for improvement.
+  - specific problems:
+    - fetching schedule from DB every time instead of storing in mem
+    - lots of unbatched queries (teams, players, results)
+- [improvement] Look into standardizing imports (use sveltekit alias for all imports?)
 
 later:
 - We will probably have consistency issues with our DB the way things run right now.

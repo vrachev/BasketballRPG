@@ -25,4 +25,4 @@ export const load: LayoutLoad = async ({ params }) => {
   return {
     league
   };
-}; 
+};

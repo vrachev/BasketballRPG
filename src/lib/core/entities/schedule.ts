@@ -12,4 +12,4 @@ export async function markGameAsProcessed(matchInput: MatchInput, seasonId: numb
     .where('away_team_id', '=', matchInput.awayTeam.teamInfo.id)
     .where('date', '=', matchInput.date.toISOString().slice(0, 10))
     .execute();
-} 
+}
