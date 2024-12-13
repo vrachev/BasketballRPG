@@ -1,35 +1,91 @@
 import { writable } from 'svelte/store';
 import type { MatchInput } from '$lib/core/simulation/match';
+import { getDb } from '$lib/data/db';
+import { SCHEDULE_TABLE } from '$lib/data/constants';
+import { getTeams } from '$lib/core/entities/team';
+import { logger } from '$lib/logger';
 
 interface SimulationState {
-  simulatedDates: Map<number, Set<string>>;
   seasonSchedules: Map<number, MatchInput[]>;
+}
+
+async function loadScheduleFromDb(seasonId: number): Promise<MatchInput[]> {
+  const db = await getDb();
+  const schedules = await db
+    .selectFrom(SCHEDULE_TABLE)
+    .select(['home_team_id', 'away_team_id', 'date', 'season_type'])
+    .where('season_id', '=', seasonId)
+    .where('is_processed', '=', 0)
+    .orderBy('date', 'asc')
+    .execute();
+
+  const season = await db
+    .selectFrom('season')
+    .select('start_year')
+    .where('id', '=', seasonId)
+    .executeTakeFirstOrThrow();
+
+  const teams = await getTeams(season.start_year);
+  const teamsMap = new Map(teams.map(team => [team.teamInfo.id, team]));
+
+  return schedules.map(schedule => ({
+    homeTeam: teamsMap.get(schedule.home_team_id)!,
+    awayTeam: teamsMap.get(schedule.away_team_id)!,
+    date: new Date(schedule.date),
+    seasonStage: schedule.season_type as 'regular_season' | 'playoffs'
+  }));
+}
+
+async function saveScheduleToDb(seasonId: number, schedule: MatchInput[]): Promise<void> {
+  const db = await getDb();
+  await db
+    .deleteFrom(SCHEDULE_TABLE)
+    .where('season_id', '=', seasonId)
+    .execute();
+
+  await db
+    .insertInto(SCHEDULE_TABLE)
+    .values(
+      schedule.map(match => ({
+        season_id: seasonId,
+        home_team_id: match.homeTeam.teamInfo.id,
+        away_team_id: match.awayTeam.teamInfo.id,
+        date: match.date.toISOString().slice(0, 10),
+        season_type: match.seasonStage,
+        is_processed: 0
+      }))
+    )
+    .execute();
 }
 
 function createSimulationStore() {
   const { subscribe, set, update } = writable<SimulationState>({
-    simulatedDates: new Map(),
     seasonSchedules: new Map()
   });
 
   return {
     subscribe,
-    setSchedule: (seasonId: number, schedule: MatchInput[]) => update(state => {
-      state.seasonSchedules.set(seasonId, schedule);
-      if (!state.simulatedDates.has(seasonId)) {
-        state.simulatedDates.set(seasonId, new Set());
-      }
-      return state;
-    }),
-    addSimulatedDate: (seasonId: number, date: string) => update(state => {
-      const dates = state.simulatedDates.get(seasonId);
-      if (dates) {
-        dates.add(date);
-      }
-      return state;
-    }),
+    setSchedule: async (seasonId: number, schedule: MatchInput[]) => {
+      await saveScheduleToDb(seasonId, schedule);
+      update(state => {
+        state.seasonSchedules.set(seasonId, schedule);
+        return state;
+      });
+    },
+    loadSchedule: async (seasonId: number) => {
+      const schedule = await loadScheduleFromDb(seasonId);
+      logger.debug({ schedule });
+      logger.debug({ schedule }, 'Loaded schedule');
+      update(state => {
+        state.seasonSchedules.set(seasonId, schedule);
+        return state;
+      });
+      return schedule;
+    },
+    markProcessed: async (seasonId: number, date: string) => {
+      await loadScheduleFromDb(seasonId);
+    },
     reset: () => set({
-      simulatedDates: new Map(),
       seasonSchedules: new Map()
     })
   };

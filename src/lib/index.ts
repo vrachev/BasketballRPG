@@ -83,7 +83,7 @@ async function main() {
   const schedule = generateSchedule(teams, 'regular_season', 2024);
   for (let i = 0; i < 40; i++) {
     const matchInput = schedule[i];
-    const res = await core.processMatch(matchInput);
+    const res = await core.processMatch(matchInput, 1);
     console.log(
       `Game ${i + 1}: ` +
       `${matchInput.homeTeam.teamInfo.name} vs ${matchInput.awayTeam.teamInfo.name} - ` +

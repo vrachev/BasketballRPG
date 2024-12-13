@@ -6,6 +6,7 @@
     simulateWeek,
     simulateSeason,
   } from "$lib/core/season/seasonSim";
+  import "$lib/data/migrate";
 
   export let data;
   let simulating = false;
@@ -52,7 +53,7 @@
 
   function viewStandings() {
     if (!$currentLeague) return;
-    goto(`/standings/${$currentLeague.id}`);
+    goto(`/league/${$currentLeague.id}/standings`);
   }
 </script>
 

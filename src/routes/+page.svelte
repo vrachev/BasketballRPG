@@ -6,7 +6,6 @@
   import { currentLeague } from "$lib/stores/league";
   import { createNewLeague } from "$lib/core/league/leagueManager";
   import { logger } from "$lib/logger.js";
-  import "$lib/data/migrate";
 
   let leagues: LeagueInfo[] = [];
   let creating = false;
@@ -21,7 +20,7 @@
     try {
       const league = await createNewLeague();
       currentLeague.set(league);
-      await goto(`/league/${league.id}`);
+      await goto(`/league/${league.id}`, { replaceState: false });
     } finally {
       creating = false;
     }
@@ -70,6 +69,7 @@
                   <td class="px-6 py-4 whitespace-nowrap">
                     <a
                       href="/league/{league.id}"
+                      data-sveltekit-preload-data
                       class="text-blue-600 hover:text-blue-800 hover:underline"
                     >
                       {league.name}

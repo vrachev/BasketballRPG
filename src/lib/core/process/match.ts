@@ -7,23 +7,20 @@ import { calculateGameStats } from './calculateGameStats.js';
 import type { MatchInput } from '../simulation/match.js';
 import type { GameStats, PlayerEvent } from '../../data/index.js';
 import { logger } from '../../logger.js';
+import { markGameAsProcessed } from '../entities/schedule.js';
 
 export const processMatch = async (
   matchInput: MatchInput,
+  seasonId: number,
 ): Promise<GameStats> => {
-  // Simulate match and calculate game stats
   const possessionResults = simulateMatch(matchInput);
   const gameStats = calculateGameStats(possessionResults, matchInput);
 
-  // Insert game results
   const gameResultId = await insertGameResult({ gameStats, seasonStage: matchInput.seasonStage, date: matchInput.date });
   await insertPlayerGameResults(gameStats, gameResultId, matchInput.seasonStage, matchInput.date);
-
-  // Update team seasons
   await updateTeamSeasonStats(gameStats);
-
-  // Update player seasons
   await updatePlayerSeasonStats(gameStats, matchInput.seasonStage);
+  await markGameAsProcessed(matchInput, seasonId);
 
   logger.debug({
     homeTeam: matchInput.homeTeam.teamInfo.name,

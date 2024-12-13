@@ -1,8 +1,6 @@
 import * as core from '$lib/core/index.js';
 import { getDb } from '$lib/data/index.js';
-import type { MatchInput } from '$lib/core/simulation/match';
 import { logger } from '$lib/logger.js';
-import { get } from 'svelte/store';
 import { simulationStore } from '$lib/stores/simulation';
 
 export interface GameResult {
@@ -17,29 +15,21 @@ export async function simulateDay(
 ): Promise<GameResult[]> {
   logger.debug({ leagueId, seasonId }, 'Starting day simulation');
 
-  const simState = get(simulationStore);
-  const schedule = simState.seasonSchedules.get(seasonId);
-  if (!schedule) throw new Error(`No schedule found for season ${seasonId}`);
-
-  const simulated = simState.simulatedDates.get(seasonId)!;
-
-  // Find next unplayed date
-  const nextGames = schedule
-    .filter(game => !simulated.has(game.date.toISOString().split('T')[0]))
-    .sort((a, b) => a.date.getTime() - b.date.getTime());
-
-  if (nextGames.length === 0) {
+  // Load fresh schedule from DB to ensure we have latest state
+  const schedule = await simulationStore.loadSchedule(seasonId);
+  if (!schedule || schedule.length === 0) {
     throw new Error('No more games to simulate in this season');
   }
 
-  const nextDate = nextGames[0].date.toISOString().split('T')[0];
-  const todaysGames = nextGames.filter(g =>
+  // Get earliest date from unprocessed games
+  const nextDate = schedule[0].date.toISOString().split('T')[0];
+  const todaysGames = schedule.filter(g =>
     g.date.toISOString().split('T')[0] === nextDate
   );
 
   const results = [];
   for (const game of todaysGames) {
-    const result = await core.processMatch(game);
+    const result = await core.processMatch(game, seasonId);
     results.push({
       homeTeam: game.homeTeam.teamInfo.name,
       awayTeam: game.awayTeam.teamInfo.name,
@@ -47,7 +37,6 @@ export async function simulateDay(
     });
   }
 
-  simulationStore.addSimulatedDate(seasonId, nextDate);
   return results;
 }
 
@@ -67,12 +56,6 @@ export async function simulateSeason(
   leagueId: string,
   seasonId: number
 ): Promise<void> {
-  const simState = get(simulationStore);
-  const schedule = simState.seasonSchedules.get(seasonId);
-  if (!schedule) {
-    throw new Error(`No schedule found for season ${seasonId}`);
-  }
-
   try {
     while (true) {
       await simulateDay(leagueId, seasonId);

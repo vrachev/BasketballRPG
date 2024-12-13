@@ -259,6 +259,7 @@ export async function up(db: Kysely<any>) {
     .addColumn('season_id', 'integer', (col) => col.references(`${SEASON_TABLE}.id`).notNull())
     .addColumn('home_team_id', 'integer', (col) => col.references(`${TEAM_TABLE}.id`).notNull())
     .addColumn('away_team_id', 'integer', (col) => col.references(`${TEAM_TABLE}.id`).notNull())
+    .addColumn('is_processed', 'integer', (col) => col.notNull())
     .addColumn('date', 'text', (col) => col.notNull())
     .addColumn('season_type', 'text', (col) => col.notNull())
     .execute();
