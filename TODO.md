@@ -29,7 +29,6 @@ High Level:
 - GUI
 
 Now:
-- [bug] Getting 404 when loading a subpage directly - only works when using links.
 - [improvement] seasonId is brittle. In some places we expect season start year, other places season ID.
   - idea: change id to be `${start_year}-${season_type}` eg: `2024-regular_season`.
 - [improvement] Performance
