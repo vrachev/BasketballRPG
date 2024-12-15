@@ -29,6 +29,7 @@ High Level:
 - GUI
 
 Now:
+- [bug/improvement] We're using `stores` all wrong. Learn how to use it correctly and fix.
 - [improvement] seasonId is brittle. In some places we expect season start year, other places season ID.
   - idea: change id to be `${start_year}-${season_type}` eg: `2024-regular_season`.
 - [improvement] Performance
