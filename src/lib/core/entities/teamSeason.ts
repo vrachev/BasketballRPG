@@ -51,10 +51,10 @@ export const createTeamSeason = async (
     pts: 0,
   } as Insertable<TeamSeasonTable>));
 
-  // TODO: Batch this
-  await Promise.all(teamSeasons.map(teamSeason =>
-    db.insertInto(TEAM_SEASON_TABLE).values(teamSeason).execute()
-  ));
+  await db
+    .insertInto(TEAM_SEASON_TABLE)
+    .values(teamSeasons)
+    .execute()
 };
 
 export const updateTeamSeason = async (

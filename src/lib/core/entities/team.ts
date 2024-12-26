@@ -66,20 +66,21 @@ export const createTeams = async (): Promise<void> => {
   const db = await getDb();
   for (const [conference, divisions] of Object.entries(cities)) {
     for (const [division, teams] of Object.entries(divisions)) {
+      const teamRecords: Insertable<TeamInfoTable>[]= [];
       for (const team of teams) {
-        const teamRecord: Insertable<TeamInfoTable> = {
+        teamRecords.push({
           name: team.name,
           city: team.city,
           abbreviation: team.abbreviation,
           conference: conference,
           division: division
-        };
-        await db
-          .insertInto(TEAM_TABLE)
-          .values(teamRecord)
-          .returning('id')
-          .executeTakeFirstOrThrow();
+        });
       }
+      await db
+        .insertInto(TEAM_TABLE)
+        .values(teamRecords)
+        .returning('id')
+        .execute();
     }
   }
 };
