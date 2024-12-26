@@ -7,7 +7,6 @@
   "scripts": {
     "migrate": "tsx src/lib/data/migrate.ts",
     "generate-types": "tsx scripts/gentypes.ts",
-    "start": "npm run migrate && tsx src/lib/index.ts",
     "build": "npm run migrate && tsc",
     "serve": "node dist/index.js",
     "test": "jest",
@@ -20,7 +19,7 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@sveltejs/adapter-auto": "^3.0.0",
+    "@sveltejs/adapter-auto": "^3.3.1",
     "@sveltejs/kit": "^2.0.0",
     "@sveltejs/vite-plugin-svelte": "^3.0.0",
     "@types/babel__core": "^7.20.5",
@@ -42,7 +41,6 @@
   },
   "dependencies": {
     "@sqlite.org/sqlite-wasm": "^3.47.0-build1",
-    "better-sqlite3": "^11.5.0",
     "chance": "^1.1.12",
     "kysely": "^0.27.4",
     "pino": "^9.5.0",

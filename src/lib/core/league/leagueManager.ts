@@ -5,7 +5,6 @@ import type { LeagueInfo } from "$lib/stores/league";
 import { browser } from "$app/environment";
 import { logger } from "$lib/logger.js";
 import { generateSchedule } from "../season/createSchedule";
-import type { MatchInput } from "../simulation/match";
 import getDb from "$lib/data/db";
 import { migrateDb } from '$lib/data/migrate.js';
 import { simulationStore } from '$lib/stores/simulation';
