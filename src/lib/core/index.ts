@@ -1,4 +1,4 @@
-import { createPlayer } from './entities/player.js';
+import { createPlayers } from './entities/player.js';
 import { getPlayerHistory, type CreatePlayerInput } from './entities/player.js';
 import { createTeams, getTeamId, getTeamIds, getTeams, getTeam } from './entities/team.js';
 import { getTeamStandings, type TeamStanding } from './entities/views/teamStandings.js';
@@ -14,7 +14,7 @@ import { processMatch } from './process/match.js';
 
 export {
   getPlayerHistory,
-  createPlayer,
+  createPlayers,
   createTeams,
   getTeamId,
   getTeamIds,

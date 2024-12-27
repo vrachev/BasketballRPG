@@ -6,6 +6,7 @@ import { browser } from "$app/environment";
 import { logger } from "$lib/logger.js";
 import { generateSchedule } from "../season/createSchedule";
 import getDb from "$lib/data/db";
+import { getQueryStats } from "$lib/data/db";
 import { migrateDb } from '$lib/data/migrate.js';
 import { simulationStore } from '$lib/stores/simulation';
 
@@ -84,6 +85,7 @@ export async function createNewLeague(): Promise<LeagueInfo> {
   saveLeague(newLeague);
 
   logger.info({ leagueId: newLeague.id }, 'League created successfully');
+  logger.info(`total number of calls ${getQueryStats().totalQueries}`);
   return newLeague;
 }
 
@@ -108,14 +110,17 @@ async function createPlayers(teamIds: number[]) {
   };
 
   const positions = ['PG', 'SG', 'SF', 'PF', 'C'] as const;
+  const inputs: core.CreatePlayerInput[] = [];
   for (const teamId of teamIds) {
     for (let i = 0; i < positions.length; i++) {
       const template = i === 2 ? starPlayerTemplate : rolePlayerTemplate;
-      await core.createPlayer({
+      inputs.push({
         ...template,
         teamId: teamId,
         position: positions[i],
-      });
+      })
     }
   }
+
+  await core.createPlayers(inputs);
 }

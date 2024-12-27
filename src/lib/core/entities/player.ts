@@ -12,6 +12,7 @@ import {
 import type { Insertable } from 'kysely';
 import { getSeason } from './season.js';
 import { Chance } from 'chance';
+import { logger } from '$lib/logger.js';
 
 type Position = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
 type SeasonType = 'regular_season' | 'playoffs';
@@ -193,39 +194,61 @@ export type CreatePlayerInput = {
   overrideSkills?: Partial<Insertable<PlayerSkillTable>>;
 };
 
-export const createPlayer = async (input: CreatePlayerInput): Promise<number> => {
+export const createPlayers = async (inputs: CreatePlayerInput[]): Promise<number[]> => {
   const db = await getDb();
-  const { playerInfoInput, teamId, seasonStartingYear, position, defaultSkillLevel, defaultTendencyLevel, overrideSkills } = input;
-  const playerInfo = generatePlayerInfo(playerInfoInput);
-  const player = await db
-    .insertInto(PLAYER_TABLE)
-    .values(playerInfo)
-    .returning('id')
-    .executeTakeFirstOrThrow();
 
-  const playerId = player.id;
-  let seasonId;
-  try {
-    seasonId = (await getSeason(seasonStartingYear))?.id;
-  } catch (error: unknown) {
-    throw error;
+  const playerInfoBatch: Insertable<PlayerInfoTable>[] = [];
+  let playerSkillsBatch: Insertable<PlayerSkillTable>[] = [];
+  let playerSeasonRegularBatch: Insertable<PlayerSeasonTable>[] = [];
+  let playerSeasonPlayoffsBatch: Insertable<PlayerSeasonTable>[] = [];
+
+  for (const { playerInfoInput } of inputs) {
+    const playerInfo = generatePlayerInfo(playerInfoInput);
+    playerInfoBatch.push(playerInfo);    
   }
-  const playerSkills = generatePlayerSkills(playerId, seasonId, teamId, defaultSkillLevel, defaultTendencyLevel, overrideSkills);
-  const playerSeasonRegular = generatePlayerSeason(playerId, teamId, seasonId, position, 'regular_season');
-  const playerSeasonPlayoffs = generatePlayerSeason(playerId, teamId, seasonId, position, 'playoffs');
+
+  // First we insert PlayerInfo to get PID for other tables
+  const insertedPlayers = await db
+  .insertInto(PLAYER_TABLE)
+  .values(playerInfoBatch)
+  .returning('id')
+  .execute();
+
+  for (const [idx, input] of inputs.entries()) {
+    const { teamId, seasonStartingYear, position, defaultSkillLevel, defaultTendencyLevel, overrideSkills } = input;
+    
+    const pid = insertedPlayers[idx].id;
+    const seasonId = (await getSeason(seasonStartingYear))?.id;
+    if (!seasonId) {
+      throw new Error(`Season ${seasonStartingYear} not found.`);
+    }
+
+    // Dependent data
+    const playerSkills = generatePlayerSkills(pid, seasonId, teamId, defaultSkillLevel, defaultTendencyLevel, overrideSkills);
+    const playerSeasonRegular = generatePlayerSeason(pid, teamId, seasonId, position, 'regular_season');
+    const playerSeasonPlayoffs = generatePlayerSeason(pid, teamId, seasonId, position, 'playoffs');
+
+    playerSkillsBatch.push(playerSkills);
+    playerSeasonRegularBatch.push(playerSeasonRegular);
+    playerSeasonPlayoffsBatch.push(playerSeasonPlayoffs);
+  }
+
   await db
     .insertInto(PLAYER_SKILLS_TABLE)
-    .values(playerSkills)
-    .executeTakeFirstOrThrow();
+    .values(playerSkillsBatch)
+    .execute();
+
   await db
     .insertInto(PLAYER_SEASON_TABLE)
-    .values(playerSeasonRegular)
-    .executeTakeFirstOrThrow();
+    .values(playerSeasonRegularBatch)
+    .execute();
+
   await db
     .insertInto(PLAYER_SEASON_TABLE)
-    .values(playerSeasonPlayoffs)
-    .executeTakeFirstOrThrow();
-  return playerId;
+    .values(playerSeasonPlayoffsBatch)
+    .execute();
+
+  return insertedPlayers.map((player) => player.id);
 };
 
 export const getPlayerHistory = async (playerId: number): Promise<PlayerHistory> => {

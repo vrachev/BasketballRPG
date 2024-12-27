@@ -63,11 +63,11 @@ async function seedDb() {
 
     for (let i = 0; i < positions.length; i++) {
       const template = i === 2 ? starPlayerTemplate : rolePlayerTemplate;
-      await core.createPlayer({
+      await core.createPlayers([{
         ...template,
         teamId: teamId,
         position: positions[i],
-      });
+      }]);
     }
   }
 
