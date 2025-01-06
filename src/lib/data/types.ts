@@ -8,6 +8,7 @@ import type {
   TeamInfo as TeamInfoTable,
   GameResult as GameResultTable,
   PlayerGameResult as PlayerGameResultTable,
+  Schedule as ScheduleTable,
 } from './schema.js';
 
 export type PlayerInfo = Selectable<PlayerInfoTable>;
@@ -18,7 +19,7 @@ export type TeamSeason = Selectable<TeamSeasonTable>;
 export type TeamInfo = Selectable<TeamInfoTable>;
 export type GameResult = Selectable<GameResultTable>;
 export type PlayerGameResult = Selectable<PlayerGameResultTable>;
-
+export type Schedule = Selectable<ScheduleTable>;
 // Player Types
 
 export type PlayerHistory = {

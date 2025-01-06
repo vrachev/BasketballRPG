@@ -10,6 +10,7 @@ export type MatchInput = {
   awayTeam: Team,
   date: Date,
   seasonStage: 'regular_season' | 'playoffs',
+  isProcessed: boolean,
 };
 
 const getTeamsForPeriod = (

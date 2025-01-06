@@ -22,6 +22,8 @@ export const processMatch = async (
   await updatePlayerSeasonStats(gameStats, matchInput.seasonStage);
   await markGameAsProcessed(matchInput, seasonId);
 
+  matchInput.isProcessed = true;
+
   logger.debug({
     homeTeam: matchInput.homeTeam.teamInfo.name,
     awayTeam: matchInput.awayTeam.teamInfo.name,

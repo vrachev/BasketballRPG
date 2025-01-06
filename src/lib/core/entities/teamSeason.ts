@@ -54,7 +54,7 @@ export const createTeamSeason = async (
   await db
     .insertInto(TEAM_SEASON_TABLE)
     .values(teamSeasons)
-    .execute()
+    .execute();
 };
 
 export const updateTeamSeason = async (

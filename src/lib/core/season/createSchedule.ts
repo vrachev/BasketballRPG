@@ -67,6 +67,7 @@ export function generateSchedule(
       awayTeam: game.awayTeam,
       date: game.date,
       seasonStage,
+      isProcessed: false,
     }));
   }
 

@@ -9,6 +9,8 @@ import getDb from "$lib/data/db";
 import { getQueryStats } from "$lib/data/db";
 import { migrateDb } from '$lib/data/migrate.js';
 import { simulationStore } from '$lib/stores/simulation';
+import { Cache } from '$lib/data/cache/cache';
+import { getSeason } from '$lib/core/entities/season';
 
 
 const LEAGUES_STORAGE_KEY = 'bball-leagues';
@@ -57,8 +59,9 @@ export async function createNewLeague(): Promise<LeagueInfo> {
   // create db singleton
   await getDb(newLeague.id);
 
-  // Create initial league data
-  const seasonId = await core.createSeason(2024, 2025);
+  // TODO fix hardcoded year
+  const startingYear = 2024;
+  const seasonId = await core.createSeason(startingYear, startingYear + 1);
   newLeague.currentSeasonId = seasonId;
 
   // Create teams and players
@@ -77,6 +80,10 @@ export async function createNewLeague(): Promise<LeagueInfo> {
   logger.info('Generating schedule');
   const schedule = generateSchedule(teams, 'regular_season', 2024);
   logger.info({ gameCount: schedule.length }, 'Schedule generated');
+
+  // Initialize cache singleton with all required data
+  const season = await getSeason(startingYear);
+  Cache.getInstance(season, teams, schedule);
 
   // Store schedule and initialize tracking
   simulationStore.setSchedule(seasonId, schedule);
@@ -118,7 +125,7 @@ async function createPlayers(teamIds: number[]) {
         ...template,
         teamId: teamId,
         position: positions[i],
-      })
+      });
     }
   }
 

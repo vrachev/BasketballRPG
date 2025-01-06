@@ -4,12 +4,23 @@ import { getDb } from '$lib/data/db';
 import { SCHEDULE_TABLE } from '$lib/data/constants';
 import { getTeams } from '$lib/core/entities/team';
 import { logger } from '$lib/logger';
+import { Cache } from '$lib/data/cache/cache';
 
 interface SimulationState {
   seasonSchedules: Map<number, MatchInput[]>;
 }
 
 async function loadScheduleFromDb(seasonId: number): Promise<MatchInput[]> {
+  try {
+    const cache = Cache.getInstance();
+    const cachedSchedule = cache.getSchedule();
+    if (cachedSchedule.length > 0) {
+      return cachedSchedule;
+    }
+  } catch (e) {
+    logger.debug('Cache not initialized, loading from DB');
+  }
+
   const db = await getDb();
   const schedules = await db
     .selectFrom(SCHEDULE_TABLE)
@@ -21,19 +32,23 @@ async function loadScheduleFromDb(seasonId: number): Promise<MatchInput[]> {
 
   const season = await db
     .selectFrom('season')
-    .select('start_year')
+    .select(['id', 'start_year', 'end_year'])
     .where('id', '=', seasonId)
     .executeTakeFirstOrThrow();
 
   const teams = await getTeams(season.start_year);
   const teamsMap = new Map(teams.map(team => [team.teamInfo.id, team]));
 
-  return schedules.map(schedule => ({
+  const schedule = schedules.map(schedule => ({
     homeTeam: teamsMap.get(schedule.home_team_id)!,
     awayTeam: teamsMap.get(schedule.away_team_id)!,
     date: new Date(schedule.date),
-    seasonStage: schedule.season_type as 'regular_season' | 'playoffs'
+    seasonStage: schedule.season_type as 'regular_season' | 'playoffs',
+    isProcessed: false
   }));
+
+  Cache.getInstance(season, teams, schedule);
+  return schedule;
 }
 
 async function saveScheduleToDb(seasonId: number, schedule: MatchInput[]): Promise<void> {

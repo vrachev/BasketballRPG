@@ -204,19 +204,19 @@ export const createPlayers = async (inputs: CreatePlayerInput[]): Promise<number
 
   for (const { playerInfoInput } of inputs) {
     const playerInfo = generatePlayerInfo(playerInfoInput);
-    playerInfoBatch.push(playerInfo);    
+    playerInfoBatch.push(playerInfo);
   }
 
   // First we insert PlayerInfo to get PID for other tables
   const insertedPlayers = await db
-  .insertInto(PLAYER_TABLE)
-  .values(playerInfoBatch)
-  .returning('id')
-  .execute();
+    .insertInto(PLAYER_TABLE)
+    .values(playerInfoBatch)
+    .returning('id')
+    .execute();
 
   for (const [idx, input] of inputs.entries()) {
     const { teamId, seasonStartingYear, position, defaultSkillLevel, defaultTendencyLevel, overrideSkills } = input;
-    
+
     const pid = insertedPlayers[idx].id;
     const seasonId = (await getSeason(seasonStartingYear))?.id;
     if (!seasonId) {
