@@ -1,6 +1,28 @@
 TODO
 
 
+BIG ITEMS, as of Dec 25th 2024
+- Perf improvements
+  - Make db calls *actually* async. So instead of awaiting every call, effectively making things synchronous, treat the calls as promises and only await when needed. Let them run in the background otherwise
+  - batch calls as much as possible
+    - for example, if simulating more than one game, batch the calls instead of calling to the DB for every call
+    - might need local storage for this if the objects are too big for memory
+  - local storage cache layer?
+    - look into places where we write to the DB, and maybe we can cache instead.
+    - But also look into places where we read from the DB. Maybe we can cache frequent reads.
+- front end
+  - well, develop more of the frontend to create a usable game
+- simulation logic
+  - make it better. has problems right now
+
+
+- get rid of browser/server option
+
+
+
+
+
+
 Ideas:
 - Several game modes
   - Journey to "GOAT" (eg: first pick, lots of potential)
@@ -39,6 +61,10 @@ Now:
     - fetching schedule from DB every time instead of storing in mem
     - lots of unbatched queries (teams, players, results)
 - [improvement] Look into standardizing imports (use sveltekit alias for all imports?)
+
+
+Bugs:
+- Standings should not only sort by win-percentage, as they do now, but use games played as a tie-breaker. Currently, a team with a record of 2-0 might be above a team with a record of 3-0.
 
 later:
 - We will probably have consistency issues with our DB the way things run right now.

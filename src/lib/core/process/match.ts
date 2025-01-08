@@ -8,6 +8,7 @@ import type { MatchInput } from '../simulation/match.js';
 import type { GameStats, PlayerEvent } from '../../data/index.js';
 import { logger } from '../../logger.js';
 import { markGameAsProcessed } from '../entities/schedule.js';
+import { getQueryStats } from "$lib/data/db";
 
 export const processMatch = async (
   matchInput: MatchInput,
@@ -30,6 +31,8 @@ export const processMatch = async (
     date: matchInput.date
   }, "Processing match");
 
+  const qs = getQueryStats();
+  logger.info(`queries since last ${qs.totalQueries}`);
   return gameStats;
 };
 

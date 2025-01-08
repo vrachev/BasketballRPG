@@ -10,7 +10,7 @@ import {
   type TeamInfoTable,
   type Player
 } from '../../data/index.js';
-import { getPlayerFromHistory, getPlayerHistory } from './player.js';
+import { getPlayerHistories, getPlayersFromHistories } from './player.js';
 import { getSeason } from './season.js';
 
 const cities = {
@@ -64,9 +64,9 @@ const cities = {
 
 export const createTeams = async (): Promise<void> => {
   const db = await getDb();
+  const teamRecords: Insertable<TeamInfoTable>[]= [];
   for (const [conference, divisions] of Object.entries(cities)) {
     for (const [division, teams] of Object.entries(divisions)) {
-      const teamRecords: Insertable<TeamInfoTable>[]= [];
       for (const team of teams) {
         teamRecords.push({
           name: team.name,
@@ -76,13 +76,14 @@ export const createTeams = async (): Promise<void> => {
           division: division
         });
       }
-      await db
-        .insertInto(TEAM_TABLE)
-        .values(teamRecords)
-        .returning('id')
-        .execute();
     }
   }
+
+  await db
+    .insertInto(TEAM_TABLE)
+    .values(teamRecords)
+    .returning('id')
+    .execute();
 };
 
 export const getTeamId = async (city: string): Promise<number> => {
@@ -195,12 +196,11 @@ const getTeamPlayersBySeason = async (
     return [];
   }
 
-  const players = await Promise.all(
-    playerIds.map((row) =>
-      getPlayerHistory(row.player_id).then((history) =>
-        getPlayerFromHistory(history, season.start_year)
-      )
-    )
+  const playerHistories = await getPlayerHistories(playerIds.map((row) => row.player_id)); // Batch fetching player histories
+
+  const players = await getPlayersFromHistories(
+    Array.from(playerHistories.values()), // Convert map values to an array
+    season.start_year // Season year
   );
 
   return players;

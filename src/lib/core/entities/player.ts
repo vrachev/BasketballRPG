@@ -7,15 +7,15 @@ import {
   type PlayerInfoTable,
   type PlayerHistory,
   type Player,
-  getDb
-} from '../../data/index.js';
-import type { Insertable } from 'kysely';
-import { getSeason } from './season.js';
-import { Chance } from 'chance';
-import { logger } from '$lib/logger.js';
+  getDb,
+} from "../../data/index.js";
+import type { Insertable } from "kysely";
+import { getSeason } from "./season.js";
+import { Chance } from "chance";
+import { logger } from "$lib/logger.js";
 
-type Position = 'PG' | 'SG' | 'SF' | 'PF' | 'C';
-type SeasonType = 'regular_season' | 'playoffs';
+type Position = "PG" | "SG" | "SF" | "PF" | "C";
+type SeasonType = "regular_season" | "playoffs";
 
 type PlayerInfoInput = {
   firstName?: string;
@@ -30,8 +30,10 @@ type PlayerInfoInput = {
 // Initialize chance
 const chance = new Chance();
 
-const generatePlayerInfo = (input: PlayerInfoInput): Insertable<PlayerInfoTable> => {
-  const firstName = input.firstName || chance.first({ gender: 'male' });
+const generatePlayerInfo = (
+  input: PlayerInfoInput,
+): Insertable<PlayerInfoTable> => {
+  const firstName = input.firstName || chance.first({ gender: "male" });
   const lastName = input.lastName || chance.last();
   const fullName = `${firstName} ${lastName}`;
 
@@ -48,7 +50,7 @@ const generatePlayerInfo = (input: PlayerInfoInput): Insertable<PlayerInfoTable>
     wingspan: input.wingspan || 78,
 
     // Career Info
-    career_status: 'Active',
+    career_status: "Active",
     experience: 0,
     is_starting: input.isStarting ? 1 : 0,
   };
@@ -62,7 +64,7 @@ const generatePlayerSkills = (
   teamId: number,
   defaultSkillLevel: number,
   defaultTendencyLevel: number,
-  insertableFields: Partial<Insertable<PlayerSkillTable>> = {}
+  insertableFields: Partial<Insertable<PlayerSkillTable>> = {},
 ): Insertable<PlayerSkillTable> => {
   const skillDefaults = {
     player_id: pid,
@@ -133,10 +135,13 @@ const generatePlayerSkills = (
     tendency_paint: defaultTendencyLevel,
     tendency_free_throw_drawing: defaultTendencyLevel,
     tendency_offensive_rebounding: defaultTendencyLevel,
-    tendency_defensive_rebounding: defaultTendencyLevel
+    tendency_defensive_rebounding: defaultTendencyLevel,
   };
 
-  const playerSkills: Insertable<PlayerSkillTable> = { ...skillDefaults, ...insertableFields };
+  const playerSkills: Insertable<PlayerSkillTable> = {
+    ...skillDefaults,
+    ...insertableFields,
+  };
   return playerSkills;
 };
 
@@ -145,7 +150,7 @@ const generatePlayerSeason = (
   teamId: number,
   seasonId: number,
   position: Position,
-  seasonType: SeasonType
+  seasonType: SeasonType,
 ): Insertable<PlayerSeasonTable> => {
   const playerSeason: Insertable<PlayerSeasonTable> = {
     // Keys
@@ -187,20 +192,27 @@ const generatePlayerSeason = (
 export type CreatePlayerInput = {
   playerInfoInput: PlayerInfoInput;
   teamId: number;
-  seasonStartingYear: number;
   position: Position;
   defaultSkillLevel: number;
   defaultTendencyLevel: number;
   overrideSkills?: Partial<Insertable<PlayerSkillTable>>;
 };
 
-export const createPlayers = async (inputs: CreatePlayerInput[]): Promise<number[]> => {
+export const createPlayers = async (
+  inputs: CreatePlayerInput[],
+  seasonStartingYear: number,
+): Promise<number[]> => {
   const db = await getDb();
 
   const playerInfoBatch: Insertable<PlayerInfoTable>[] = [];
   let playerSkillsBatch: Insertable<PlayerSkillTable>[] = [];
   let playerSeasonRegularBatch: Insertable<PlayerSeasonTable>[] = [];
   let playerSeasonPlayoffsBatch: Insertable<PlayerSeasonTable>[] = [];
+
+  const seasonId = (await getSeason(seasonStartingYear))?.id;
+  if (!seasonId) {
+    throw new Error(`Season ${seasonStartingYear} not found.`);
+  }
 
   for (const { playerInfoInput } of inputs) {
     const playerInfo = generatePlayerInfo(playerInfoInput);
@@ -211,32 +223,49 @@ export const createPlayers = async (inputs: CreatePlayerInput[]): Promise<number
   const insertedPlayers = await db
     .insertInto(PLAYER_TABLE)
     .values(playerInfoBatch)
-    .returning('id')
+    .returning("id")
     .execute();
 
   for (const [idx, input] of inputs.entries()) {
-    const { teamId, seasonStartingYear, position, defaultSkillLevel, defaultTendencyLevel, overrideSkills } = input;
-
+    const {
+      teamId,
+      position,
+      defaultSkillLevel,
+      defaultTendencyLevel,
+      overrideSkills,
+    } = input;
     const pid = insertedPlayers[idx].id;
-    const seasonId = (await getSeason(seasonStartingYear))?.id;
-    if (!seasonId) {
-      throw new Error(`Season ${seasonStartingYear} not found.`);
-    }
 
     // Dependent data
-    const playerSkills = generatePlayerSkills(pid, seasonId, teamId, defaultSkillLevel, defaultTendencyLevel, overrideSkills);
-    const playerSeasonRegular = generatePlayerSeason(pid, teamId, seasonId, position, 'regular_season');
-    const playerSeasonPlayoffs = generatePlayerSeason(pid, teamId, seasonId, position, 'playoffs');
+    const playerSkills = generatePlayerSkills(
+      pid,
+      seasonId,
+      teamId,
+      defaultSkillLevel,
+      defaultTendencyLevel,
+      overrideSkills,
+    );
+    const playerSeasonRegular = generatePlayerSeason(
+      pid,
+      teamId,
+      seasonId,
+      position,
+      "regular_season",
+    );
+    const playerSeasonPlayoffs = generatePlayerSeason(
+      pid,
+      teamId,
+      seasonId,
+      position,
+      "playoffs",
+    );
 
     playerSkillsBatch.push(playerSkills);
     playerSeasonRegularBatch.push(playerSeasonRegular);
     playerSeasonPlayoffsBatch.push(playerSeasonPlayoffs);
   }
 
-  await db
-    .insertInto(PLAYER_SKILLS_TABLE)
-    .values(playerSkillsBatch)
-    .execute();
+  await db.insertInto(PLAYER_SKILLS_TABLE).values(playerSkillsBatch).execute();
 
   await db
     .insertInto(PLAYER_SEASON_TABLE)
@@ -251,64 +280,147 @@ export const createPlayers = async (inputs: CreatePlayerInput[]): Promise<number
   return insertedPlayers.map((player) => player.id);
 };
 
-export const getPlayerHistory = async (playerId: number): Promise<PlayerHistory> => {
+export const getPlayerHistories = async (
+  playerIds: number[],
+): Promise<Map<number, PlayerHistory>> => {
   const db = await getDb();
-  const playerData = await db
+
+  const playersData = await db
     .selectFrom(PLAYER_TABLE)
     .selectAll()
-    .where('id', '=', playerId)
-    .executeTakeFirstOrThrow();
-  if (!playerData) {
-    throw new Error(`Player with id ${playerId} not found`);
+    .where("id", "in", playerIds)
+    .execute();
+
+  const missingIds = playerIds.filter(
+    (id) => !playersData.some((player) => player.id === id),
+  );
+  if (missingIds.length > 0) {
+    throw new Error(`Players with IDs ${missingIds.join(", ")} not found`);
   }
+
   const regularSeasons = await db
     .selectFrom(PLAYER_SEASON_TABLE)
     .selectAll()
-    .where('player_id', '=', playerId)
-    .where('season_type', '=', 'regular_season')
+    .where("player_id", "in", playerIds)
+    .where("season_type", "=", "regular_season")
     .execute();
+
   const playoffSeasons = await db
     .selectFrom(PLAYER_SEASON_TABLE)
     .selectAll()
-    .where('player_id', '=', playerId)
-    .where('season_type', '=', 'playoffs')
+    .where("player_id", "in", playerIds)
+    .where("season_type", "=", "playoffs")
     .execute();
-  const skills = await db
+
+  const skillsData = await db
     .selectFrom(PLAYER_SKILLS_TABLE)
     .selectAll()
-    .where('player_id', '=', playerId)
+    .where("player_id", "in", playerIds)
     .execute();
-  const playerHistory: PlayerHistory = {
-    playerInfo: playerData,
-    regularSeasons: regularSeasons,
-    playoffSeasons: playoffSeasons,
-    skills: skills,
-  };
-  return playerHistory;
+
+  const regularSeasonsByPlayer = groupBy(regularSeasons, "player_id");
+  const playoffSeasonsByPlayer = groupBy(playoffSeasons, "player_id");
+  const skillsByPlayer = groupBy(skillsData, "player_id");
+
+  const playerHistories = new Map<number, PlayerHistory>();
+  for (const player of playersData) {
+    const playerId = player.id;
+    playerHistories.set(playerId, {
+      playerInfo: player,
+      regularSeasons: regularSeasonsByPlayer[String(playerId)] || [],
+      playoffSeasons: playoffSeasonsByPlayer[String(playerId)] || [],
+      skills: skillsByPlayer[String(playerId)] || [],
+    });
+  }
+
+  return playerHistories;
 };
 
-export const getPlayerFromHistory = async (history: PlayerHistory, seasonStartingYear: number): Promise<Player> => {
+export const getPlayersFromHistories = async (
+  histories: PlayerHistory[],
+  seasonStartingYear: number,
+): Promise<Player[]> => {
+  const db = await getDb();
+
+  // Fetch the season data for the given starting year
   const season = await getSeason(seasonStartingYear);
   if (!season) {
     throw new Error(`Season with year ${seasonStartingYear} not found`);
   }
-  const { playerInfo } = history;
 
-  // Find skills for the given year
-  const skills = history.skills.find(s => s.season_id === season.id);
-  if (!skills) {
-    throw new Error(`No skills found for player ${playerInfo.id} in year ${season.start_year}`);
-  }
+  // Extract all player IDs from the histories
+  const playerIds = histories.map((history) => history.playerInfo.id);
 
-  // Find seasons for the given year
-  const regularSeason = history.regularSeasons?.find(s => s.season_id === season.id);
-  const playoffSeason = history.playoffSeasons?.find(s => s.season_id === season.id);
+  // Fetch all skills for the given season and player IDs in a batch
+  const skillsData = await db
+    .selectFrom(PLAYER_SKILLS_TABLE)
+    .selectAll()
+    .where("season_id", "=", season.id)
+    .where("player_id", "in", playerIds)
+    .execute();
 
-  return {
-    playerInfo,
-    season,
-    skills,
-    regularSeason,
-    playoffSeason,
-  };
+  // Fetch all regular and playoff seasons for the given season and player IDs in a batch
+  const regularSeasonsData = await db
+    .selectFrom(PLAYER_SEASON_TABLE)
+    .selectAll()
+    .where("season_id", "=", season.id)
+    .where("season_type", "=", "regular_season")
+    .where("player_id", "in", playerIds)
+    .execute();
+
+  const playoffSeasonsData = await db
+    .selectFrom(PLAYER_SEASON_TABLE)
+    .selectAll()
+    .where("season_id", "=", season.id)
+    .where("season_type", "=", "playoffs")
+    .where("player_id", "in", playerIds)
+    .execute();
+
+  // Group fetched data by player ID
+  const skillsByPlayer = groupBy(skillsData, "player_id");
+  const regularSeasonsByPlayer = groupBy(regularSeasonsData, "player_id");
+  const playoffSeasonsByPlayer = groupBy(playoffSeasonsData, "player_id");
+
+  // Construct Player objects
+  const players: Player[] = histories.map((history) => {
+    const { playerInfo } = history;
+    const playerId = playerInfo.id;
+
+    const skills = skillsByPlayer[String(playerId)]?.[0]; // Each player should have one skill entry per season
+    if (!skills) {
+      throw new Error(
+        `No skills found for player ${playerId} in year ${season.start_year}`,
+      );
+    }
+
+    const regularSeason = regularSeasonsByPlayer[String(playerId)]?.[0];
+    const playoffSeason = playoffSeasonsByPlayer[String(playerId)]?.[0];
+
+    return {
+      playerInfo,
+      season,
+      skills,
+      regularSeason,
+      playoffSeason,
+    };
+  });
+
+  return players;
 };
+
+function groupBy<T, K extends keyof T>(
+  array: T[],
+  key: K,
+): Record<string, T[]> {
+  return array.reduce(
+    (acc, item) => {
+      const groupKey = String(item[key]);
+      if (!acc[groupKey]) {
+        acc[groupKey] = [];
+      }
+      acc[groupKey].push(item);
+      return acc;
+    },
+    {} as Record<string, T[]>,
+  );
+}

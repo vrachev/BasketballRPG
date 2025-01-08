@@ -1,5 +1,5 @@
 import { createPlayers } from './entities/player.js';
-import { getPlayerHistory, type CreatePlayerInput } from './entities/player.js';
+import { type CreatePlayerInput } from './entities/player.js';
 import { createTeams, getTeamId, getTeamIds, getTeams, getTeam } from './entities/team.js';
 import { getTeamStandings, type TeamStanding } from './entities/views/teamStandings.js';
 import { createTeamSeason } from './entities/teamSeason.js';
@@ -13,7 +13,6 @@ import {
 import { processMatch } from './process/match.js';
 
 export {
-  getPlayerHistory,
   createPlayers,
   createTeams,
   getTeamId,

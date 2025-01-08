@@ -7,12 +7,14 @@ type QueryStats = {
   totalQueries: number;
   totalDurationMs: number;
   averageDurationMs: number;
+  sinceLast: number;
 };
 
 const queryStats: QueryStats = {
   totalQueries: 0,
   totalDurationMs: 0,
   averageDurationMs: 0,
+  sinceLast: 0,
 };
 
 export async function createDialect(dbRelPath: string): Promise<Dialect> {
@@ -23,7 +25,7 @@ export async function createDialect(dbRelPath: string): Promise<Dialect> {
 }
 
 function appendQueryEvent(event: LogEvent) {
-  logger.trace({ query: event.query, duration: event.queryDurationMillis }, "Query executed");
+  // logger.info({ query: event.query, duration: event.queryDurationMillis }, "Query executed");
   queryStats.totalQueries++;
   queryStats.totalDurationMs += event.queryDurationMillis;
   queryStats.averageDurationMs = queryStats.totalDurationMs / queryStats.totalQueries;
@@ -58,7 +60,10 @@ export async function getDb(leagueId?: LeagueId): Promise<Kysely<DBSchema>> {
 }
 
 export function getQueryStats(): Readonly<QueryStats> {
-  return Object.freeze({ ...queryStats });
+  const qs = Object.freeze({ ...queryStats });
+  queryStats.sinceLast = qs.totalQueries;
+
+  return qs;
 }
 
 export default getDb;

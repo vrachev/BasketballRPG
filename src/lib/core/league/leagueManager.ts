@@ -101,7 +101,6 @@ async function createPlayers(teamIds: number[]) {
   const rolePlayerTemplate: core.CreatePlayerInput = {
     playerInfoInput: { isStarting: true },
     teamId: 0,
-    seasonStartingYear: 2024,
     position: 'PG',
     defaultSkillLevel: 35,
     defaultTendencyLevel: 20,
@@ -110,7 +109,6 @@ async function createPlayers(teamIds: number[]) {
   const starPlayerTemplate: core.CreatePlayerInput = {
     playerInfoInput: { isStarting: true },
     teamId: 0,
-    seasonStartingYear: 2024,
     position: 'PG',
     defaultSkillLevel: 10,
     defaultTendencyLevel: 70
@@ -129,5 +127,5 @@ async function createPlayers(teamIds: number[]) {
     }
   }
 
-  await core.createPlayers(inputs);
+  await core.createPlayers(inputs, 2024);
 }
