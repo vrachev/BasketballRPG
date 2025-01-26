@@ -10,10 +10,10 @@ interface SimulationState {
   seasonSchedules: Map<number, MatchInput[]>;
 }
 
-async function loadScheduleFromDb(seasonId: number): Promise<MatchInput[]> {
+export async function loadScheduleFromDb(leagueId: string, seasonId: number): Promise<MatchInput[]> {
   try {
-    const cache = Cache.getInstance();
-    const cachedSchedule = cache.getSchedule();
+    const cache = await Cache.getInstance(leagueId, seasonId);
+    const cachedSchedule = cache.schedule;
     if (cachedSchedule.length > 0) {
       return cachedSchedule;
     }
@@ -47,7 +47,7 @@ async function loadScheduleFromDb(seasonId: number): Promise<MatchInput[]> {
     isProcessed: false
   }));
 
-  Cache.getInstance(season, teams, schedule);
+  Cache.getInstance(leagueId, seasonId, { season, teams, schedule });
   return schedule;
 }
 
@@ -87,8 +87,8 @@ function createSimulationStore() {
         return state;
       });
     },
-    loadSchedule: async (seasonId: number) => {
-      const schedule = await loadScheduleFromDb(seasonId);
+    loadSchedule: async (leagueId: string, seasonId: number) => {
+      const schedule = await loadScheduleFromDb(leagueId, seasonId);
       logger.debug({ schedule });
       logger.debug({ schedule }, 'Loaded schedule');
       update(state => {
@@ -97,8 +97,8 @@ function createSimulationStore() {
       });
       return schedule;
     },
-    markProcessed: async (seasonId: number, date: string) => {
-      await loadScheduleFromDb(seasonId);
+    markProcessed: async (leagueId: string, seasonId: number, date: string) => {
+      await loadScheduleFromDb(leagueId, seasonId);
     },
     reset: () => set({
       seasonSchedules: new Map()

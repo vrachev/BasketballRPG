@@ -16,7 +16,7 @@ import { getSeason } from '$lib/core/entities/season';
 const LEAGUES_STORAGE_KEY = 'bball-leagues';
 
 export function getStoredLeagues(): LeagueInfo[] {
-  if (!browser) return [];
+  // if (!browser) return [];
   const stored = localStorage.getItem(LEAGUES_STORAGE_KEY);
   return stored ? JSON.parse(stored) : [];
 }
@@ -28,7 +28,7 @@ export function getLeagueById(id: string): LeagueInfo | undefined {
 }
 
 export function saveLeague(league: LeagueInfo): void {
-  if (!browser) return;
+  // if (!browser) return;
   const leagues = getStoredLeagues();
   const index = leagues.findIndex(l => l.id === league.id);
 
@@ -83,7 +83,7 @@ export async function createNewLeague(): Promise<LeagueInfo> {
 
   // Initialize cache singleton with all required data
   const season = await getSeason(startingYear);
-  Cache.getInstance(season, teams, schedule);
+  Cache.getInstance(newLeague.id, season.id, { season, teams, schedule });
 
   // Store schedule and initialize tracking
   simulationStore.setSchedule(seasonId, schedule);

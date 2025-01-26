@@ -1,21 +1,8 @@
 import type { Team, Season } from "../types";
 import type { MatchInput } from "$lib/core/simulation/match.js";
-
-export class CacheManager {
-  private caches: Map<string, Cache>;
-
-  constructor() {
-    this.caches = new Map();
-  }
-
-  get(leagueId: string): Cache {
-    if (this.caches.has(leagueId)) return this.caches.get(leagueId)!;
-
-    const cache = new Cache(leagueId);
-    this.caches.set(leagueId, cache);
-    return cache;
-  }
-}
+import { getSeason } from "$lib/core/entities/season";
+import { getTeams } from "$lib/core/entities/team";
+import { loadScheduleFromDb } from "$lib/stores/simulation";
 
 /**
  * Todos:
@@ -30,41 +17,42 @@ export class CacheManager {
  *    * 
  */
 
+type CacheInput = {
+  season: Season;
+  teams: Team[];
+  schedule: MatchInput[];
+};
+
 export class Cache {
   private static instance: Cache | null = null;
-  private season: Season;
-  private teams: Team[];
-  private schedule: MatchInput[];
+  leagueId: string;
+  season: Season;
+  teams: Team[];
+  schedule: MatchInput[];
 
-  constructor(leagueId: string) {
+  private constructor(
+    leagueId: string,
+    season: Season,
+    teams: Team[],
+    schedule: MatchInput[]
+  ) {
+    this.leagueId = leagueId;
+    this.season = season;
+    this.teams = teams;
+    this.schedule = schedule;
   }
 
-  // private constructor(season: Season, teams: Team[], schedule: MatchInput[]) {
-  //   this.season = season;
-  //   this.teams = teams;
-  //   this.schedule = schedule;
-  // }
-
-  // public static getInstance(season?: Season, teams?: Team[], schedule?: MatchInput[]): Cache {
-  //   if (!Cache.instance) {
-  //     if (!season || !teams || !schedule) {
-  //       throw new Error('Cache must be initialized with data on first call');
-  //     }
-  //     Cache.instance = new Cache(season, teams, schedule);
-  //   }
-  //   return Cache.instance;
-  // }
-
-  public getSeason(): Season {
-    return this.season;
-  }
-
-  public getTeams(): Team[] {
-    return this.teams;
-  }
-
-  public getSchedule(): MatchInput[] {
-    return this.schedule;
+  static async getInstance(leagueId: string, seasonId: number, params?: CacheInput): Promise<Cache> {
+    if (!Cache.instance || Cache.instance.leagueId !== leagueId) {
+      if (params) {
+        Cache.instance = new Cache(leagueId, params.season, params.teams, params.schedule);
+      } else {
+        const season = await getSeason(seasonId);
+        const teams = await getTeams(season.start_year);
+        const schedule = await loadScheduleFromDb(leagueId, seasonId);
+        Cache.instance = new Cache(leagueId, season, teams, schedule);
+      }
+    }
+    return Cache.instance;
   }
 }
-

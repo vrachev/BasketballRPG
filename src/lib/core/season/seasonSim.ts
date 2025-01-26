@@ -16,7 +16,7 @@ export async function simulateDay(
   logger.debug({ leagueId, seasonId }, 'Starting day simulation');
 
   // Load fresh schedule from DB to ensure we have latest state
-  const schedule = await simulationStore.loadSchedule(seasonId);
+  const schedule = await simulationStore.loadSchedule(leagueId, seasonId);
   if (!schedule || schedule.length === 0) {
     throw new Error('No more games to simulate in this season');
   }
